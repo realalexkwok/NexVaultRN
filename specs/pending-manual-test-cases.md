@@ -1,0 +1,30 @@
+# spec: pending-manual-test-cases — 手工测试登记表
+
+> Status: active | Date: 2026-10-14 | Constitution: yes
+> 用途：CI 无法自动化的真机/人工走查统一登记（AGENTS.md B.4-5：涉及生物识别、截屏、越狱/root 等结论**必须实体真机**）。每条用例走查后把结果（机型 + OS 版本 + 录屏证据链接 + 结论）补入 validation.md，并同步 `plans/` 对应 AC 的勾选。
+
+> 走查记录格式（写进 feature 的 validation.md）：`MAN-NNN | 机型+OS | 日期 | 录屏证据链接 | 结论（通过/失败/阻塞）`。
+
+## 登记表
+
+| ID | 用例 | 预期 | 关联 spec 用例 | 依赖设备 | 状态 |
+|---|---|---|---|---|---|
+| MAN-001 | 真机签名全链路走查：导入助记词→派生地址→构造 EIP-1559→native 签名→回收站→广播→Etherscan 回执 | 签名成功；不通过则 abort（“演示假签名”=红线，AGENTS.md B.4-5） | TC-VC-001/003/007、TC-W3A-003 | Android 干净机 + iPhone 各一 | ☐ 待走查 |
+| MAN-002 | 生物识别门禁：改生物信息→设备密码回退→连续失败→取消弹窗 | 依序触发 promptDeviceCredential 回退 / 硬失败 / 取消信号（E_VAULT_BIOMETRIC_*）；per-use 有效期=使用周期 | TC-SA-005、TC-SI-003 | 生物识别真机 ×2 | ☐ 待走查 |
+| MAN-003 | 防截屏：敏感页截图/录屏、切后台缩略图、离开恢复 | Android 黑屏/空白 + 后台模糊；iOS 快照遮挡层；模拟器结论无效须真机复核 | TC-SA-004、TC-SI-005、TC-UI-004 | 双端真机 | ☐ 待走查 |
+| MAN-004 | 越狱/Root 分级处置：干净机 vs Magisk 机对照 | 干净机 risk=0 放行；Root/Frida 机 signDigest 被 E_VAULT_SECURITY_GATE 拒绝（fail-closed）并录屏 | TC-SA-002/003/006、TC-SI-002、TC-VC-004 | 干净机 + Magisk 机 | ☐ 待走查 |
+| MAN-005 | OTA 代码签名与回滚演练：签 bundle→发布→回滚→重放篡改 bundle | 验签失败包被拒载；rollback-to-embedded 命令真实生效 | TC-OTA-002/003/006 | staging 渠道真机 | ☐ 待走查 |
+| MAN-006 | OTA critical 门控：强制更新不可跳过、非 critical 可跳过并可回滚 | 门控 UI 行为符合 spec | TC-OTA-005/007、TC-UI-006 | 双端真机 | ☐ 待走查 |
+| MAN-007 | Web 端只读性：UI 无签名入口 + 无签名 bundle | Web 端不出现导入/签名/广播入口（R7） | TC-W3A-004、TC-UI-005 | 桌面浏览器 ×2 | ☐ 待走查 |
+| MAN-008 | release build 远程调试隔离：Chrome DevTools / Metro 无法连接 | 连接失败；真钱流程调试不可用（R8） | TC-SA-007、TC-W3A-006 | Android release 真机 | ☐ 待走查 |
+| MAN-009 | 助记词不落盘审查：断网环境下全流程 + 本地文件/日志检查 | 无 plaintext 助记词/私钥落盘；日志零泄露（R5） | TC-VC-002/008 | 双端真机 + adb 检查 | ☐ 待走查 |
+| MAN-010 | 弱网/断链链交互：广播超时、回执超时、断网降级 | 提示可重试、无重复广播、无悬挂状态 | TC-W3A-002/005 | 真机 + 网络调节 | ☐ 待走查 |
+
+## 规则
+
+1. 新增手工用例追加 MAN 编号（顺序分配，不复用），删除须注明原因。
+2. 每条必须关联至少一个 specs/ 内的 TC 编号；无对应 TC 时先补 spec（=修宪）。
+3. 走查结论只能为「通过 / 失败（附 issue）/ 阻塞（附原因）」，禁止无证据勾「通过」。
+4. 走查环境以 spec: dev-environment §2 的真机基线为准；模拟器/Expo Go 结果不计入。
+5. MAN 用例与 TC 用例互补：能自动化的进 TC + CI，本表只保留必须人工/真机的部分。
+6. 阶段 1（三天原型）期间，G1–G3 门槛所需的 MAN-001/004/005 为最低走查集，其余可顺延至阶段 2 首轮。

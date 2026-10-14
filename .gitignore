@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# pnpm
+.pnpm-store/
+
+# Expo / Metro
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.jks
+*.pem
+!certs/code-signing-certificate.pem.example
+
+# Android
+**/android/app/build/
+**/android/build/
+**/android/.gradle/
+**/android/local.properties
+*.keystore
+!debug.keystore
+
+# iOS (not built yet, rules in place for later)
+**/ios/build/
+**/ios/Pods/
+**/ios/.xcode.env.local
+
+# secrets (R5: no keys/credentials in the repo)
+.env
+.env.*
+!.env.example
+*.local
+local.properties
+
+# OTA signing private key (R2: private key stays offline, never committed)
+certs/private-key.pem
+certs/*.key
+
+# security test assets (security-testing spec: bypass scripts never ship in release artifacts)
+tests/security/bypass-scripts/output/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
