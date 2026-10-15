@@ -135,11 +135,16 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
      below; the test implements a test-side 78-byte serializer (version|depth|parentFingerprint|
      childNumber|chainCode|key + Base58Check via BC `Base58`/`SHA256Digest`; `xprv=0x0488ADE4`,
      `xpub=0x0488B21E`; parent fingerprint = first 4 bytes of `RIPEMD160(SHA256(pub))`) and
-     asserts master + every listed chain for vectors 1–4; vector 5 asserts the two documented
-     invalid derivations fail. The exact xprv/xpub strings are transcribed into the test **only
-     after** the Step-0 verification (download `bip-0032.mediawiki`, record sha256, independently
-     recompute vector 1's master xprv with stdlib Python — the T1.2 P0.4 pattern); the
-     transcription itself is recorded in `validation.md`.
+     asserts master + every listed chain for vectors 1–4. **Vector 5 is deliberately outside the
+     T1.3 gate**: the fetched revision lists 16 invalid/malformed *extended keys* (version mismatch,
+     bad key prefixes, zero depth with non-zero parent fingerprint/index, unknown version, private
+     key ∉ [1, n-1], invalid public key, bad checksum); recognising them needs an extended-key
+     parser, which T1.3 production code does not have, so asserting them would exercise only test
+     scaffolding — recorded as Handoff T1.3-H7 instead of a fake gate. The exact xprv/xpub strings
+     are transcribed into the test **only after** the Step-0 verification (download
+     `bip-0032.mediawiki`, record sha256, independently recompute **all** chains with a separate
+     Python implementation — the T1.2 P0.4 pattern, strengthened); the transcription itself is
+     recorded in `validation.md`.
   2. **Canonical address (TC-VC-003)** — `Bip39.mnemonicToSeed("abandon ×23 about", "")` →
      `deriveAddressBytes` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`
      (original-repo TC-SEC-005 anchor).
@@ -192,9 +197,15 @@ master xprv independently recomputed with stdlib Python before transcription).
 | --- | --- | --- |
 | V1 | `000102030405060708090a0b0c0d0e0f` | `m`, `m/0'`, `m/0'/1`, `m/0'/1/2'`, `m/0'/1/2'/2`, `m/0'/1/2'/2/1000000000` |
 | V2 | `fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542` | `m`, `m/0`, `m/0/2147483647'`, `m/0/2147483647'/1`, `m/0/2147483647'/1/2147483646'`, `m/0/2147483647'/1/2147483646'/2` |
-| V3 | `4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be` | `m`, `m/0'`, `m/0'/1'`, `m/0'/1'/2'`, `m/0'/1'/2'/2`, `m/0'/1'/2'/2/1000000000` |
-| V4 | `3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678` | public derivation only (xpub): `m`, `m/0'`, `m/0'/1'`, `m/0'/1'/2'`, `m/0'/1'/2'/2`, `m/0'/1'/2'/2/1000000000` |
-| V5 | `000102030405060708090a0b0c0d0e0f` | invalid derivations: `m/0'/1'/2'/2/1000000000` (derived private key = 0) and hardened child from a public-only parent — both must fail |
+| V3 | `4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be` | `m`, `m/0'` (2 chains in the fetched revision) |
+| V4 | `3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678` | `m`, `m/0'`, `m/0'/1'` (leading-zero-retention vector; 3 chains in the fetched revision) |
+| V5 | — (no seed; 16 malformed extended keys) | **outside the T1.3 gate** — extended-key validity needs a parser T1.3 does not have; see Handoff T1.3-H7 |
+
+Chain lists corrected in implementation Task 0 to match the **fetched** `bip-0032.mediawiki`
+(`sha256 e5e00a8289db2f681052cf24a745320afc225e66b25d1e489a7c884d2fc7f11f`, lines 218–309) after an
+independent Python implementation reproduced **every** listed chain (xprv and xpub) for V1–V4; the
+planning draft had over-listed chains for V3/V4 from memory and mis-described V5. The correction is
+recorded in `validation.md` Task 0.
 
 ### BIP-44 canonical anchor (TC-VC-003, JVM + device)
 
@@ -262,3 +273,4 @@ Provenance: original repo `/home/superguo/Projects/NexVault/core/core-security/s
 | T1.3-H4 | BIP-32 xprv/xpub strings transcribed at implementation | Transcription happens only after Step-0 sha256 + independent verification (FR-7) | Keep the transcription evidence in `validation.md` | AC-3 |
 | T1.3-H5 | JS wrapper evidence still uses the throwaway `/tmp` harness | Repo has no JS test runner (T1.2 H6) | T1.1 closure should absorb the harness as committed jest tests | AC-10 |
 | T1.3-H6 | BC version pin (1.86) must carry to T1.4 signing work | T1.4 uses the same provider | Replan to T1.4 | AC-8 |
+| T1.3-H7 | BIP-32 vector 5 (16 invalid extended keys) not gated | No production extended-key parser in T1.3; the vector tests serialization validity | Absorb when an xpub-export/parser feature exists (roadmap stage 2) | AC-3 |

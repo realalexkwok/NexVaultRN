@@ -181,7 +181,7 @@ mirrors `src/main/java`; `// TC-VC-XXX` marker above each `@Test`):
 | `bip32Vector2` | `// TC-VC-013` | same for V2 (incl. `2147483647'` hardened chains) |
 | `bip32Vector3` | `// TC-VC-013` | same for V3 |
 | `bip32Vector4` | `// TC-VC-013` | public-only derivation: every V4 chain xpub matches |
-| `bip32Vector5InvalidDerivations` | `// TC-VC-013` | the two documented invalid derivations fail (privkey=0 child; hardened child from xpub) |
+| — (V5 excluded) | — | BIP-32 vector 5 = 16 malformed **extended keys** (serialization validity, not derivation); T1.3 has no production parser → Handoff T1.3-H7 |
 | `canonicalAddress` | `// TC-VC-003` | `Bip39.mnemonicToSeed(abandon×23 about, "")` → `deriveAddressBytes` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94` |
 | `secondAddressCrossCheck` | `// TC-VC-003` | `m/44'/60'/0'/0/1` equals the `@scure/bip32` /tmp cross-check value (recorded in `validation.md`) |
 | `keccakSanity` | `// TC-VC-015` | `keccak256("") == c5d246…5d85a470` |
