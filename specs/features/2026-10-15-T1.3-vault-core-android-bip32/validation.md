@@ -50,7 +50,10 @@ pin · Q6 GATE-MODEL-SWITCH stop. Answers are transcribed in `requirements.md` O
 
 ### P0.6 — Planning-round commit
 
-(Command + observed output appended after the commit runs.)
+| Command | Exit | Observed result |
+| --- | --- | --- |
+| `git add specs/features/2026-10-15-T1.3-vault-core-android-bip32 && git commit -m "docs(T1.3): planning-round specs — deriveAddress (BIP32/BIP44)"` | 0 | `[feature/T1.3-vault-core-android-bip32 10fbb64] 3 files changed, 632 insertions(+)`; `create mode 100644 …/{plan,requirements,validation}.md` |
+| `git status --short --branch` | 0 | `## feature/T1.3-vault-core-android-bip32`, worktree clean — **zero code/dependency changes** in this round (R4 gate holds) |
 
 ## Gate checklist (blocking)
 
