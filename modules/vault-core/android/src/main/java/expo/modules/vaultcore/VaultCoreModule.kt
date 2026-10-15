@@ -40,5 +40,19 @@ class VaultCoreModule : Module() {
         handle
       }
     }
+
+    AsyncFunction("deriveAddress") Coroutine { handle: String, path: String ->
+      withContext(Dispatchers.Default) {
+        // The seed stays native: only the public address string is returned (R1).
+        val seed = handleStore[handle] ?: throw HandleNotFoundException()
+        val indices = Bip32.parseEthereumPath(path)
+        val seedCopy = seed.copyOf()
+        try {
+          Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices))
+        } finally {
+          seedCopy.fill(0)
+        }
+      }
+    }
   }
 }

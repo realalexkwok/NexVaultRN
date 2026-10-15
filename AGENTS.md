@@ -10,13 +10,13 @@
 
 | 项 | 当前状态 | 证据 |
 |---|---|---|
-| 工程阶段 | **实施中**（阶段 1 Day 1）。骨架已提交（`088d84f`；存在 scaffold 债 H6）；T1.2 vault-core Android BIP39 已实装并双侧验证关闭 | `specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` |
+| 工程阶段 | **实施中**（阶段 1 Day 1）。骨架已提交（`088d84f`；存在 scaffold 债 H6）；T1.2 已关闭；T1.3 `deriveAddress`（BIP32/BIP44 + EIP-55）已实装，JVM 门禁全绿，**真机 smoke 待设备**（H3） | `specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md`；`specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md` |
 | 选型定案 | Expo SDK 57（≥57.0.21）+ CNG + Development Build；pnpm workspace；viem；NativeWind v4；Web 端只读降级 | `doc/research-report.md` §sec02 |
 | 应用身份 | Android applicationId = iOS bundleIdentifier = **`io.github.realalexkwok.nexvault`**（2026-10-14 owner 定案，上架后终身不可改；`com.nexvault.wallet` 已由原 Kotlin 工程占用，弃用） | `specs/tech-stack.md` §4 |
 | 权威规格目录 | `specs/`（mission / roadmap / tech-stack / dev-environment / pending-manual-test-cases + features/） | 本文件 Part B §B.1 |
 | 实施计划 | `plans/`（3 天小时级计划，粒度 ≤ 半天） | `plans/3-day-implementation-plan.md` |
 | 调研存档 | `doc/` 与 `/mnt/agents/output/research/`：**只读存档**，禁止改写 | `doc/research-report.md` |
-| 自动化验证 | 已开始：T1.2 JVM 向量门禁 16/16（V1–V8 覆盖 12/15/18/21/24 词且熵/校验和独立解码，`./gradlew :vault-core:testDebugUnitTest`）+ 真机 instrumentation 2/2（Pixel 6a / Android 17）+ JS wrapper 便携校验 2/2；CI 尚未接线 | `specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` §5.3/§5.4/Review-fix round |
+| 自动化验证 | T1.2：JVM 16/16（BIP-39 V1–V8）+ 真机 2/2 + JS wrapper 2/2。T1.3：JVM 26/26（BIP-39 16 + BIP-32 向量 1–4 全链 xprv/xpub、规范锚点 `0x9858EfFD…Eda94`、第二地址、keccak/EIP-55、10 条路径负例）；`./gradlew :vault-core:testDebugUnitTest` BUILD SUCCESSFUL；真机 smoke 未跑（无设备，H3）。CI 尚未接线 | `specs/features/2026-10-14-T1.2-…/validation.md`；`specs/features/2026-10-15-T1.3-…/validation.md` §Task 3–7 |
 | 手工验证 | 登记簿 `specs/pending-manual-test-cases.md` 已登记 MAN-001…MAN-010，0 条走查完成；T1.2 的真机侧是 instrumentation 复跑（非人眼走查），人眼侧的 MAN-009 仍待端到端流程 | 本文件 Part B §B.4；`specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` §5.4 |
 
 **最近关闭记录**（倒序，每条附日期与证据路径）：

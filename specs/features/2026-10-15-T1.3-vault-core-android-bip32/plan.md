@@ -128,10 +128,17 @@ Algorithm checklist (must):
   single-quote hardened spellings, nothing else); `account, index ∈ [0, 0x80000000)`; return
   `[44|H, 60|H, account|H, 0, index]`; violations → `E_VAULT_INVALID_PATH` (fixed template;
   path-syntax-class echo only).
-- **deriveAddressBytes** — `HDKeyDerivation.createMasterPrivateKey(seed)` on a **copy** of the
-  stored seed (the store copy survives for T1.4); `deriveChildKey` loop over the indices; pubkey
-  via `CustomNamedCurves.getByName("secp256k1").g.multiply(key.d).getEncoded(false)` (65B,
-  `0x04‖x‖y`); keccak over `x‖y`; return the last 20 bytes. Wipe the seed copy, the `x‖y`
+- **Implementation correction (applied, recorded in validation.md Task 4):** BouncyCastle 1.86
+  ships **no** HD-key API (`HDKeyDerivation`/`HDKey` are absent from the artifact; there is no
+  `Base58` helper either). The BIP-32 CKD *glue* is therefore implemented in `Bip32.kt` on BC
+  primitives (`HMac(SHA512Digest)` + `CustomNamedCurves.getByName("secp256k1")`); **all curve
+  arithmetic stays in BC**, so `specs/vault-core.md` §2.2's "point math must not be
+  self-implemented" rule holds. Base58Check lives only in the JVM test (formatting).
+- **deriveAddressBytes** — `masterNode(seed)` on a **copy** of the stored seed (the store copy
+  survives for T1.4); `deriveChild(parent, index)` loop over the indices (hardened ⇒ serialized
+  parent key, else compressed parent pubkey); pubkey via
+  `CustomNamedCurves.getByName("secp256k1").g.multiply(key).getEncoded(false)` (65B, `0x04‖x‖y`);
+  keccak over `x‖y`; return the last 20 bytes. Wipe the seed copy, every chain code, the `x‖y`
   buffer and keccak scratch in `finally`.
 - **toChecksumAddress** — lowercase hex → `KeccakDigest(256)` over the ASCII hex string →
   ERC-55 case mixing → `0x` prefix.

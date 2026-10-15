@@ -98,17 +98,21 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
   non-negative `account, index < 0x80000000`) and returns
   `[44|H, 60|H, account|H, 0, index]`. Any violation throws `E_VAULT_INVALID_PATH` with a fixed
   template that may echo the path **syntax class** but never key material.
-- **FR-3 — BIP32 core (BouncyCastle lightweight API).** New
+- **FR-3 — BIP32 core (BouncyCastle lightweight API + self-written CKD glue).** New
   `modules/vault-core/android/src/main/java/expo/modules/vaultcore/Bip32.kt` with `internal`
-  functions: `parseEthereumPath`, `deriveAddressBytes(seed: ByteArray, indices: IntArray):
-  ByteArray` (20 bytes: `HDKeyDerivation.createMasterPrivateKey(seed)` →
-  `deriveChildKey` loop → pubkey via
-  `CustomNamedCurves.getByName("secp256k1").g.multiply(privKey.d)` → `getEncoded(false)` 65B,
-  drop the `0x04` prefix → `KeccakDigest(256)` over `x‖y` → last 20 bytes),
-  `toChecksumAddress(addressBytes: ByteArray): String`, `keccak256(bytes: ByteArray):
-  ByteArray`. Only `org.bouncycastle.crypto.*` classes are used; `BouncyCastleProvider` is
-  **never** registered as a JCE provider (Android platform BC remnants clash); point math is
-  never self-implemented.
+  functions: `parseEthereumPath`, `masterNode(seed)`, `deriveChild(node, index)`,
+  `deriveAddressBytes(seed: ByteArray, indices: IntArray): ByteArray` (20 bytes:
+  CKDpriv chain → uncompressed pubkey via
+  `CustomNamedCurves.getByName("secp256k1").g.multiply(key)` → `getEncoded(false)` 65B, drop the
+  `0x04` prefix → `KeccakDigest(256)` over `x‖y` → last 20 bytes),
+  `toChecksumAddress(addressBytes: ByteArray): String`, `keccak256(bytes: ByteArray): ByteArray`.
+  **Implementation-time correction (Task 4, recorded):** BouncyCastle 1.86 ships **no** HD-key API —
+  `HDKeyDerivation`/`HDKey` do not exist in the artifact (nor a `Base58` helper), so the BIP-32 CKD
+  *glue* (HMAC-SHA512 via `HMac(SHA512Digest)`, ser32/ser256 concatenation, `IL + k_parent mod n`,
+  HASH160 fingerprinting) is written in `Bip32.kt` while **all curve arithmetic remains in BC**,
+  preserving `specs/vault-core.md` §2.2's "point math must not be self-implemented" rule. Only
+  `org.bouncycastle.crypto.*` classes are used; `BouncyCastleProvider` is **never** registered as a
+  JCE provider (Android platform BC remnants clash).
 - **FR-4 — Keccak-256 and EIP-55.** Keccak is the **pre-NIST** variant (`KeccakDigest(256)`),
   gated by `keccak256("") == c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`.
   `toChecksumAddress` implements ERC-55 over the lowercase hex string and is gated by the four
