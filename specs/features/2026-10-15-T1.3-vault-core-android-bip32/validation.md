@@ -1,9 +1,9 @@
 # T1.3 — vault-core Android BIP32/BIP44 deriveAddress (validation)
 
 > Feature spec (validation record). Branch: `feature/T1.3-vault-core-android-bip32`.
-> Status: **implementation complete 2026-10-15; automated gates green; device smoke (H3) pending —
-> no device attached.** Overall `[~]` (JVM-verified; the device side is carried as Handoff
-> T1.3-H3 per owner decision Q5).
+> Status: **`[x]` verified 2026-10-15** — JVM vector gate 26/26, real-device instrumentation
+> 4/4 on Pixel 6a / Android 17 (`BUILD SUCCESSFUL in 4m 22s`), zeroization review recorded.
+> H3 is closed by the device run; the remaining open Handoffs are non-T1.3 items.
 > No task is marked `[x]` without command + observed output below.
 > Status scale (AGENTS.md B.4): `[x]` verified (both sides with evidence) · `[~]` implemented
 > but unverified · `[ ]` not started.
@@ -176,12 +176,13 @@ Status: `[x]`
 
 ### Task 6 — Tests and gates
 
-Status: `[x]` for the JVM gate; device smoke `[~]` → Handoff T1.3-H3 (no device attached)
+Status: `[x]` — JVM gate 26/26 and device smoke 4/4 both green
 
 ```bash
 ./gradlew :vault-core:testDebugUnitTest --rerun
 ./gradlew :vault-core:compileDebugAndroidTestKotlin
-adb devices -l        # → empty
+adb devices -l                                     # two transports for one phone → pin ANDROID_SERIAL
+ANDROID_SERIAL=10.42.0.139:41771 ./gradlew :vault-core:connectedDebugAndroidTest
 ```
 
 Observed:
@@ -201,8 +202,18 @@ Observed:
   `erc55Vectors` PASS; `rejectsInvalidPaths` (10 shapes) + `acceptsHardenedSpellings` PASS.
 - `compileDebugAndroidTestKotlin` → `BUILD SUCCESSFUL` (so the extended instrumentation suite
   compiles against `internal` members).
-- `adb devices -l` → **empty**: the Pixel 6a is not attached, so `connectedDebugAndroidTest`
-  could not run → H3 reopens as Handoff (owner decision Q5).
+- **Device smoke (H3 closed 2026-10-15):** Pixel 6a (`bluejay`, serial `26111jEGR13989`),
+  Android 17 / API 37, build `google/bluejay/bluejay:17/CP2A.260705.006/15641320:user/release-keys`;
+  wireless adb, with `ANDROID_SERIAL=10.42.0.139:41771` pinned because the same phone again
+  appeared through two transports (T1.2 lesson applied). Command
+  `ANDROID_SERIAL=… ./gradlew :vault-core:connectedDebugAndroidTest` →
+  `Starting 4 tests on Pixel 6a - 17`, `Finished 4 tests on Pixel 6a - 17`,
+  `BUILD SUCCESSFUL in 4m 22s` (`gradle_exit=0`). XML
+  `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/TEST-Pixel 6a - 17-_vault-core-.xml`
+  → `tests="4" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T18:51:49"`); cases:
+  `rawWordlistHasExactly2048Words`, `moduleDefinitionExposesImportMnemonicAndDeriveAddress`,
+  `canonicalAddressOnDevice`, `invalidPathExposesTypedCode`. APK:
+  `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/apk/androidTest/debug/vault-core-debug-androidTest.apk`.
 
 ### Task 7 — Verification, zeroization review, Handoff
 
@@ -246,7 +257,7 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | --- | --- | --- | --- |
 | T1.3-H1 | `destroy` absent; handle store per process | `[ ]` open | Implement in T1.4 |
 | T1.3-H2 | iOS `deriveAddress` port | `[ ]` open | Replan to T1.5 |
-| T1.3-H3 | **Device smoke not run** — no Pixel 6a attached at implementation time | `[ ]` open | Reconnect the device and run `ANDROID_SERIAL=<serial> ./gradlew :vault-core:connectedDebugAndroidTest`; the JVM gate remains the mandatory automated evidence (Q5) |
+| T1.3-H3 | Device smoke | **`[x]` closed 2026-10-15** — Pixel 6a / Android 17, 4/4 tests, `BUILD SUCCESSFUL in 4m 22s` (Task 6) | Rerun with `ANDROID_SERIAL` pinned whenever the module surface changes |
 | T1.3-H4 | BIP-32 vector transcription provenance | `[x]` closed | Vectors verified before transcription (Task 0) and asserted green in Task 6 |
 | T1.3-H5 | JS wrapper evidence via throwaway harness | `[ ]` open | T1.1 closure should absorb it as committed jest tests |
 | T1.3-H6 | BC 1.86 pin carried to T1.4 signing work | `[ ]` open | Replan to T1.4 |
@@ -265,6 +276,6 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | Task 4 `Bip32.kt` core | `[x]` verified (compiles; vectors green) |
 | Task 5 module wiring + typed errors | `[x]` verified |
 | Task 6 JVM vector gate | `[x]` verified (26/26) |
-| Task 6 device smoke (H3) | `[~]` not run — no device attached |
+| Task 6 device smoke (H3) | `[x]` verified — Pixel 6a / Android 17, 4/4 tests |
 | Task 7 verification + zeroization review | `[x]` verified |
-| T1.3 overall | **`[~]` implemented + JVM-verified; device smoke open (H3)** |
+| T1.3 overall | **`[x]` verified 2026-10-15** — JVM vector gate 26/26 + real-device instrumentation 4/4 + zeroization review |
