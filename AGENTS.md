@@ -10,16 +10,17 @@
 
 | 项 | 当前状态 | 证据 |
 |---|---|---|
-| 工程阶段 | **预研完成态**（Pre-implementation）。选型、密钥架构、热更方案、威胁模型已定案；骨架代码尚未落地 | `doc/research-report.md` §sec01 |
+| 工程阶段 | **实施中**（阶段 1 Day 1）。骨架已提交（`088d84f`；存在 scaffold 债 H6）；T1.2 vault-core Android BIP39 已实装并双侧验证关闭 | `specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` |
 | 选型定案 | Expo SDK 57（≥57.0.21）+ CNG + Development Build；pnpm workspace；viem；NativeWind v4；Web 端只读降级 | `doc/research-report.md` §sec02 |
 | 应用身份 | Android applicationId = iOS bundleIdentifier = **`io.github.realalexkwok.nexvault`**（2026-10-14 owner 定案，上架后终身不可改；`com.nexvault.wallet` 已由原 Kotlin 工程占用，弃用） | `specs/tech-stack.md` §4 |
 | 权威规格目录 | `specs/`（mission / roadmap / tech-stack / dev-environment / pending-manual-test-cases + features/） | 本文件 Part B §B.1 |
 | 实施计划 | `plans/`（3 天小时级计划，粒度 ≤ 半天） | `plans/3-day-implementation-plan.md` |
 | 调研存档 | `doc/` 与 `/mnt/agents/output/research/`：**只读存档**，禁止改写 | `doc/research-report.md` |
-| 自动化验证 | 未开始（脚手架未创建） | — |
-| 手工验证 | 登记簿：`specs/pending-manual-test-cases.md`，当前为空表待首个 feature 填充 | 本文件 Part B §B.4 |
+| 自动化验证 | 已开始：T1.2 JVM 官方向量门禁 11/11（`./gradlew :vault-core:testDebugUnitTest`）+ 真机 instrumentation 2/2（Pixel 6a / Android 17，`BUILD SUCCESSFUL in 1m 1s`）；CI 尚未接线 | `specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` §5.3/§5.4 |
+| 手工验证 | 登记簿 `specs/pending-manual-test-cases.md` 已登记 MAN-001…MAN-010，0 条走查完成；T1.2 的真机侧是 instrumentation 复跑（非人眼走查），人眼侧的 MAN-009 仍待端到端流程 | 本文件 Part B §B.4；`specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md` §5.4 |
 
 **最近关闭记录**（倒序，每条附日期与证据路径）：
+- 2026-10-15：**T1.2 关闭**——vault-core Android BIP39 `importMnemonic` 实装并验证：JVM 官方向量前 4 组 11/11、真机 instrumentation 2/2（Pixel 6a / Android 17，`BUILD SUCCESSFUL in 1m 1s`）、R1/R5/日志 grep 干净、`tsc --noEmit` exit 0、零新增 npm 依赖；R4 测试依赖修订经 owner 批准并已写入 `specs/tech-stack.md`/`doc/dependencies.md`。证据：`/home/superguo/Projects/NexVaultRN/specs/features/2026-10-14-T1.2-vault-core-android-bip39/validation.md`（§5.3/§5.4/Task 6）。Handoff 裁定：H3/H4/H5 关闭，H1/H2/H6/H7 待后续条目。
 - 2026-10-14（治理修订）：AGENTS.md B.3 修订——owner 授权 Agent 执行任意 git 命令（含 commit/push/tag/stash/config/hooks）；分支纪律 B.3-1/B.3-2 与 `.gitignore` 安全忽略条目禁令不变。
 - 2026-10-14：预研（Stage 0–6）完成并交叉验证通过；AGENTS.md 与 doc/dependencies.md 立宪。[^1^]
 - 2026-10-14（补充任务）：JD 合规缺口补齐——报告新增第 8 章「合规边界与标准对标」（doc/research-report.md §8）；`specs/security-testing.md` 立档（MobSF 进 CI + 自绕过回归门禁）；plans 升 v1.1（新增 T5.4 篡改版 APK 对照演示）。

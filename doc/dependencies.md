@@ -1,6 +1,7 @@
 # doc/dependencies.md — NexVault RN/Expo 骨架代码依赖决策清单
 
 - 决策日期：**2026-10-14**（所有版本号以此日期的调研裁决为准；时效性事实须在引入前复核）。
+- T1.2 R4 修宪：2026-10-14 owner 批准为 `modules/vault-core` 加入 JUnit/AndroidX 测试依赖（见 §6a）；本清单与 `specs/tech-stack.md` 同步修订。
 - 效力：本清单是 `specs/tech-stack.md` 的决策依据与附录。加依赖 = 修宪（AGENTS.md R4）；**禁止**安装本清单与 `specs/tech-stack.md` 之外的包。
 - 安装位置：`apps/mobile`（唯一 Expo app）/ `packages/vault-core`（纯 TS）/ `root`（workspace 根，devDependency）/ `modules/vault-core`（原生侧，非 npm）。
 - 备注列统一为「信任依据 / 风险点 / 缓解措施」三段。
@@ -62,6 +63,23 @@
 | libsecp256k1（bitcoin-core/secp256k1） | v0.7.0（MIT，~1.3MB/ABI，CMake 正式支持） | **roadmap**：vault-core 的签名原语 C++ 化（ECDSA/Schnorr 常数时间实现） | modules/vault-core（CMake） | 极高（Bitcoin Core 级，半年一版） | 无已知未修 CVE | 信任依据：官方 README 给出 NDK CMake 交叉编译命令；生产级常数时间设计。风险点：README 自带 WIP 免责声明。缓解：钉 v0.7.0+，引入时按 R4 复核 GitHub releases。[^19^] |
 | ~~wallet-core（Trust Wallet）~~ | —（**不预装，仅备选**） | — | — | 活跃（4.8.4） | **CVE-2025-66692（<4.4.0 缓冲区越界读）**；且助记词以 String 形态驻留 JVM/Swift 堆，无法可靠清零 | 处理：不预装。仅在 vault-core 自研路线失败时作为备选启用，届时强制 ≥4.4.0 + 实测二进制体积（数十 MB 量级）+ 重写 binding 避免 String 出 native。[^20^] |
 
+## 6a. Android 原生测试工具（modules/vault-core，T1.2 R4 修宪）
+
+> **修宪记录：** 2026-10-14 owner 批准（T1.2 owner-approval item）。仅
+> `modules/vault-core/android` 的 `test`/`androidTest` 配置；非生产运行时依赖，不影响
+> R1/R7 边界。版本参照原 NexVault 仓库
+> `/home/superguo/Projects/NexVault/gradle/libs.versions.toml`（JUnit 4.13.2 为实际标准）
+> 与 Expo SDK 57 自身测试用法（`expo-modules-core@57.0.22` android/build.gradle 的
+> `androidx.test` 1.7.0 family）。[^23^]
+
+| 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
+|---|---|---|---|---|---|---|
+| junit:junit | 4.13.2 | JVM 单测；BIP-39 前 4 向量自动门禁（`Bip39Test`） | modules/vault-core/android `testImplementation` | 高（JUnit 4 稳定线） | 无未修公告 | 信任依据：原 NexVault 仓库全模块实际使用版本；Expo SDK 57 自身测试同版。风险点：JUnit 4 已停止新特性。缓解：仅测试配置，不影响生产路径。 |
+| androidx.test.ext:junit | 1.3.0 | `AndroidJUnit4` instrumentation smoke | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：原 NexVault 仓库版本；AndroidX 官方。风险点：真机/模拟器可用性。缓解：instrumentation 为 best-effort，JVM 向量门禁为主（T1.2 Q5）。 |
+| androidx.test:runner | 1.7.0 | Instrumentation runner | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：Expo SDK 57 `expo-modules-core` 自身 androidTest 同版 1.7.0。风险点：无。 |
+| androidx.test:rules | 1.7.0 | Instrumentation test rules（按需） | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：同 runner 1.7.0 family；原 NexVault 仓库同版。 |
+| androidx.test:core | 1.7.0 | `ApplicationProvider`/context（按需） | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：Expo SDK 57 `expo-modules-core` 自身同版 1.7.0。 |
+
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
@@ -113,3 +131,4 @@
 [^20^]: NVD/cvefeed CVE-2025-66692 + Snyk wallet-core 条目 + wallet-core README（无官方 RN binding、String 助记词）；`research/nexvault-rn_dim07.md` §1。
 [^21^]: docs.expo.dev/eas-update/code-signing 与 runtime-versions（一手核实 2026-10-14）；`research/nexvault-rn_dim11.md` §2。
 [^22^]: Expo 官方 monorepo 指南 https://docs.expo.dev/guides/monorepos/ + SDK 55 pnpm 实战案例；`research/nexvault-rn_dim02.md` §4。
+[^23^]: 原 NexVault 仓库 `/home/superguo/Projects/NexVault/gradle/libs.versions.toml` 与 `specs/tech-stack.md`（JUnit 4.13.2 / androidx.test 1.3.0 / 1.7.0）；本仓库安装的 `expo-modules-core@57.0.22` `android/build.gradle` 测试配置；T1.2 owner 批准（2026-10-14）。
