@@ -1,8 +1,8 @@
 # T1.2 — vault-core Android BIP39 (validation)
 
 > Feature spec (validation record). Branch: `feature/T1.2-vault-core-android-bip39`.
-> Status: **`[x]` verified 2026-10-15** — automated JVM vector gate (15/15 after the
-> review-fix round), device instrumentation smoke (2/2 on Pixel 6a / Android 17) and the
+> Status: **`[x]` verified 2026-10-15** — automated JVM vector gate (16/16 after the two
+> review-fix rounds), device instrumentation smoke (2/2 on Pixel 6a / Android 17) and the
 > zeroization review are all green. No task is marked `[x]` without command + observed output
 > below.
 > Status scale (AGENTS.md B.4): `[x]` verified (both sides with evidence) · `[~]` implemented
@@ -187,8 +187,9 @@ Observed:
   `\--- Project ':vault-core'`.
 - `./gradlew :vault-core:testDebugUnitTest`: first run `BUILD SUCCESSFUL in 4m 18s`;
   final rerun `gradle_exit=0`, `BUILD SUCCESSFUL in 10s`.
-- Test XML: `modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml`
-  → `tests="11" skipped="0" failures="0" errors="0"`.
+- Test XML: `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml`
+  → `tests="11" skipped="0" failures="0" errors="0"` (that run predates the review-fix rounds;
+  the gate is now 16/16 — see "Review-fix rounds").
 
 Vector result table (all PASS):
 
@@ -271,7 +272,8 @@ git diff -- package.json apps/mobile/package.json pnpm-lock.yaml
 Observed: exit 0; the only `apps/mobile/package.json` delta is Expo's prebuild script
 update (`android`/`ios` → `expo run:*`). Root `package.json` and `pnpm-lock.yaml` are
 untouched; **no npm dependency was added or upgraded by T1.2**. The only new dependencies
-are the owner-approved FR-10 JUnit/AndroidX test coordinates in `modules/vault-core`.
+are the owner-approved FR-10 JUnit/AndroidX test coordinates in
+`/home/superguo/Projects/NexVaultRN/modules/vault-core`.
 
 #### R1/R5 greps
 
@@ -344,6 +346,30 @@ The Node harness is a one-off verification artifact (the repo still has no JS te
 it is deliberately not committed. Its `present` case is the first execution of the R1 wrapper
 path, which was previously covered by code review only.
 
+### Review-fix round 2 (2026-10-15, second review pass over `7ce5479`)
+
+| Finding | Severity | Disposition | Evidence |
+| --- | --- | --- | --- |
+| `requirements.md` self-contradiction: FR-8 lists three error codes while binding AC-7 still claimed two | 🟠 MAJOR | **Fixed.** AC-7 now names all three codes and states that the JS-side guard is machine-readable | `requirements.md` FR-8/AC-7 |
+| Stale headers: `requirements.md:10` and `plan.md:8` still said JVM gate 11/11 | 🟢 NIT | **Fixed** → 16/16 | `requirements.md`, `plan.md` |
+| `entropyHex` still not locked by JUnit (only the recorded Python cross-check) | 🟢 NIT | **Fixed.** New `vectorEntropyAndChecksumMatchMnemonic` decodes every fixture independently of production code (word index → bits → entropy hex) and recomputes the SHA-256 checksum, so both the `entropyHex` value and the checksum of V1–V8 are asserted in-repo | JVM XML `tests="16" failures="0"` |
+| JS guard "code" existed only inside the message text | 🟢 NIT | **Fixed.** The guard sets `error.code = 'E_VAULT_UNSUPPORTED_PLATFORM'`; FR-8/AC-7 document it; the harness asserts `codeMatches=true` | harness output below |
+| Absolute-path claim not uniform (`validation.md:190` and `:274`) | 🟢 NIT | **Fixed.** Both citations are absolute; every build-artifact and path citation in this file is now absolute | this file |
+
+Round-2 verification:
+
+| Command | Exit | Observed result |
+| --- | --- | --- |
+| `./gradlew :vault-core:testDebugUnitTest --rerun` | 0 | `BUILD SUCCESSFUL in 5s`; XML `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml` → `tests="16" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T10:42:56.622Z"`); new case `vectorEntropyAndChecksumMatchMnemonic` passes |
+| `cd apps/mobile && npx --no-install tsc --noEmit` | 0 | clean (re-type-checks the guard with its `code` property) |
+| R1 grep / R5 grep | 1 | zero matches each (clean) |
+| Throwaway harness `/tmp/t12-guard` (rebuilt) | 0 | `STUB_MODE=missing` → `result=throw:E_VAULT_UNSUPPORTED_PLATFORM: …`, `errorCode=E_VAULT_UNSUPPORTED_PLATFORM`, `codeMatches=true`, `bufferAfter=[0,0,0,0,0,0,0,0,0,0,0]`; `STUB_MODE=present` → `result=handle:handle-abc`, `duringCall=[104,101,108,108,111,32,119,111,114,108,100]`, `bufferAfter=[0,0,0,0,0,0,0,0,0,0,0]` |
+
+Device instrumentation was **not** re-run for round 2: only `src/test` JVM code, the JS barrel
+and the specs changed, so the androidTest APK and the module's production code are unchanged
+from the round-1 re-verification; the recorded `tests="2" failures="0"` run
+(`timestamp="2026-10-15T09:05:03"`) therefore still describes the current native artifact.
+
 ## Handoff list (final for this round)
 
 | # | Item | Status 2026-10-15 | Disposal |
@@ -366,9 +392,9 @@ path, which was previously covered by code review only.
 | Task 2 wordlist | `[x]` verified |
 | Task 3 Bip39.kt core | `[x]` verified by tests + zeroization review |
 | Task 4 module wiring | `[x]` verified by compile + review |
-| Task 5 R4 amendment + JVM vector gate | `[x]` verified — 15/15 after the review-fix round (V1–V8 cover 12/15/18/21/24 words) |
+| Task 5 R4 amendment + JVM vector gate | `[x]` verified — 16/16 after the two review-fix rounds (V1–V8 cover 12/15/18/21/24 words; entropy/checksum independently decoded) |
 | Task 5 instrumentation smoke | `[x]` verified — Pixel 6a / Android 17, 2/2 tests, XML `tests="2" failures="0" errors="0"` (H3 closed; re-run after the review fixes) |
-| Task 6 static checks + zeroization + Handoff | `[x]` verified — close-out rerun + review-fix re-run: JVM 15/15, wrapper harness 2/2, R1/R5/log greps clean, `tsc --noEmit` exit 0, zero new npm deps; `expo-doctor` patch drift carried as H7 |
+| Task 6 static checks + zeroization + Handoff | `[x]` verified — close-out rerun + review-fix re-runs: JVM 16/16, wrapper harness 2/2, R1/R5/log greps clean, `tsc --noEmit` exit 0, zero new npm deps; `expo-doctor` patch drift carried as H7 |
 | Task 7 review-fix round (2026-10-15) | `[x]` verified — all 8 review findings dispositioned: 2 spec amendments, 4 code/test fixes, 1 no-risk hash proof, 1 fail-closed guard |
 | T1.2 overall | **`[x]` verified 2026-10-15** — automated JVM vector gate + real-device instrumentation smoke + zeroization review all green |
 
@@ -382,4 +408,5 @@ Real-device / manual side (B.4-2), stated precisely after review finding MINOR-3
   handle contract at the JS bridge is deferred to T1.3 (H3); the end-to-end human walkthrough is
   `MAN-001` (import → derive → sign → broadcast) and the no-plaintext/no-log-leak walkthrough is
   `MAN-009` — both registered and both **pending** in `specs/pending-manual-test-cases.md`.
-- **Evidence format:** artifact paths in this file are absolute as of the review-fix round.
+- **Evidence format:** every build-artifact path in this file is absolute (command blocks keep the
+  repo-relative paths exactly as executed) as of the review-fix rounds.

@@ -1,5 +1,6 @@
 package expo.modules.vaultcore
 
+import java.security.MessageDigest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -142,6 +143,24 @@ class Bip39Test {
 
   // TC-VC-001
   @Test
+  fun vectorEntropyAndChecksumMatchMnemonic() {
+    // Decodes every fixture independently of production code: word indices -> bits ->
+    // entropy hex, then a fresh SHA-256 checksum comparison. This locks each entropyHex
+    // value to its mnemonic (V7/V8 included) instead of trusting the recorded Python
+    // cross-check, and proves every vector's checksum is genuinely valid.
+    for (vector in vectors) {
+      val decoded = decodeMnemonic(vector.mnemonic)
+      assertEquals(
+        "${vector.id} entropy decoded from its mnemonic",
+        vector.entropyHex,
+        decoded.first
+      )
+      assertTrue("${vector.id} independent checksum verification", decoded.second)
+    }
+  }
+
+  // TC-VC-001
+  @Test
   fun fallbackLoopMatchesVectorV1() {
     val seedHex = Bip39.mnemonicToSeedUsingFallback(vectors[0].mnemonic, "TREZOR").toHex()
     assertEquals(vectors[0].seedHex, seedHex)
@@ -205,19 +224,44 @@ class Bip39Test {
       vector.seedHex,
       Bip39.mnemonicToSeed(vector.mnemonic, "TREZOR").toHex()
     )
-    // Entropy stays a fixture-only field (T1.2 never exposes entropy bytes to JS), but it
-    // must stay self-consistent with the mnemonic: BIP-39 entropy bits = words * 32 / 3
-    // (12→128, 15→160, 18→192, 21→224, 24→256), i.e. words * 32 / 3 == hexChars * 4.
-    val wordCount = vector.mnemonic.split(" ").size
-    assertEquals(
-      "${vector.id} entropy bits must match its word count",
-      wordCount * 32 / 3,
-      vector.entropyHex.length * 4
-    )
-    assertTrue(
-      "${vector.id} entropy must be lowercase hex",
-      vector.entropyHex.matches(Regex("[0-9a-f]+"))
-    )
+    // Entropy/checksum consistency is locked by vectorEntropyAndChecksumMatchMnemonic,
+    // which decodes each mnemonic independently of production code (entropy value + a
+    // freshly computed SHA-256 checksum).
+  }
+
+  /**
+   * Test-side BIP-39 decoder, independent of the production `Bip39` object: maps each word to
+   * its 11-bit index, splits entropy/checksum bits, recomputes SHA-256 over the decoded
+   * entropy and returns (entropyHex, checksumOk). Test-only; nothing sensitive is logged.
+   */
+  private fun decodeMnemonic(mnemonic: String): Pair<String, Boolean> {
+    val words = mnemonic.split(" ")
+    val bits = buildString {
+      for (word in words) {
+        val index = testWordlist.binarySearch(word)
+        check(index >= 0) { "vector word is not in the test wordlist" }
+        append(index.toString(2).padStart(11, '0'))
+      }
+    }
+    val entropyBits = bits.length * 32 / 33
+    val checksumBits = bits.length - entropyBits
+    val entropyHex = buildString {
+      for (i in 0 until entropyBits step 4) {
+        append(bits.substring(i, i + 4).toInt(2).toString(16))
+      }
+    }
+    val entropy = ByteArray(entropyBits / 8) { i ->
+      bits.substring(i * 8, i * 8 + 8).toInt(2).toByte()
+    }
+    val digest = MessageDigest.getInstance("SHA-256").digest(entropy)
+    val expectedChecksum = buildString {
+      for (byte in digest) {
+        append((byte.toInt() and 0xFF).toString(2).padStart(8, '0'))
+      }
+    }.take(checksumBits)
+    entropy.fill(0)
+    digest.fill(0)
+    return entropyHex to (expectedChecksum == bits.substring(entropyBits))
   }
 
   private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->

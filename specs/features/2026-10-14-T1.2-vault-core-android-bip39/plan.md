@@ -5,7 +5,7 @@
 > Skill: `nexvault-t1-2-vault-core-android-bip39`.
 > Session status: planning written 2026-10-14; implementation executed 2026-10-14 and closed
 > out **2026-10-15** with all commands/results recorded in `validation.md` (overall T1.2
-> `[x]` — JVM vector gate 11/11 + real-device instrumentation 2/2 on Pixel 6a / Android 17).
+> `[x]` — JVM vector gate 16/16 + real-device instrumentation 2/2 on Pixel 6a / Android 17).
 
 ## Hard gates (read before any work)
 
@@ -335,9 +335,19 @@ Findings from the independent review and their disposition are recorded in
 | NIT-3 `.agents/` skill unversioned | content is sha256-identical to the committed feature `SKILL.md`; recorded in `validation.md` (dir stays local) |
 | NIT-4 no web/degenerate-platform guard | `index.ts` throws the fixed `E_VAULT_UNSUPPORTED_PLATFORM` code; both stub states executed in a throwaway Node harness |
 
-Re-run after the fixes: `./gradlew :vault-core:testDebugUnitTest --rerun` (15/15) and the
-pinned-device `:vault-core:connectedDebugAndroidTest` (2/2), plus `tsc --noEmit` and the
-R1/R5 greps.
+Round 2 (second review pass, recorded as "Review-fix round 2" in `validation.md`):
+
+| Finding | Fix |
+| --- | --- |
+| MAJOR AC-7 still claimed two error codes while FR-8 lists three | AC-7 amended to the three codes + machine-readable `error.code` |
+| NIT stale headers said JVM gate 11/11 | `requirements.md` / `plan.md` headers → 16/16 |
+| NIT `entropyHex` not locked by JUnit | new `vectorEntropyAndChecksumMatchMnemonic` decodes each fixture independently and recomputes the SHA-256 checksum |
+| NIT JS guard code only inside the message | guard sets `error.code = 'E_VAULT_UNSUPPORTED_PLATFORM'`; harness asserts it |
+| NIT absolute-path claim not uniform | remaining path citations in `validation.md` made absolute |
+
+Re-run after the fixes: `./gradlew :vault-core:testDebugUnitTest --rerun` (16/16) and the
+pinned-device `:vault-core:connectedDebugAndroidTest` (2/2; unchanged native artifact in
+round 2, so not re-run), plus `tsc --noEmit` and the R1/R5 greps.
 
 ## File manifest (T1.2 implementation)
 

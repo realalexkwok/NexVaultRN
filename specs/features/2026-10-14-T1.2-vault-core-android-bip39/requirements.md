@@ -7,7 +7,7 @@
 > Sibling files: `plan.md`, `validation.md`.
 > Session status: planning round **2026-10-14** wrote this record; a later session implemented
 > T1.2 with the owner-approved V4.1-Flash switch, and the round closed **2026-10-15**. Evidence
-> is in `validation.md`; overall T1.2 is **`[x]` verified** (JVM vector gate 11/11, real-device
+> is in `validation.md`; overall T1.2 is **`[x]` verified** (JVM vector gate 16/16, real-device
 > instrumentation 2/2 on Pixel 6a / Android 17, zeroization review). Remaining Handoffs are
 > non-T1.2 items (H1/H2/H6/H7).
 
@@ -113,7 +113,10 @@ Implement **only** `importMnemonic(mnemonicBytes: ArrayBuffer) → handle` in
   unavailable), and the JS-side guard `E_VAULT_UNSUPPORTED_PLATFORM` thrown by `index.ts` when
   the resolved module exposes no `importMnemonic` (the web stub), so a web-side import fails
   closed with a fixed code instead of a raw `TypeError` (R7; added in the review-fix round
-  2026-10-15). Error messages are fixed templates with no input fragments; no `Log.*` call
+  2026-10-15). JS-side codes are machine-readable: the guard sets
+  `error.code = 'E_VAULT_UNSUPPORTED_PLATFORM'` in addition to the message prefix (native codes
+  already surface as Expo's `CodedException.code`). Error messages are fixed templates with no
+  input fragments; no `Log.*` call
   contains mnemonic bytes, word indices, seed bytes, or handle material. This supersedes the
   draft `E_VAULT_CHECKSUM_MISMATCH` split in `specs/vault-core.md` §2.4 for T1.2 (Handoff H2).
 - **FR-9 — Tests and vector gate.** `modules/vault-core/android/src/test/java/expo/modules/vaultcore/Bip39Test.kt`
@@ -213,7 +216,7 @@ Negative gate (mandatory, all must fail closed):
 | AC-4 | `res/raw/bip39_english.txt` = 2048 lines, no BOM, SHA-256 `2f5eed…b24dbda`; `loadWordlist` fails closed otherwise | TC-VC-010 (JVM fixture + shell `cmp`/`sha256sum`) |
 | AC-5 | `importMnemonic` returns a UUID-shaped, non-encoding handle; seed stays in native `ConcurrentHashMap`; never returned | Code review for the handle/store contract; TC-VC-012 device instrumentation proves the module ships and loads (best-effort); the JS-bridge handle assertion is deferred to T1.3 (H3) and to the end-to-end `MAN-001` walkthrough |
 | AC-6 | Input `ByteArray` wiped after decode; all sensitive byte/char buffers `fill(0)`; `PBEKeySpec.clearPassword()` | TC-VC-011 zeroization review |
-| AC-7 | Only `E_VAULT_INVALID_MNEMONIC` / `E_VAULT_PBKDF2_UNAVAILABLE`; fixed error templates; no sensitive log calls | TC-VC-007 review + R5 grep |
+| AC-7 | Exactly three codes — `E_VAULT_INVALID_MNEMONIC` / `E_VAULT_PBKDF2_UNAVAILABLE` (native, surfaced through Expo `CodedException`) and the JS-side `E_VAULT_UNSUPPORTED_PLATFORM` guard (exposed as `error.code` **and** in the message); fixed error templates; no sensitive log calls | TC-VC-007 review + R5 grep; guard executed in the review-fix harness (both stub states) |
 | AC-8 | `git diff` on `package.json`, `apps/mobile/package.json`, `pnpm-lock.yaml` proves zero new deps; test deps appear only after owner approval recorded in `validation.md` | TC-VC-013 diff gate + R4 approval record |
 | AC-9 | `./gradlew :<vault-core-project>:testDebugUnitTest` prints `BUILD SUCCESSFUL` with V1–V4 + N1–N3 + wordlist all green | TC-VC-001/002/010 mandatory automated gate |
 | AC-10 | `npx tsc --noEmit` exits 0 and R1/R5 greps are clean. `npx expo-doctor` is recorded; 21/21 is expected, but a single pre-existing Expo patch-drift failure (57.0.28 vs doctor's expected ~57.0.29) is accepted only as named Handoff H7 — T1.2 itself changes no dependency | TC-VC-006/007 static checks + validation Task 6 |
