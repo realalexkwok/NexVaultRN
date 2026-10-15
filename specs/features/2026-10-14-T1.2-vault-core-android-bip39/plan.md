@@ -247,6 +247,10 @@ Test methods (each `// TC-VC-XXX` marker directly above `@Test`):
 | `vectorV2_legalWinner` | `// TC-VC-001` | validate true; seed hex == V2 seed |
 | `vectorV3_letterAdvice` | `// TC-VC-001` | validate true; seed hex == V3 seed |
 | `vectorV4_zooWrong` | `// TC-VC-001` | validate true; seed hex == V4 seed |
+| `vectorV5_abandonAgent` | `// TC-VC-001` | 18-word official vector: validate true; seed hex == V5 seed |
+| `vectorV6_abandonArt` | `// TC-VC-001` | 24-word official vector: validate true; seed hex == V6 seed |
+| `vectorV7_zeroEntropy15Words` | `// TC-VC-001` | 15-word derived+cross-checked vector: validate true; seed hex == V7 seed |
+| `vectorV8_onesEntropy21Words` | `// TC-VC-001` | 21-word derived+cross-checked vector: validate true; seed hex == V8 seed |
 | `rejectsUnknownWord` | `// TC-VC-002` | replace one word with `zzzz` → validate false |
 | `rejectsChecksumMismatch` | `// TC-VC-002` | V1 with `about` → `abandon` (valid words, bad checksum) → validate false |
 | `rejectsWrongWordCount` | `// TC-VC-002` | 11/13 words → validate false |
@@ -314,6 +318,26 @@ persistence, process-lifetime only in T1.2). State the [C] caveats from requirem
 Write `validation.md` Task 6 evidence and the final Handoff list. T1.2 is never marked
 `[x]` unless the automated vector gate output and the zeroization review note are both
 recorded with command + output (AGENTS.md B.4-3).
+
+### Task 7 — Review-fix round (2026-10-15, after the code-review handoff)
+
+Findings from the independent review and their disposition are recorded in
+`validation.md` → "Review-fix round (2026-10-15)". Scope of the fixes:
+
+| Finding | Fix |
+| --- | --- |
+| MAJOR-1 FR-9 overstated the instrumentation content | `requirements.md` FR-9 + AC-5 amended to the deferred (T1.3) scope |
+| MINOR-1 AC-2 lengths had no positive vectors | V5 (18w) / V6 (24w) added from `vectors.json`; V7 (15w) / V8 (21w) derived + independently cross-checked in Python |
+| MINOR-2 fallback `blockInput` not wiped if `doFinal` throws | `Bip39.kt` `u`/`t` hoisted so the `finally` always wipes them |
+| MINOR-3 evidence paths relative / manual-side wording | `validation.md` artifact paths made absolute; manual-side note sharpened (MAN-001/MAN-009 pending, not claimed) |
+| NIT-1 partial fallback output on exceptional path | `Bip39.kt` catches `Throwable`, wipes `output`, rethrows |
+| NIT-2 `entropyHex` near-dead assertion | now asserts entropy bits == words × 32 / 3 and lowercase hex |
+| NIT-3 `.agents/` skill unversioned | content is sha256-identical to the committed feature `SKILL.md`; recorded in `validation.md` (dir stays local) |
+| NIT-4 no web/degenerate-platform guard | `index.ts` throws the fixed `E_VAULT_UNSUPPORTED_PLATFORM` code; both stub states executed in a throwaway Node harness |
+
+Re-run after the fixes: `./gradlew :vault-core:testDebugUnitTest --rerun` (15/15) and the
+pinned-device `:vault-core:connectedDebugAndroidTest` (2/2), plus `tsc --noEmit` and the
+R1/R5 greps.
 
 ## File manifest (T1.2 implementation)
 

@@ -1,9 +1,10 @@
 # T1.2 — vault-core Android BIP39 (validation)
 
 > Feature spec (validation record). Branch: `feature/T1.2-vault-core-android-bip39`.
-> Status: **`[x]` verified 2026-10-15** — automated JVM vector gate (11/11), device
-> instrumentation smoke (2/2 on Pixel 6a / Android 17) and the zeroization review are all
-> green. No task is marked `[x]` without command + observed output below.
+> Status: **`[x]` verified 2026-10-15** — automated JVM vector gate (15/15 after the
+> review-fix round), device instrumentation smoke (2/2 on Pixel 6a / Android 17) and the
+> zeroization review are all green. No task is marked `[x]` without command + observed output
+> below.
 > Status scale (AGENTS.md B.4): `[x]` verified (both sides with evidence) · `[~]` implemented
 > but unverified · `[ ]` not started.
 
@@ -227,7 +228,8 @@ adb serial `10.42.0.139:34139` over wireless debugging.
 | `./gradlew :vault-core:connectedDebugAndroidTest` (2026-10-15, unpinned) | 1 | `Starting 2 tests on Pixel 6a - 17-adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`; `Finished 2 tests` (XML `tests="2" failures="0" errors="0"`); the same device then appeared as `10.42.0.139:34139` and the duplicate install failed with `INSTALL_FAILED_DUPLICATE_PACKAGE: Duplicate package expo.modules.vaultcore.test in pending install requests` → `BUILD FAILED in 2m 55s` |
 | harness root cause | n/a | One physical device was exposed through two adb transports (mDNS TLS auto-connect + direct `adb connect`), so AGP/UTP installed the test APK twice in parallel. **Neither production nor test code is at fault**; no source change was made for this |
 | `ANDROID_SERIAL=10.42.0.139:34139 ./gradlew :vault-core:connectedDebugAndroidTest` (2026-10-15, single device) | 0 | `Starting 2 tests on Pixel 6a - 17`; `Finished 2 tests on Pixel 6a - 17`; `BUILD SUCCESSFUL in 1m 1s`; 110 actionable tasks: 9 executed, 101 up-to-date |
-| JUnit XML artifact | 0 | `modules/vault-core/android/build/outputs/androidTest-results/connected/debug/TEST-Pixel 6a - 17-_vault-core-.xml` → `tests="2" skipped="0" failures="0" errors="0"`; `moduleDefinitionExposesImportMnemonic` 0.029s, `rawWordlistHasExactly2048Words` 0.002s |
+| JUnit XML artifact | 0 | `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/TEST-Pixel 6a - 17-_vault-core-.xml` → `tests="2" skipped="0" failures="0" errors="0"`; `moduleDefinitionExposesImportMnemonic` 0.029s, `rawWordlistHasExactly2048Words` 0.002s |
+| post-fix rerun (review-fix round) | 0 | same command/device after the zeroization + guard fixes: `BUILD SUCCESSFUL in 3m 13s`, XML `tests="2" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T09:05:03"`) — see "Review-fix round" below |
 
 History — first attempt 2026-10-14 (kept for the record): that run executed 2 tests; the
 wordlist test passed and `moduleDefinitionExposesOnlyImportMnemonic` failed with
@@ -253,7 +255,7 @@ Status: `[x]`
 
 | Command | Exit | Observed result |
 | --- | --- | --- |
-| `./gradlew :vault-core:testDebugUnitTest --rerun` | 0 | `BUILD SUCCESSFUL in 5s`; 1 executed / 56 up-to-date; XML `modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml` → `tests="11" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T08:07:06.064Z"`) |
+| `./gradlew :vault-core:testDebugUnitTest --rerun` | 0 | `BUILD SUCCESSFUL in 5s`; 1 executed / 56 up-to-date; XML `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml` → `tests="11" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T08:07:06.064Z"`); re-run after the review fixes → `tests="15"` (see "Review-fix round") |
 | R1 grep (`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile … \| grep -v packages/vault-core`) | 1 | zero matches (clean; exit 1 = nothing found) |
 | R5 grep (`console\.(log\|warn\|error\|info)\(…(mnemonic\|privKey\|secret\|seed\|sig)\)`) | 1 | zero matches (clean) |
 | Kotlin log grep (`Log\.\|println` in `src/main`/`src/test`/`src/androidTest`) | 1 | zero matches (clean) |
@@ -311,6 +313,37 @@ Residual **[C]** caveats (not raised to [P]): Java `String` normalized mnemonic 
 `Mac`/`SecretKeySpec` internals are only released by GC; `handleStore` seed persists for
 process lifetime until T1.3/T1.4 adds `destroy` (H1).
 
+## Review-fix round (2026-10-15, independent code review of `00a180e`)
+
+Every claim below is backed by the command output in this section.
+
+| Finding | Severity | Disposition | Evidence |
+| --- | --- | --- | --- |
+| FR-9 claimed the instrumentation asserts a non-empty handle and invalid-input rejection; the committed test asserts only the raw wordlist and `importMnemonic` presence | 🟠 MAJOR | **Fixed by spec amendment** (the code follows `plan.md` §5.4). FR-9 + AC-5 now state the deferred T1.3 scope and point the handle contract at code review + `MAN-001` | `requirements.md` FR-9/AC-5, this round |
+| AC-2 claims 12/15/18/21/24 validation but positive vectors existed only for 12 words | 🟡 MINOR | **Fixed by adding coverage.** V5 18w + V6 24w from official `vectors.json`; V7 15w + V8 21w derived and independently decoded with a separate Python BIP-39 implementation | JVM XML `tests="15" failures="0"`; Python cross-check below |
+| Fallback `mac.doFinal(blockInput)` ran outside the inner `try`, so `salt‖counter` survived if it threw | 🟡 MINOR | **Fixed.** `u`/`t` are hoisted as `EMPTY_BYTES` before the `try`, so the `finally` always wipes `blockInput`, `u` and `t` | `Bip39.kt:194-217` |
+| Artifact paths recorded repo-relative; manual-side wording implicit | 🟡 MINOR | **Fixed.** Absolute paths in §5.4 and Task 6; the manual-side note below now states exactly what is and is not covered | this file |
+| Fallback `output` not wiped when an exception escapes mid-loop | 🟢 NIT | **Fixed.** `catch (e: Throwable) { output.fill(0); throw e }` sits before the outer `finally` | `Bip39.kt:219-222` |
+| `entropyHex` only asserted `length == 32` (near-dead data, and wrong for 15/18/21/24-word rows) | 🟢 NIT | **Fixed.** The assertion now ties entropy bits to the word count (`words × 32 / 3 == hexChars × 4`) and requires lowercase hex, so V5–V8 (40/48/56/64 hex chars) are self-consistent | `Bip39Test.kt:208-220` |
+| `.agents/skills/…/SKILL.md` untracked ("unversioned") | 🟢 NIT | **No content risk:** it is sha256-identical to the committed feature copy. The content is versioned at `specs/features/…/SKILL.md`; `.agents/` stays a local install (B.1 does not list it) | `sha256sum` below |
+| No web/degenerate-platform guard in `index.ts` | 🟢 NIT | **Fixed.** The barrel throws the fixed `E_VAULT_UNSUPPORTED_PLATFORM` code when the resolved module exposes no `importMnemonic`; both stub states executed in a throwaway Node harness (FR-8 amended) | harness output below |
+
+### Post-fix re-verification (2026-10-15)
+
+| Command | Exit | Observed result |
+| --- | --- | --- |
+| `./gradlew :vault-core:testDebugUnitTest --rerun` | 0 | `BUILD SUCCESSFUL in 14s`; XML `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip39Test.xml` → `tests="15" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T09:01:45.455Z"`); the four new cases `vectorV5_abandonAgent`, `vectorV6_abandonArt`, `vectorV7_zeroEntropy15Words`, `vectorV8_onesEntropy21Words` all pass |
+| `ANDROID_SERIAL=10.42.0.139:34139 ./gradlew :vault-core:connectedDebugAndroidTest` | 0 | `Starting 2 tests on Pixel 6a - 17`; `Finished 2 tests on Pixel 6a - 17`; `BUILD SUCCESSFUL in 3m 13s`; XML `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/TEST-Pixel 6a - 17-_vault-core-.xml` → `tests="2" skipped="0" failures="0" errors="0"` (`timestamp="2026-10-15T09:05:03"`); APK `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/apk/androidTest/debug/vault-core-debug-androidTest.apk` |
+| `cd apps/mobile && npx --no-install tsc --noEmit` | 0 | clean (also type-checks the new platform guard) |
+| R1 grep / R5 grep / Kotlin log grep | 1 | zero matches each (clean) |
+| `sha256sum .agents/skills/…/SKILL.md specs/features/…/SKILL.md` | 0 | both `0229587644bf78ffc57cc28c04a84e2ea1c2b74d2965c8c81c8fb0ca1e3c728d` |
+| Python derived-vector cross-check (V7/V8) | 0 | V7 15w decodes back to `0000…0000` (160-bit) with `checksum_ok=True`; V8 21w decodes back to `ffff…ffff` (224-bit) with `checksum_ok=True`; both seeds recomputed via `hashlib.pbkdf2_hmac('sha512', NFKD(mnemonic), b'mnemonicTREZOR', 2048)`; V5/V6 official seeds also re-verified `MATCH` |
+| Throwaway wrapper harness `/tmp/t12-guard` (not committed) | 0 | `STUB_MODE=missing` → `result=throw:E_VAULT_UNSUPPORTED_PLATFORM: vault-core importMnemonic is unavailable on this platform`, `bufferAfter=[0,0,0,0,0,0,0,0,0,0,0]`; `STUB_MODE=present` → `result=handle:handle-abc`, `duringCall=[104,101,108,108,111,32,119,111,114,108,100]`, `bufferAfter=[0,0,0,0,0,0,0,0,0,0,0]` |
+
+The Node harness is a one-off verification artifact (the repo still has no JS test runner — H6);
+it is deliberately not committed. Its `present` case is the first execution of the R1 wrapper
+path, which was previously covered by code review only.
+
 ## Handoff list (final for this round)
 
 | # | Item | Status 2026-10-15 | Disposal |
@@ -320,7 +353,7 @@ process lifetime until T1.3/T1.4 adds `destroy` (H1).
 | H3 | Instrumentation smoke | **`[x]` closed 2026-10-15** — clean rerun on Pixel 6a / Android 17: `Starting 2 tests … Finished 2 tests`, `BUILD SUCCESSFUL in 1m 1s`, XML `tests="2" failures="0" errors="0"` (pinned with `ANDROID_SERIAL`; the unpinned failure was the duplicate-transport harness artifact in §5.4) | Keep `VaultCoreModuleTest.kt`; JS-bridge `importMnemonic` invocation stays deferred to T1.3 per plan §5.4 |
 | H4 | PBKDF2 fallback coverage | `[x]` closed | `fallbackLoopMatchesVectorV1` passes |
 | H5 | R4 test-dependency amendment approval | `[x]` closed | Owner approved exact package; specs/doc/build.gradle amended and evidence above |
-| H6 | T1.1 scaffold debt (no eslint/jest; `packages/vault-core` absent) | `[ ]` open | Replan to T1.1 closure |
+| H6 | T1.1 scaffold debt (no eslint/jest; `packages/vault-core` absent) | `[ ]` open | Replan to T1.1 closure; the T1.2 JS wrapper guard is currently verified only by the throwaway `/tmp/t12-guard` harness — the T1.1 jest setup should absorb it as a committed test |
 | H7 | `expo-doctor` expo `57.0.28` vs expected `~57.0.29` | `[ ]` open | T1.1 closure or owner-approved R4 patch bump; T1.2 must not upgrade |
 
 ## Status board
@@ -333,13 +366,20 @@ process lifetime until T1.3/T1.4 adds `destroy` (H1).
 | Task 2 wordlist | `[x]` verified |
 | Task 3 Bip39.kt core | `[x]` verified by tests + zeroization review |
 | Task 4 module wiring | `[x]` verified by compile + review |
-| Task 5 R4 amendment + JVM vector gate | `[x]` verified |
-| Task 5 instrumentation smoke | `[x]` verified — Pixel 6a / Android 17, 2/2 tests, XML `tests="2" failures="0" errors="0"` (H3 closed) |
-| Task 6 static checks + zeroization + Handoff | `[x]` verified — 2026-10-15 close-out rerun: JVM 11/11, R1/R5/log greps clean, `tsc --noEmit` exit 0, zero new npm deps; `expo-doctor` patch drift carried as H7 |
+| Task 5 R4 amendment + JVM vector gate | `[x]` verified — 15/15 after the review-fix round (V1–V8 cover 12/15/18/21/24 words) |
+| Task 5 instrumentation smoke | `[x]` verified — Pixel 6a / Android 17, 2/2 tests, XML `tests="2" failures="0" errors="0"` (H3 closed; re-run after the review fixes) |
+| Task 6 static checks + zeroization + Handoff | `[x]` verified — close-out rerun + review-fix re-run: JVM 15/15, wrapper harness 2/2, R1/R5/log greps clean, `tsc --noEmit` exit 0, zero new npm deps; `expo-doctor` patch drift carried as H7 |
+| Task 7 review-fix round (2026-10-15) | `[x]` verified — all 8 review findings dispositioned: 2 spec amendments, 4 code/test fixes, 1 no-risk hash proof, 1 fail-closed guard |
 | T1.2 overall | **`[x]` verified 2026-10-15** — automated JVM vector gate + real-device instrumentation smoke + zeroization review all green |
 
-Real-device side (B.4-2): the instrumentation rerun on the physical Pixel 6a is the recorded
-device evidence for this feature. The human-eyes R5 walkthrough for mnemonic/seed material
-("no plaintext on disk, no log leak") is the global `MAN-009` case in
-`specs/pending-manual-test-cases.md`; it depends on the end-to-end import→sign flow and
-therefore remains **pending** (T1.2 does not close it and does not claim it).
+Real-device / manual side (B.4-2), stated precisely after review finding MINOR-3:
+
+- **What T1.2's `[x]` rests on:** the physical-device instrumentation run recorded in §5.4
+  (Pixel 6a `bluejay`, Android 17 / API 37, build `CP2A.260705.006`, conclusion 2/2 pass,
+  re-run after the review fixes). Per owner decision Q5 this best-effort device run is the
+  feature's real-device side; no T1.2 AC binds a human-eyes walkthrough.
+- **What is *not* claimed:** no human-eyes MAN case has been walked through for T1.2. The
+  handle contract at the JS bridge is deferred to T1.3 (H3); the end-to-end human walkthrough is
+  `MAN-001` (import → derive → sign → broadcast) and the no-plaintext/no-log-leak walkthrough is
+  `MAN-009` — both registered and both **pending** in `specs/pending-manual-test-cases.md`.
+- **Evidence format:** artifact paths in this file are absolute as of the review-fix round.

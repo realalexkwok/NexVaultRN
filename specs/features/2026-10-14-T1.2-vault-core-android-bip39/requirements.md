@@ -107,23 +107,33 @@ Implement **only** `importMnemonic(mnemonicBytes: ArrayBuffer) → handle` in
   leaving scope; `PBEKeySpec.clearPassword()` is called. JVM `String` intermediates are
   unavoidable for BIP-39 word processing and are not zeroizable — this is labelled **[C]**,
   never [P] (R6); compensating controls are short lifetime, no logging, no persistence.
-- **FR-8 — Typed errors and R5 log red line.** Only two error codes are exposed:
+- **FR-8 — Typed errors and R5 log red line.** Only three error codes are exposed:
   `E_VAULT_INVALID_MNEMONIC` (word not in list / illegal word count / checksum mismatch — all
-  fail closed) and `E_VAULT_PBKDF2_UNAVAILABLE` (both provider and self-written fallback
-  unavailable). Error messages are fixed templates with no input fragments; no `Log.*` call
+  fail closed), `E_VAULT_PBKDF2_UNAVAILABLE` (both provider and self-written fallback
+  unavailable), and the JS-side guard `E_VAULT_UNSUPPORTED_PLATFORM` thrown by `index.ts` when
+  the resolved module exposes no `importMnemonic` (the web stub), so a web-side import fails
+  closed with a fixed code instead of a raw `TypeError` (R7; added in the review-fix round
+  2026-10-15). Error messages are fixed templates with no input fragments; no `Log.*` call
   contains mnemonic bytes, word indices, seed bytes, or handle material. This supersedes the
   draft `E_VAULT_CHECKSUM_MISMATCH` split in `specs/vault-core.md` §2.4 for T1.2 (Handoff H2).
 - **FR-9 — Tests and vector gate.** `modules/vault-core/android/src/test/java/expo/modules/vaultcore/Bip39Test.kt`
   (JVM, JUnit 4, test-layout mirroring the source package — per the original NexVault repo's
   non-RN test convention) is the mandatory automated gate. It must:
-  1. assert all first-4 official vectors below: `validateMnemonic(...)` true and
+  1. assert the vectors below (the mandated first 4 plus one row per remaining accepted
+     length — 18/24 words from `vectors.json`, 15/21-word derived vectors with an independent
+     Python cross-check): `validateMnemonic(...)` true and
      `mnemonicToSeed(normalized, "TREZOR")` hex equals the vector seed;
   2. assert corrupted-word and checksum-mismatch negatives fail closed;
   3. assert the wordlist fixture contains exactly 2048 words (and validation gate proves the
      fixture byte-identical to `res/raw/bip39_english.txt`).
-  Instrumentation smoke `VaultCoreModuleTest.kt` (best-effort) asserts non-empty handle and
-  invalid-input rejection. Each mapped test method carries a `// TC-VC-XXX` comment above its
-  `@Test` (AGENTS.md B.2-3).
+  Instrumentation smoke `VaultCoreModuleTest.kt` (best-effort; executed on Pixel 6a /
+  Android 17) asserts that the raw `res/raw` wordlist has exactly 2048 words and that the
+  `VaultCoreModule` definition exposes `importMnemonic`. The JS-bridge invocation of
+  `importMnemonic` (non-empty handle + invalid-input rejection) is **deferred to T1.3** per
+  `plan.md` §5.4 and Handoff H3, so the handle contract is covered by code review plus the
+  end-to-end `MAN-001` walkthrough (amended 2026-10-15 after review finding MAJOR-1 — this
+  paragraph previously claimed assertions the committed test does not make). Each mapped test
+  method carries a `// TC-VC-XXX` comment above its `@Test` (AGENTS.md B.2-3).
 - **FR-10 — R4 dependency amendment package (owner approval required).** No dependency is added
   before owner approval. The exact proposal, with versions referenced from
   `/home/superguo/Projects/NexVault/gradle/libs.versions.toml` and Expo SDK 57's own test
@@ -150,12 +160,16 @@ Implement **only** `importMnemonic(mnemonicBytes: ArrayBuffer) → handle` in
   the three spec files. `plan.md` Task 0 begins with `GATE-MODEL-SWITCH`: the implementation
   session must stop and let the owner switch the model to V4.1-Flash before any code is written.
 
-## Official BIP39 vectors — first 4 (automated gate)
+## BIP39 vectors — automated gate (first 4 + one per remaining length)
 
-Source: BIP-0039 specification test vectors as mirrored by Trezor
-`vectors.json` (fetched 2026-10-14; current schema `[entropy, mnemonic, seed, xprv]`; the seed
-field matches the BIP-0039 rows with passphrase **`TREZOR`**). These four rows are embedded
-verbatim in test code and in `validation.md`.
+Source: BIP-0039 specification test vectors as mirrored by Trezor `vectors.json` (fetched
+2026-10-14; schema `[entropy, mnemonic, seed, xprv]`; the seed field matches the BIP-0039 rows
+with passphrase **`TREZOR`**). V1–V6 are embedded verbatim from that file. `vectors.json`
+only ships 12/18/24-word rows, so V7 (15 words) and V8 (21 words) are derived vectors: their
+entropy→mnemonic mapping and PBKDF2 seed were produced **and independently decoded** with a
+separate Python implementation (evidence in `validation.md`, review-fix round 2026-10-15).
+This extension is additive to owner decision Q3 (which mandates the first four rows) and exists
+so AC-2's 12/15/18/21/24 length claim has positive coverage at every accepted length.
 
 | # | Entropy (hex) | Mnemonic (space-separated) | Seed expected with passphrase `"TREZOR"` (hex) |
 | --- | --- | --- | --- |
@@ -163,6 +177,13 @@ verbatim in test code and in `validation.md`.
 | V2 | `7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f` | `legal winner thank year wave sausage worth useful legal winner thank yellow` | `2e8905819b8723fe2c1d161860e5ee1830318dbf49a83bd451cfb8440c28bd6fa457fe1296106559a3c80937a1c1069be3a3a5bd381ee6260e8d9739fce1f607` |
 | V3 | `80808080808080808080808080808080` | `letter advice cage absurd amount doctor acoustic avoid letter advice cage above` | `d71de856f81a8acc65e6fc851a38d4d7ec216fd0796d0a6827a3ad6ed5511a30fa280f12eb2e47ed2ac03b5c462a0358d18d69fe4f985ec81778c1b370b652a8` |
 | V4 | `ffffffffffffffffffffffffffffffff` | `zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong` | `ac27495480225222079d7be181583751e86f571027b0497b5b5d11218e0a8a13332572917f0f8e5a589620c6f15b11c61dee327651a14c34e18231052e48c069` |
+| V5 (18w, official) | `000000000000000000000000000000000000000000000000` | `abandon ×17 agent` | `035895f2f481b1b0f01fcf8c289c794660b289981a78f8106447707fdd9666ca06da5a9a565181599b79f53b844d8a71dd9f439c52a3d7b3e8a79c906ac845fa` |
+| V6 (24w, official) | `0000000000000000000000000000000000000000000000000000000000000000` | `abandon ×23 art` | `bda85446c68413707090a52022edd26a1c9462295029f2e60cd7c4f2bbd3097170af7a4d73245cafa9c3cca8d561a7c3de6f5d4a10be8ed2a5e608d68f92fcc8` |
+| V7 (15w, derived+verified) | `0000000000000000000000000000000000000000` | `abandon ×14 address` | `fa08713f46bf5cb48728ceb70e3aae1bc53c5cb7b4e29c5610261d1cbb7be3bed4d805256fec515754d2be35974fc5da678168e9d9bb0cb70948026923b0def3` |
+| V8 (21w, derived+verified) | `ffffffffffffffffffffffffffffffffffffffffffffffffffffffff` | `zoo ×20 veteran` | `4aa0af4ca02ef1d9fa675cd02aa06d318425564e7fadd3d51b6165cc56d77398f28d8522073cd036c2a4a24a83e919211c84500d96cb120084e613ff5fcd96c1` |
+
+The full mnemonics of V5–V8 are embedded verbatim in `Bip39Test.kt`; the `×n` shorthand above
+keeps this table readable.
 
 Negative gate (mandatory, all must fail closed):
 
@@ -187,10 +208,10 @@ Negative gate (mandatory, all must fail closed):
 | AC | Content | Test/gate |
 | --- | --- | --- |
 | AC-1 | Public TS API is ArrayBuffer-in / opaque string handle-out; wrapper `finally` wipes the caller buffer | TC-VC-006 static grep + code review |
-| AC-2 | 12/15/18/21/24-word validation, binary search, `BigInteger` bit reconstruction (264-bit max), SHA-256 checksum | TC-VC-001, TC-VC-002 (JVM) |
+| AC-2 | 12/15/18/21/24-word validation, binary search, `BigInteger` bit reconstruction (264-bit max), SHA-256 checksum | TC-VC-001, TC-VC-002 (JVM; positive vectors now at all five lengths — V1–V4 12w, V7 15w, V5 18w, V8 21w, V6 24w — plus 11/13-word and checksum negatives) |
 | AC-3 | PBKDF2-HMAC-SHA512 2048 iterations matches V1–V4 with passphrase `TREZOR`; fallback loop present and unit-reachable | TC-VC-001 (JVM), TC-VC-011 review |
 | AC-4 | `res/raw/bip39_english.txt` = 2048 lines, no BOM, SHA-256 `2f5eed…b24dbda`; `loadWordlist` fails closed otherwise | TC-VC-010 (JVM fixture + shell `cmp`/`sha256sum`) |
-| AC-5 | `importMnemonic` returns a UUID-shaped, non-encoding handle; seed stays in native `ConcurrentHashMap`; never returned | TC-VC-012 instrumentation (best-effort) + code review |
+| AC-5 | `importMnemonic` returns a UUID-shaped, non-encoding handle; seed stays in native `ConcurrentHashMap`; never returned | Code review for the handle/store contract; TC-VC-012 device instrumentation proves the module ships and loads (best-effort); the JS-bridge handle assertion is deferred to T1.3 (H3) and to the end-to-end `MAN-001` walkthrough |
 | AC-6 | Input `ByteArray` wiped after decode; all sensitive byte/char buffers `fill(0)`; `PBEKeySpec.clearPassword()` | TC-VC-011 zeroization review |
 | AC-7 | Only `E_VAULT_INVALID_MNEMONIC` / `E_VAULT_PBKDF2_UNAVAILABLE`; fixed error templates; no sensitive log calls | TC-VC-007 review + R5 grep |
 | AC-8 | `git diff` on `package.json`, `apps/mobile/package.json`, `pnpm-lock.yaml` proves zero new deps; test deps appear only after owner approval recorded in `validation.md` | TC-VC-013 diff gate + R4 approval record |
@@ -208,6 +229,7 @@ Negative gate (mandatory, all must fail closed):
 | Kotlin `ByteArray`/`CharArray` zeroization | **[C]** | ART compacting GC may retain copies; JVM `String` intermediates are not zeroizable |
 | No-seed/no-mnemonic logging | **[P]** (within T1.2 scope) | No log call + fixed error templates + grep gate |
 | Handle-store lifetime without `destroy` (T1.2 interim) | **[C]** | Entries live until process death until T1.3/T1.4 implements destruction; no persistence, no export |
+| Web/degenerate-platform guard (`E_VAULT_UNSUPPORTED_PLATFORM` in `index.ts`) | **[S]** | Not a protection — it only replaces a raw `TypeError` with a fixed fail-closed code when the resolved module has no key path. The actual R7 boundary is that the web stub ships no signing code and the R7 CI grep rejects a web bundle containing `importMnemonic` |
 
 ## Handoff (owned by T1.2, adjudicated by the next planning round)
 

@@ -31,6 +31,7 @@ internal object Bip39 {
   private const val KEY_LENGTH_BITS = 512
   private const val KEY_LENGTH_BYTES = KEY_LENGTH_BITS / 8
   private val ASCII_WHITESPACE = Regex("[\\s]+")
+  private val EMPTY_BYTES = ByteArray(0)
 
   /**
    * Validates a normalized BIP-39 English mnemonic against [wordlist].
@@ -190,9 +191,13 @@ internal object Bip39 {
         blockInput[saltBytes.size + 2] = ((blockIndex ushr 8) and 0xFF).toByte()
         blockInput[saltBytes.size + 3] = (blockIndex and 0xFF).toByte()
 
-        var u = mac.doFinal(blockInput)
-        val t = u.copyOf()
+        // u/t start as empty arrays only so the finally block can wipe them even when
+        // mac.doFinal(blockInput) itself throws (FR-7: salt||counter is always wiped).
+        var u = EMPTY_BYTES
+        var t = EMPTY_BYTES
         try {
+          u = mac.doFinal(blockInput)
+          t = u.copyOf()
           repeat(PBKDF2_ITERATIONS - 1) {
             val next = mac.doFinal(u)
             u.fill(0)
@@ -211,6 +216,10 @@ internal object Bip39 {
           t.fill(0)
         }
       }
+    } catch (e: Throwable) {
+      // Never hand back a partially derived key on an exceptional path.
+      output.fill(0)
+      throw e
     } finally {
       passwordBytes.fill(0)
     }

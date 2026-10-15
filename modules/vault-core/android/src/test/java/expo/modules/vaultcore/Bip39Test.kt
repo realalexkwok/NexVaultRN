@@ -9,10 +9,16 @@ import org.junit.Test
 /**
  * JVM automated gate for T1.2.
  *
- * V1–V4 are the first four official BIP-0039 English vectors (TREZOR passphrase),
- * mirrored by https://github.com/trezor/python-mnemonic/blob/master/vectors.json
- * (fetched 2026-10-14). Seed assertions compare hex through the pure Kotlin core;
- * the seed never leaves native.
+ * V1–V6 are official BIP-0039 English vectors (TREZOR passphrase) mirrored by
+ * https://github.com/trezor/python-mnemonic/blob/master/vectors.json (fetched 2026-10-14).
+ * That file only ships 12/18/24-word rows, so V7 (15 words) and V8 (21 words) are derived
+ * vectors whose entropy→mnemonic mapping and PBKDF2 seed were produced and independently
+ * decoded with a separate Python implementation (evidence: validation.md, review-fix round
+ * 2026-10-15). Seed assertions compare hex through the pure Kotlin core; the seed never
+ * leaves native.
+ *
+ * Coverage (AC-2): positive vectors exist for all five accepted word counts
+ * (12/15/18/21/24) plus the 11/13-word and checksum negatives.
  */
 class Bip39Test {
   private data class Vector(
@@ -52,6 +58,37 @@ class Bip39Test {
       entropyHex = "ffffffffffffffffffffffffffffffff",
       mnemonic = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong",
       seedHex = "ac27495480225222079d7be181583751e86f571027b0497b5b5d11218e0a8a13332572917f0f8e5a589620c6f15b11c61dee327651a14c34e18231052e48c069"
+    ),
+    // Official vectors.json row, 18 words.
+    Vector(
+      id = "V5",
+      entropyHex = "000000000000000000000000000000000000000000000000",
+      mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon agent",
+      seedHex = "035895f2f481b1b0f01fcf8c289c794660b289981a78f8106447707fdd9666ca06da5a9a565181599b79f53b844d8a71dd9f439c52a3d7b3e8a79c906ac845fa"
+    ),
+    // Official vectors.json row, 24 words.
+    Vector(
+      id = "V6",
+      entropyHex = "0000000000000000000000000000000000000000000000000000000000000000",
+      mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+      seedHex = "bda85446c68413707090a52022edd26a1c9462295029f2e60cd7c4f2bbd3097170af7a4d73245cafa9c3cca8d561a7c3de6f5d4a10be8ed2a5e608d68f92fcc8"
+    ),
+    // Derived vector: 160-bit zero entropy (vectors.json has no 15-word row); the mnemonic
+    // decodes back to this entropy with a correct checksum under an independent Python
+    // BIP-39 implementation, and the seed below comes from Python PBKDF2-HMAC-SHA512.
+    Vector(
+      id = "V7",
+      entropyHex = "0000000000000000000000000000000000000000",
+      mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon address",
+      seedHex = "fa08713f46bf5cb48728ceb70e3aae1bc53c5cb7b4e29c5610261d1cbb7be3bed4d805256fec515754d2be35974fc5da678168e9d9bb0cb70948026923b0def3"
+    ),
+    // Derived vector: 224-bit all-ones entropy (no 21-word row in vectors.json); same
+    // independent cross-check as V7.
+    Vector(
+      id = "V8",
+      entropyHex = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      mnemonic = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo veteran",
+      seedHex = "4aa0af4ca02ef1d9fa675cd02aa06d318425564e7fadd3d51b6165cc56d77398f28d8522073cd036c2a4a24a83e919211c84500d96cb120084e613ff5fcd96c1"
     )
   )
 
@@ -77,6 +114,30 @@ class Bip39Test {
   @Test
   fun vectorV4_zooWrong() {
     assertVector(vectors[3])
+  }
+
+  // TC-VC-001
+  @Test
+  fun vectorV5_abandonAgent() {
+    assertVector(vectors[4])
+  }
+
+  // TC-VC-001
+  @Test
+  fun vectorV6_abandonArt() {
+    assertVector(vectors[5])
+  }
+
+  // TC-VC-001
+  @Test
+  fun vectorV7_zeroEntropy15Words() {
+    assertVector(vectors[6])
+  }
+
+  // TC-VC-001
+  @Test
+  fun vectorV8_onesEntropy21Words() {
+    assertVector(vectors[7])
   }
 
   // TC-VC-001
@@ -144,9 +205,19 @@ class Bip39Test {
       vector.seedHex,
       Bip39.mnemonicToSeed(vector.mnemonic, "TREZOR").toHex()
     )
-    // Entropy is embedded in the vector fixture to keep the official id visible,
-    // but T1.2 does not expose entropy bytes to JS.
-    assertEquals(32, vector.entropyHex.length)
+    // Entropy stays a fixture-only field (T1.2 never exposes entropy bytes to JS), but it
+    // must stay self-consistent with the mnemonic: BIP-39 entropy bits = words * 32 / 3
+    // (12→128, 15→160, 18→192, 21→224, 24→256), i.e. words * 32 / 3 == hexChars * 4.
+    val wordCount = vector.mnemonic.split(" ").size
+    assertEquals(
+      "${vector.id} entropy bits must match its word count",
+      wordCount * 32 / 3,
+      vector.entropyHex.length * 4
+    )
+    assertTrue(
+      "${vector.id} entropy must be lowercase hex",
+      vector.entropyHex.matches(Regex("[0-9a-f]+"))
+    )
   }
 
   private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->
