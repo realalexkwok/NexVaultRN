@@ -294,9 +294,11 @@ Evidence directory: none yet — xcresult/device artefacts belong to the Mac ses
 
 ## Task 7 — Board + git (owner-gated)
 
-Status: `[~]` — **2026-10-17 (Mac session): the working tree was committed and the branch pushed**
-(commit hashes below); **not** executed: merging into `main`, the AGENTS.md Part A board row, and the
-T1.5 closure call — all pending the owner's explicit instruction after an independent review (Q6).
+Status: `[~]` — **2026-10-17 (Mac session): the working tree was committed and the branch pushed.**
+Observed: `git commit` → `e620fb3` (implementation + evidence + spec/doc amendments) and `git push
+origin feature/T1.5-vault-core-ios-port` → `29892de..e620fb3` (branch in sync with origin, 0/0).
+**Not** executed: merging into `main`, the AGENTS.md Part A board row, and the T1.5 closure call —
+all pending the owner's explicit instruction after an independent review (Q6).
 
 ## Status board
 
