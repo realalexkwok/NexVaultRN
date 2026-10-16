@@ -2,6 +2,7 @@
 
 > Status: draft | Date: 2026-10-14 | Evidence: doc/research-report.md §3.5、§3.6（调研依据 nexvault-rn_dim07、dim02、cross_verification H11/C6）
 > 修订：2026-10-15（T1.3 / H2，owner 批准）——§2.1 `VaultHandle` 由 `number` 改为品牌化 `string`（对齐 T1.2 冻结实现：native `UUID.randomUUID().toString()`）；§2.2/§2.3 双端签名 `handle: Int` → `handle: String`；§2.4 合并 `E_VAULT_CHECKSUM_MISMATCH` 入 `E_VAULT_INVALID_MNEMONIC`；TC-VC-002 同步。证据：specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md Task 1。
+> 修订：2026-10-16（T1.4 代码评审轮 / BLOCKER-1 + MINOR-1）——§2.1 signDigest 明确 recid 语义 = 识别恢复点（R 的 y 奇偶；low-s 取负 s 时 recid 必须翻转，与 libsecp256k1 一致）；AC-3 与 TC-VC-004 增加「(r,s,recid) 恢复公钥 == 签名公钥」判据与「向量须覆盖归一化路径」要求。证据：specs/features/2026-10-16-T1.4-vault-core-android-sign-digest/validation.md §Review round。
 > 修订：2026-10-16（T1.3 代码评审轮 / MINOR-2）——§2.4 补登 T1.2 已实装但此前漏列的 `E_VAULT_PBKDF2_UNAVAILABLE`；无签名/行为变更。证据：同 validation.md §Code review round。
 
 ## 1. 目标（Goal 与范围）
@@ -46,6 +47,9 @@ export function deriveAddress(handle: VaultHandle, path: string): Promise<string
 /**
  * 对 32 字节 digest（keccak256 后的交易序列化哈希，由 web3-adapter 提供）做 RFC6979 ECDSA 签名。
  * 返回 65 字节 ArrayBuffer：r(32)‖s(32)‖recid(1, 取值 0/1)。
+ * recid 语义 = 识别恢复点：R 点的 y 奇偶；**low-s 归一化把 s 取负（s > n/2 → s = n − s）时
+ * 恢复点随之取负，recid 必须同步翻转**（与 libsecp256k1 的 recoverable signing 一致）。
+ * 正确性口径：由 (r, s, recid) 恢复出的公钥必须等于签名私钥对应公钥——含归一化路径。
  * EIP-155 的 v/yParity 编码由 web3-adapter 完成，本模块只做曲线运算。
  */
 export function signDigest(handle: VaultHandle, path: string, digest: ArrayBuffer): Promise<ArrayBuffer>;
@@ -123,7 +127,7 @@ public class VaultCoreModule: Module {
 |---|---|---|---|
 | AC-1 | BIP-39 官方 24 词向量全集通过（含 checksum 拒绝负例） | TC-VC-001/002 | Android instrumentation + iOS XCTest（CI 常绿） |
 | AC-2 | BIP-44 已知地址一致：`abandon×23 about`（空 passphrase）`m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94` | TC-VC-003 | instrumentation/XCTest |
-| AC-3 | 签名确定性：同一 handle+path+digest 两次签名输出逐字节相同（RFC6979）；recid ∈ {0,1}；65 字节 | TC-VC-004 | instrumentation/XCTest + jest（经 dev build） |
+| AC-3 | 签名确定性：同一 handle+path+digest 两次签名输出逐字节相同（RFC6979）；recid ∈ {0,1} **且由 (r‖s‖recid) 恢复的公钥等于签名公钥（含 low-s 归一化翻转路径）**；65 字节 | TC-VC-004 | instrumentation/XCTest + jest（经 dev build） |
 | AC-4 | 内存卫生：连续 import/destroy 1000 次无泄漏崩溃（Instruments/Profiler 驻留稳定）；destroy 后旧 handle 调用抛 `E_VAULT_HANDLE_NOT_FOUND` | TC-VC-005 | 真机走查（Pixel 6a + iPhone）+ 内存 profiler 截图归档 |
 | AC-5 | 边界纪律：模块公开 API 的参数/返回类型不含 string 密钥语义；JS 侧调用 importMnemonic 后立即 fill(0) 的封装 hook 存在 | TC-VC-006 | CI grep（禁止签名出现敏感 string 参数）+ 代码审查 |
 | AC-6 | 错误消息白名单：构造全部错误路径，断言 message 不含输入词/字节片段 | TC-VC-007 | jest（桥接 dev build）+ 单元测试 |
@@ -163,6 +167,8 @@ Given 有效 handle 与 32 字节 digest = keccak256("nexvault-test-vector")
 When 连续两次 signDigest(handle, "m/44'/60'/0'/0/0", digest)
 Then 两次输出逐字节相等，长度 65，第 65 字节 ∈ {0,1}
 And 用 @noble/curves 在测试侧从已知私钥恢复签名比对 r‖s 一致
+And 对 ≥20 个 digest：由 (r, s, recid) 恢复的公钥 == 签名私钥对应公钥（BC 点运算独立恢复）
+And 固定向量集须同时覆盖 raw s > n/2（归一化、recid 翻转）与 raw s ≤ n/2 两类
 ```
 
 ### TC-VC-005 内存卫生压测

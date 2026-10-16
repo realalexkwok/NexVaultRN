@@ -1,0 +1,353 @@
+===== device-test-result-2026-10-16-r79d1072.pb (5825 bytes) =====
+1 {
+  2: 6
+}
+2: 3
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "invalidPathExposesTypedCode"
+    6 {
+      1: 1792142771
+      2: 831000000
+    }
+    7 {
+      1: 1792142771
+      2: 876000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-invalidPathExposesTypedCode.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "signAndDestroyOnDevice"
+    6 {
+      1: 1792142771
+      2: 891000000
+    }
+    7 {
+      1: 1792142771
+      2: 993000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-signAndDestroyOnDevice.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "moduleDefinitionExposesAllFourFunctions"
+    6 {
+      1: 1792142771
+      2: 999000000
+    }
+    7 {
+      1: 1792142772
+      2: 26000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-moduleDefinitionExposesAllFourFunctions.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "rawWordlistHasExactly2048Words"
+    6 {
+      1: 1792142772
+      2: 30000000
+    }
+    7 {
+      1: 1792142772
+      2: 31000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-rawWordlistHasExactly2048Words.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "thousandRoundLoop"
+    6 {
+      1: 1792142772
+      2: 37000000
+    }
+    7 {
+      1: 1792142802
+      2: 219000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-thousandRoundLoop.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+3 {
+  1 {
+    1: "VaultCoreModuleTest"
+    2: "expo.modules.vaultcore"
+    3: "canonicalAddressOnDevice"
+    6 {
+      1: 1792142802
+      2: 225000000
+    }
+    7 {
+      1: 1792142802
+      2: 252000000
+    }
+    8 {
+      1: "adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp"
+      2: "primary"
+    }
+  }
+  2: 3
+  4 {
+    1 {
+      1: "logcat"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/logcat-expo.modules.vaultcore.VaultCoreModuleTest-canonicalAddressOnDevice.txt"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/device-info.pb"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.meminfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/meminfo"
+    }
+  }
+  4 {
+    1 {
+      1: "device-info.cpuinfo"
+      2: "android"
+    }
+    2 {
+      1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/cpuinfo"
+    }
+  }
+}
+4: ""
+5 {
+  1 {
+    1: "test-results.log"
+    2: "com.google.testing.platform.runtime.android.driver.AndroidInstrumentationDriver"
+  }
+  2 {
+    1: "/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/outputs/androidTest-results/connected/debug/Pixel 6a - 17/testlog/test-results.log"
+  }
+  4: 3
+  6: "text/plain"
+}

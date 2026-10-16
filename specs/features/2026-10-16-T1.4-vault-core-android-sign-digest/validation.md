@@ -296,9 +296,114 @@ Status: `[x]`
 | T1.4-H4 | Device-gate fallback | **not needed** — Pixel 6a attached; suite green twice | Keep `ANDROID_SERIAL` pinning; re-run when the module surface changes |
 | T1.4-H5 | Cross-check tooling versions | recorded | `@noble/curves 2.4.0` · `@noble/hashes 2.4.0` · `viem 2.56.9` (throwaway `/tmp` only, zero repo drift) |
 
+## Review round (2026-10-16) — independent reviewer findings, fixes and re-verification
+
+**Process note (owner-raised):** T1.4 was merged (`0ee9370`) and marked closed **before** an independent
+review round and without an explicit owner "close" instruction — that was the agent's error. The findings
+below arrived afterwards; T1.4 is therefore **re-opened** (`[~]`) until the owner adjudicates re-closure
+(reviewer item 4). Work was done on `feature/T1.4-fix-recid-normalization` (branched from `main`).
+
+### 🚨 BLOCKER-1 — recid was not flipped when low-s normalization negates s
+
+**Defect.** `Ecdsa.signDigestWithKey` computed `recid` from R's y-parity and then negated `s` when
+`s > n/2` — but negating `s` negates the **recovery point**, so the recovery id must flip with it
+(libsecp256k1 does exactly that: `secp256k1_ecdsa_sig_sign` → `*recid ^= 1`). Every signature that
+normalized (~half of all signatures) therefore carried a **wrong recovery id** and recovered a foreign
+address. The KDoc sentence "R and therefore recid are unaffected" was mathematically false, and the same
+false rule had been propagated into `SKILL.md` (×2), `requirements.md`, `plan.md` and `specs/vault-core.md`.
+
+**Reproduced test-first** (new gates added before the fix, run against the defective revision):
+
+```
+./gradlew :vault-core:testDebugUnitTest --rerun
+  EcdsaTest > pinnedVectorsWithAndWithoutLowSNormalization FAILED
+    org.junit.ComparisonFailure: nexvault-test-vector-2 signature
+      expected:<...a10ab8c7c948f1bbe380[0]> but was:<...a10ab8c7c948f1bbe380[1]>
+  EcdsaTest > recidRecoversTheSigningKeyForManyDigests FAILED
+  36 tests completed, 2 failed   → BUILD FAILED
+```
+
+The expected byte is the one the reviewer reported (`631e7a79…1bbe38 00`): the shipped code emitted `01`.
+
+**Fix (production).**
+
+```kotlin
+var recid = if (point.affineYCoord.toBigInteger().testBit(0)) 1 else 0
+if (s > halfOrder) {
+  s = secp256k1.n.subtract(s)
+  recid = recid xor 1        // low-s negates the recovery point — recid must follow
+}
+```
+
+### 🟠 MAJOR-1 — the Task 7 cross-check could not detect a recid error
+
+The original `/tmp` script rebuilt its "noble signature" as noble's `r‖s` **plus a recid parsed back out of
+`EcdsaTest.kt`**, so the recid was never independently verified and the check passed for any rule that is
+right on non-normalizing inputs. **Fix:** the script now derives the recovery id **independently by trial**
+(yParity 0/1 → `recoverPublicKey` → compare with the address derived from the private key), compares the
+**full 65-byte** signature for **all six** pinned vectors, and cross-checks the normalized/non-normalized
+flag against raw-vs-low-s. All six vectors parse from the test source by regex, so the values checked are
+exactly the committed ones:
+
+```
+vector  normalizedByRawS  pinnedFlag  recid  fullSignatureMatch  recoveredCanonical
+  -1         false           false      1        PASS           0x9858EfFD…Eda94
+  -2         true            true       0        PASS           0x9858EfFD…Eda94
+  -3         false           false      0        PASS           0x9858EfFD…Eda94
+  -4         true            true       0        PASS           0x9858EfFD…Eda94
+  -5         false           false      1        PASS           0x9858EfFD…Eda94
+  -6         true            true       0        PASS           0x9858EfFD…Eda94
+noble/curves 2.4.0 | viem 2.56.9 → ALL VECTORS PASS (script_exit=0)
+```
+
+For every vector the *wrong* parity recovers a different address (e.g. `0x1b17b7bd…646eD`), so the recid
+is provably determined per vector.
+
+### 🟡 MINOR-1 — destroy could tear an in-flight sign/derive buffer
+
+`get()` handed out the stored array and `destroy` wiped it after removal, so a concurrent wipe could be
+observed by an in-flight operation. **Fix:** `HandleStore` is now fully serialized on one monitor —
+`copyOf()` returns an independent copy, and `evict()` removes **and wipes inside the same critical
+section** (returning `false` for an unknown handle, keeping idempotency). Module wiring and both test
+suites follow the new API.
+
+### 🔵 NIT dispositions
+
+| NIT | Disposition |
+| --- | --- |
+| NIT-1 dead variable | **Fixed** — the unused local (`firstAgain`) in the DRBG determinism test is gone. |
+| NIT-2 `mod n` vs RFC 6979 h.3 | **Aligned with the RFC** — `nextK()` now accepts only `1 ≤ k ≤ n−1` and otherwise continues the DRBG; no `mod n` reduction (matches libsecp256k1/noble). |
+| NIT-3 evidence serialization | **Fixed** — a decoded textproto (`device-test-result-2026-10-16-r79d1072.decoded.txt` and the `r65cc394` counterpart) is committed beside each binary `.pb`, produced by a documented generic wire-format decoder (`/tmp`, not committed); both runs carry the same serial, case names and (ephemeral build-dir) artifact paths. |
+| NIT-4 stale plan wording | **Fixed** — the plan's device task now states the post-GC PSS protocol with an explicit "superseded wording" note; the risk row was aligned too. |
+| NIT-5 wrong diff figure | **Confirmed** — the figure existed only in the agent's chat message; `grep` over the T1.4 spec dir and `AGENTS.md` finds no `+805`. |
+
+### New regression gates
+
+| Test | Marker | What it proves |
+| --- | --- | --- |
+| `pinnedVectorsWithAndWithoutLowSNormalization` | TC-VC-027 | 6 pinned vectors (3 normalizing / 3 not; `-2`'s `s` starts with `0x00`) match byte-for-byte **and** recover the signing key |
+| `recidRecoversTheSigningKeyForManyDigests` | TC-VC-028 | 24 digests: BC-point recovery from `(r,s,recid)` equals the signer's public key; pinned table must cover both branches |
+| device `signAndDestroyOnDevice` | TC-VC-025/027 | on ART: one non-normalizing **and** one normalizing vector + destroy wipe/idempotency under the new store API |
+
+### Re-verification on the fix revision `65cc394`
+
+| Gate | Command | Observed result |
+| --- | --- | --- |
+| JVM | `./gradlew :vault-core:testDebugUnitTest --rerun` | `BUILD SUCCESSFUL in 4s`; Bip39 16 + Bip32 10 + **Ecdsa 8** + **HandleStore 3** = **37/37**, 0 failures (XMLs `2026-10-16T13:55:33Z`; durable copies `…-r65cc394.xml`) |
+| Device | `ANDROID_SERIAL=192.168.1.5:45179 ./gradlew :vault-core:connectedDebugAndroidTest` | `Starting 6 tests on Pixel 6a - 17` → `Finished 6 tests`, `BUILD SUCCESSFUL in 1m 8s`; XML `tests="6" failures="0" errors="0"` → `evidence/device-TEST-Pixel6a-2026-10-16-r65cc394.xml` (+ `.pb`, decoded text) |
+| E2E | `node /tmp/t14-xcheck/t14-e2e.mjs` | `ALL VECTORS PASS`, `script_exit=0` (table above) |
+| Static | R1/R5/Kotlin-log greps, `tsc --noEmit`, npm/lockfile diff | greps exit 1 (clean), `tsc_exit=0`, zero drift (re-run after the fix) |
+
+Spec/skill amendments (reviewer item 2): `specs/vault-core.md` §2.1 + AC-3 + TC-VC-004 (+ revision
+note), `SKILL.md` in both locations (now identical again, sha256
+`8f53bb1a24ac8240e0772e752421aa0d9b8f364df637f629d5fb11b143c6bae5`), `requirements.md` Goal/FR-3/AC-3/AC-4,
+`plan.md` Task 3/6.2/7 + risk row, and the `AGENTS.md` Part A cells and close-record row.
+
+**Status after this round: `[~]` — fixed and re-verified on `65cc394`, awaiting the owner's re-closure
+adjudication (re-open vs. follow-up feature; reviewer item 4). T1.5 must not start before that call.**
 ## Task 9 — Board + git closure + push
 
-Status: `[x]`
+Status: `[x]` (the *premature* closure of 2026-10-16; superseded by §Review round — see the status board)
 
 | Step | Command | Observed result |
 | --- | --- | --- |
@@ -328,4 +433,5 @@ Lesson reused (T1.3): `git merge -F -` cannot read stdin — the merge message w
 | Task 7 E2E cross-check | `[x]` verified — noble equality + viem recovery PASS |
 | Task 8 verification + Handoff | `[x]` verified |
 | Task 9 board + git closure + push | `[x]` verified — merge `0ee9370` (`--no-ff`), feature branch deleted (`bb03f90`), board row committed, `origin/main` pushed |
-| T1.4 overall | **`[x]` verified 2026-10-16** — JVM 34/34 + device 6/6 + E2E recovery + zeroization review |
+| Review round (BLOCKER-1 / MAJOR-1 / MINOR-1 / NIT-1..5) | `[x]` fixed and re-verified on `65cc394` — JVM 37/37, device 6/6, `ALL VECTORS PASS`; specs/skill/plan/board amended |
+| T1.4 overall | **`[~]` — re-opened**: implementation + fixes verified on `65cc394`, **awaiting owner re-closure adjudication** (never count the premature 2026-10-16 closure) |
