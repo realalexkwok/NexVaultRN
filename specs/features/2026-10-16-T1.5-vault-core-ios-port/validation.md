@@ -11,7 +11,7 @@
 >
 > Session status 2: **Mac session 2026-10-17 (HKT) / 2026-10-16 19:2x UTC** — MAC-HANDOFF.md was
 > executed on the owner's Mac (macOS 26.2 arm64, **Xcode 26.5 / Swift 6.3.2**): the module now
-> **compiles** and the XCTest suite is **17/17 green on the pinned iOS 26.5 simulator** (section
+> **compiles** and the XCTest suite is **18/18 green on the pinned iOS 26.5 simulator** (section
 > "Mac session" below). The authoritative real-device gate is still open (the attached iPhone was
 > offline), and the P256K integration route was amended (needs owner ratification — **T1.5-H6**),
 > so T1.5 stays `[~]`.
@@ -156,13 +156,54 @@ Durable evidence: `evidence/simulator-test-2026-10-17.txt` (console transcript +
 
 **Scope honesty (B.4-2/B.4-5):** the simulator is auxiliary evidence only; the real-device run
 (and with it MAN-012/013 and the authoritative B.4 `[x]`) is still open.
+**Follow-up round (same Mac session): MAN-012 in-test carrier added.** MAN-012's acceptance text
+says the ±5% tolerance is carried by an in-test assertion, but the T1.5 suite had no walk test — only
+`VaultStoreTests`' store-level 1000-cycle loop. Added `Tests/MemoryWalkTests.swift`: 1000 rounds of
+the four-method sequence (validate + PBKDF2 → `VaultStore.put` → BIP-32/Keccak/EIP-55 → `Ecdsa.signDigest`
+→ `VaultStore.evict`, each round in an `autoreleasepool`), the process footprint
+(`task_vm_info.phys_footprint`) sampled every 100 rounds and compared with the post-warm-up
+(20-round) baseline. Everything asserted in-test: 1000/1000 rounds equal the pinned TC-VC-027
+address + canonical signature, `VaultStore.count == 0` afterwards, and an unknown handle returns
+`nil`/`false` (idempotent destroy). **No existing vector, test or production line was modified — the
+suite only grew.**
+
+```bash
+pod install   # the new Tests/*.swift file must enter the pod target's source list
+xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+  -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+  -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+  -resultBundlePath /tmp/VaultCore-Unit-Tests-2.xcresult
+# → exit=0, ** TEST SUCCEEDED ** — 18 tests, 0 failures (MemoryWalkTests 7.26 s of 7.44 s)
+```
+
+Footprint curve (xcresult attachment, exported with `xcrun xcresulttool export attachments`):
+
+```
+phys_footprint samples (bytes): 29890112,29890112,29890112,29890112,30905920,
+                                30905920,30905920,30905920,30840384,30840384,30840384
+baseline 29.89 MB → peak 30.91 MB (+3.40%) → final 30.84 MB (+3.18%)   [±5% band, non-monotonic]
+```
+
+Durable evidence: `evidence/simulator-test-2026-10-17-run2.txt`,
+`evidence/simulator-test-xcresult-summary-2026-10-17-run2.json`,
+`evidence/simulator-memory-walk-2026-10-17.txt`. This is **auxiliary** (simulator) evidence: the
+MAN-012 row stays ☐ 待走查 until the walk runs on a physical iPhone with an Instruments residency
+curve, and the `AsyncFunction` bridge path remains T1.5-H2 → T4.1.
+
 
 ### Task 5 (Mac) — MAN-012 / MAN-013
 
 **Not executed — no reachable device.** The only attached iPhone (`iPaaad (2)`, 26.5,
 `00008020-001611111101402E`) is listed under *Devices Offline*; both cases are real-device-only by
-B.4-5, and no simulator substitute is admissible for a memory-hygiene / mlock walk. Rows stay
-待走查 (see T1.5-H1/H4).
+B.4-5, and no simulator substitute is admissible for a memory-hygiene / mlock walk (the attached
+device is also an **iPad (8th generation), iPad11,6**, `devicectl` state `unavailable` — not the
+iPhone the row pins). Rows stay 待走查 (see T1.5-H1/H4).
+
+MAN-012's *automated* carrier was nevertheless put in place this session (`MemoryWalkTests`, see the
+Task 4 follow-up block below): when the promised iPhone appears, the walk part is one `xcodebuild
+test` away and the manual row only needs the Instruments residency curve + the machine/OS/conclusion
+record. MAN-013 (mlock probe) has no simulator substitute at all — it stays open until a device is
+attached.
 
 ### Task 6 (Mac) — verification
 
@@ -257,6 +298,7 @@ Status: `[~]` — authored, **not run** (T1.5-H1)
 | `KeccakTests` | keccak256("")/keccak256("abc"), four ERC-55 vectors |
 | `EcdsaTests` | probe KAT, six TC-VC-027 pinned signatures (byte-equal, normalized coverage asserted), determinism + canonical signature, 24-digest recovery (TC-VC-028), digest-length negatives, §2.4 code table |
 | `VaultStoreTests` | destroy wipe/idempotency, copy independence (MINOR-1), 1000-cycle loop |
+| `MemoryWalkTests` | MAN-012 carrier (added 2026-10-17, Mac session): 1000 × validate/PBKDF2 → put → derive → sign → evict, per-round oracle equality, in-test `phys_footprint` ±5% band, destroy idempotency |
 | `Vectors.swift` | mechanically transcribed oracle data (generator + Kotlin sha256s in the file header) |
 
 ## Task 5 — Manual side (MAN-012 / MAN-013)
@@ -284,7 +326,7 @@ Evidence directory: none yet — xcresult/device artefacts belong to the Mac ses
 
 | # | Item | Status 2026-10-16 | Disposal |
 | --- | --- | --- | --- |
-| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 17/17 on the pinned iOS 26.5 simulator); **real-device side still open** (attached iPhone offline) | `[~]` partially closed | Run the same `xcodebuild test` against the pinned iPhone UDID, then MAN-012/013; only then does the B.4 manual side exist |
+| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 18/18 on the pinned iOS 26.5 simulator); **real-device side still open** (the only attached device is an offline iPad 8th gen, not an iPhone) | `[~]` partially closed | Run the same `xcodebuild test` against the pinned iPhone UDID, then MAN-012/013; only then does the B.4 manual side exist |
 | T1.5-H2 | JS→native bridge invocation (H8 class) | `[ ]` open | Replan → T4.1 dev-build screen smoke; the iOS device tests exercise the same code the AsyncFunction runs, honestly labelled |
 | T1.5-H3 | At-rest key wrap / Keychain / Secure Enclave | `[ ]` open | Replan → security-ios feature |
 | T1.5-H4 | mlock probe result + `[C]` labelling | `[ ]` open | MAN-013 on the iPhone; roadmap follow-up if the probe shows usable semantics |
@@ -309,8 +351,8 @@ all pending the owner's explicit instruction after an independent review (Q6).
 | Task 1 R4 amendments + deployment target | `[x]` verified (docs/config) |
 | Task 2 Swift cores | `[~]` **compiled 2026-10-17** (Mac, 0 errors) and exercised by the passing simulator suite; real-device side pending |
 | Task 3 module wiring + podspec | `[~]` compile + `pod install` verified 2026-10-17; **integration route amended to the SwiftPM source build of the same pin (T1.5-H6, owner ratification pending)** |
-| Task 4 XCTest suites | `[~]` **run 2026-10-17: 17/17, 0 failures on iPhone 17 / iOS 26.5 simulator**; authoritative real-device run pending |
+| Task 4 XCTest suites | `[~]` **run 2026-10-17: 17/17 oracle/unit tests**, then **18/18** after the MAN-012 carrier was added (same simulator); authoritative real-device run pending |
 | Task 5 MAN-012/013 | `[ ]` registered, awaiting the iPhone session |
 | Task 6 verification + handoffs | `[~]` Linux + Mac automated checks green; device evidence pending |
 | Task 7 board + git | `[ ]` owner-gated |
-| T1.5 overall | **`[~]` — compiles and passes 17/17 on the iOS 26.5 simulator (2026-10-17); real-device gate + MAN-012/013 + owner ratification of the P256K route (T1.5-H6) still open** |
+| T1.5 overall | **`[~]` — compiles and passes 18/18 on the iOS 26.5 simulator (2026-10-17); real-device gate + MAN-012/013 + owner ratification of the P256K route (T1.5-H6) still open** |
