@@ -434,4 +434,17 @@ Lesson reused (T1.3): `git merge -F -` cannot read stdin — the merge message w
 | Task 8 verification + Handoff | `[x]` verified |
 | Task 9 board + git closure + push | `[x]` verified — merge `0ee9370` (`--no-ff`), feature branch deleted (`bb03f90`), board row committed, `origin/main` pushed |
 | Review round (BLOCKER-1 / MAJOR-1 / MINOR-1 / NIT-1..5) | `[x]` fixed and re-verified on `65cc394` — JVM 37/37, device 6/6, `ALL VECTORS PASS`; specs/skill/plan/board amended |
-| T1.4 overall | **`[~]` — re-opened**: implementation + fixes verified on `65cc394`, **awaiting owner re-closure adjudication** (never count the premature 2026-10-16 closure) |
+
+## Re-closure adjudication (2026-10-16, owner)
+
+Owner re-reviewed the review-round record (BLOCKER-1 low-s recid-flip fix + TC-VC-027/028
+regression gates; JVM 37/37, real-device 6/6 and E2E `ALL VECTORS PASS`, all on fix revision
+`65cc394`) and adjudicates **T1.4 closed `[x]` as of 2026-10-16**. The premature 2026-10-16
+closure (`0ee9370`) is retired and never counts as a closure event. Evidence: this file
+§Review round + `evidence/` (JVM XML ×8 across two revisions, device XML/pb ×3 runs + decoded
+text). This adjudication satisfies T1.5 hard-gate 1 and unblocks the T1.5 iOS port.
+
+| Command | Exit | Observed result |
+| --- | --- | --- |
+| `git log --oneline -2` (main) | 0 | `04aead8` Merge branch 'feature/T1.4-fix-recid-normalization' into main; `3b8f67e` docs(T1.4): review round — spec/skill/plan amendments, validation record, evidence |
+| T1.4 overall | **`[x]` verified 2026-10-16 (owner re-closure adjudication)** — implementation + review-round fixes verified on `65cc394` (JVM 37/37, device 6/6, E2E `ALL VECTORS PASS`); the premature closure `0ee9370` is retired; see §Re-closure adjudication |
