@@ -1,0 +1,46 @@
+# T1.5 — extra workspace checks (Release configuration, device SDK) — 2026-10-17
+#
+# WHY: the T1.5 gates build the VaultCore pod in Debug for the simulator. EAS/TestFlight builds are
+# Release, and the eventual device test run builds for the device SDK, so both configurations were
+# exercised locally to find problems before they surface there.
+#
+# Host: macOS 26.2 (25C56) arm64; Xcode 26.5 (17F42).
+#
+# CHECK 1 — Release configuration (simulator):
+#   $ xcodebuild -workspace ios/NexVault.xcworkspace -scheme VaultCore -configuration Release \
+#       -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#       -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
+#   -> exit 65; 0 compiler errors; ** BUILD FAILED **
+#   Failing command: PhaseScriptExecution [CP] Copy XCFrameworks (target hermes-engine,
+#                    Release-iphonesimulator)
+#   rsync error: Pods/hermes-engine/destroot/Library/Frameworks/universal/hermesvm.xcframework/
+#                ios-arm64_x86_64-simulator/*: (l)stat: No such file or directory
+#   The build aborts in this React Native prebuilt-artifact phase before VaultCore is even compiled
+#   (no VaultCore compile lines in the log).
+#
+# CHECK 2 — device SDK (Debug, unsigned):
+#   $ xcodebuild -workspace ios/NexVault.xcworkspace -scheme VaultCore -destination 'generic/platform=iOS' \
+#       -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+#   -> exit 65; 0 compiler errors; ** BUILD FAILED **
+#   rsync error: Pods/ReactNativeDependencies/framework/packages/react-native/
+#                ReactNativeDependencies.xcframework/ios-arm64/*: (l)stat: No such file or directory
+#   Local Pods tree holds only the Debug/simulator variants of these React Native prebuilt pods
+#   (Pods/hermes-engine/destroot/... has universal+macosx, no ios slice dir; the
+#   ReactNativeDependencies framework/ tree is absent).
+#
+# CHECK 3 — attempts to isolate a Release compile of just the VaultCore target (both dead ends,
+#           recorded so nobody repeats them):
+#   $ xcodebuild -project ios/Pods/Pods.xcodeproj -target VaultCore -configuration Release ...
+#     -> exit 74: "Packages are not supported when using legacy build locations, but the current
+#        project has them enabled."
+#   $ ... -derivedDataPath /tmp/vc-dd ...
+#     -> exit 64: "The flag -scheme, -testProductsPath, or -xctestrun is required when specifying
+#        -derivedDataPath."
+#
+# INTERPRETATION
+# - Nothing here involves vault-core, P256K or the podspec: both failures are React Native
+#   prebuilt-artifact script phases.
+# - Debug/simulator remains fully green: pod build 0 errors, suite 19/19, full app BUILD SUCCEEDED.
+# - Consequence to fix before a Release/EAS build or the device test run: the local Pods tree needs
+#   the Release (hermes-engine) and device (ReactNativeDependencies) slices. Registered as T1.5-H8
+#   so it is not silently lost; it is NOT a T1.5 deliverable.

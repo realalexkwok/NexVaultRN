@@ -380,16 +380,34 @@ Status: `[~]` — Linux-side checks green; compile/device evidence pending
 
 Evidence directory: none yet — xcresult/device artefacts belong to the Mac session (NIT-3 pattern).
 
+### Task 6 follow-up (Mac) — out-of-gate configuration checks (Release, device SDK)
+
+The T1.5 gates build Debug/simulator only, while EAS/TestFlight builds are Release and the device
+run needs the device SDK, so both were exercised:
+
+| Check | Command | Exit | Observed result |
+| --- | --- | --- | --- |
+| Release (simulator) | `xcodebuild -scheme VaultCore -configuration Release …` | 65 | 0 compiler errors; **BUILD FAILED** inside the `hermes-engine` script phase `[CP] Copy XCFrameworks`: `rsync … destroot/…/hermesvm.xcframework/ios-arm64_x86_64-simulator/*: No such file or directory` — aborts before VaultCore is compiled |
+| Device SDK (Debug, unsigned) | `xcodebuild -scheme VaultCore -destination 'generic/platform=iOS' …` | 65 | 0 compiler errors; **BUILD FAILED** at `ReactNativeDependencies.xcframework/ios-arm64/*: No such file or directory` — the local Pods tree holds only the Debug/simulator variants of React Native's prebuilt pods |
+| Isolated Release target build | `-project Pods.xcodeproj -target VaultCore` (with/without `-derivedDataPath`) | 74 / 64 | dead ends: "Packages are not supported when using legacy build locations" / "-derivedDataPath requires -scheme"; recorded so nobody repeats them |
+
+Neither failure touches vault-core, P256K or the podspec — both are React Native prebuilt-artifact
+script phases — and both must be resolved before a **Release/EAS build** or the **device test run**
+(hence the device gate now has two independent blockers: no iPhone attached, and the missing device
+slice). Registered as **T1.5-H8**.
+
+Evidence: `evidence/workspace-config-checks-2026-10-17.txt`.
 ### Handoff list (adjudicated by the next planning round)
 
 | # | Item | Status 2026-10-16 | Disposal |
 | --- | --- | --- | --- |
-| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open** (the only attached device is an offline iPad 8th gen, not an iPhone) | `[~]` partially closed | Run the same `xcodebuild test` against the pinned iPhone UDID, then MAN-012/013; only then does the B.4 manual side exist |
+| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open** — two independent blockers: the only attached device is an offline iPad 8th gen (not an iPhone), and the device-SDK build currently fails on a missing React Native prebuilt slice (T1.5-H8) | `[~]` partially closed | Fix T1.5-H8, attach a trusted iPhone, run the same `xcodebuild test` against its UDID, then MAN-012/013; only then does the B.4 manual side exist |
 | T1.5-H2 | JS→native bridge invocation (H8 class) | `[ ]` open | Replan → T4.1 dev-build screen smoke; the iOS device tests exercise the same code the AsyncFunction runs, honestly labelled |
 | T1.5-H3 | At-rest key wrap / Keychain / Secure Enclave | `[ ]` open | Replan → security-ios feature |
 | T1.5-H4 | mlock probe result + `[C]` labelling | `[ ]` open | MAN-013 on the iPhone; roadmap follow-up if the probe shows usable semantics |
 | T1.5-H5 | Swift compile risks (P256K call sites, podspec resource bundle, test-spec scheme name) | `[x]` resolved 2026-10-17 | Two artifact defects + one call-site error fixed with no vector/test change (Mac-session section); the prebuilt-artifact route is replaced by the SwiftPM source route — see T1.5-H6 |
 | T1.5-H6 | **R4 route change needs owner ratification**: `swift-secp256k1` moved from the prebuilt CocoaPods xcframework to the **SwiftPM source build** of the same exact version 0.23.2 (tag `e70a10e`), because the prebuilt artifact cannot be loaded by Xcode 26.5 (two defects above). Driven by the handoff mandate to make the port compile; **owner was asked twice via `ask_user_question` in the Mac session and did not answer (both calls timed out)**, so the change is applied provisionally and recorded here rather than silently | `[ ]` open — owner decision | Ratify (amend tech-stack.md + dependencies.md §6c as already drafted) or reject. If rejected, the only alternatives are: wait for an upstream fixed artifact (0.23.2 is newest), or author a local CocoaPods source podspec (more moving parts). Reverting is one podspec block + one `pod install` |
+| T1.5-H8 | **Release/device builds of the workspace abort in React Native prebuilt-artifact script phases** (hermes-engine Release-iphonesimulator slice; ReactNativeDependencies iphoneos slice missing from the local Pods tree) | `[ ]` open — environment plumbing, **not** a T1.5 deliverable | Fix before any Release/EAS build or the device test run (re-run the RN/Expo prebuilt-artifact step for all configurations, or build RN from source), then re-check with the two commands in the Task 6 follow-up table | AC-8 (device run) |
 | T1.5-H7 | **CI/EAS implication of the SPM route**: the package's build-tool plugin requires `-skipPackagePluginValidation -skipMacroValidation` (or an equivalent trust step) on every `xcodebuild` invocation; EAS Build does not run these flags today | `[ ]` open | Decide the trust policy before the first EAS iOS build (T4.x); document in the build profile or a config plugin |
 
 ## Task 7 — Board + git (owner-gated)
