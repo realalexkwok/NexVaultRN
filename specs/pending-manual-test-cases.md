@@ -19,6 +19,7 @@
 | MAN-008 | release build 远程调试隔离：Chrome DevTools / Metro 无法连接 | 连接失败；真钱流程调试不可用（R8） | TC-SA-007、TC-W3A-006 | Android release 真机 | ☐ 待走查 |
 | MAN-009 | 助记词不落盘审查：断网环境下全流程 + 本地文件/日志检查 | 无 plaintext 助记词/私钥落盘；日志零泄露（R5） | TC-VC-002/008 | 双端真机 + adb 检查 | ☐ 待走查 |
 | MAN-010 | 弱网/断链链交互：广播超时、回执超时、断网降级 | 提示可重试、无重复广播、无悬挂状态 | TC-W3A-002/005 | 真机 + 网络调节 | ☐ 待走查 |
+| MAN-011 | 真机内存卫生走查（TC-VC-005 人工侧）：1000 轮 import→derive→sign→destroy 期间以 `adb shell dumpsys meminfo` 采样 PSS/TOTAL，观察驻留曲线 | PSS/RSS 无单调增长（±5% 容差）；无 OOM/崩溃；destroy 后旧 handle 调用抛 E_VAULT_HANDLE_NOT_FOUND | TC-VC-005、TC-VC-025 | Pixel 6a / Android 17 | ☑ **通过** 2026-10-16（Pixel 6a / Android 17；`am instrument` 两次 `OK (6 tests)`；PSS 曲线非单调 62.8k→112.7k→92.6k kB，无 OOM/崩溃；±5% 驻留带由测试内 post-GC PSS 前后对比断言承载）。证据：`specs/features/2026-10-16-T1.4-vault-core-android-sign-digest/validation.md` Task 6.2 |
 
 ## 规则
 
