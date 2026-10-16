@@ -187,7 +187,7 @@ mirrors `src/main/java`; `// TC-VC-XXX` marker above each `@Test`):
 | `bip32Vector1` | `// TC-VC-013` | master + every V1 chain xprv/xpub match (test-side 78-byte serializer + Base58Check) |
 | `bip32Vector2` | `// TC-VC-013` | same for V2 (incl. `2147483647'` hardened chains) |
 | `bip32Vector3` | `// TC-VC-013` | same for V3 |
-| `bip32Vector4` | `// TC-VC-013` | public-only derivation: every V4 chain xpub matches |
+| `bip32Vector4` | `// TC-VC-013` | V4 = leading-zero-retention 向量（3 链）：master + `m/0'` + `m/0'/1'`，xprv 与 xpub 均断言（代码评审轮 2026-10-16：原 “public-only” 措辞有误） |
 | — (V5 excluded) | — | BIP-32 vector 5 = 16 malformed **extended keys** (serialization validity, not derivation); T1.3 has no production parser → Handoff T1.3-H7 |
 | `canonicalAddress` | `// TC-VC-003` | `Bip39.mnemonicToSeed(abandon×23 about, "")` → `deriveAddressBytes` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94` |
 | `secondAddressCrossCheck` | `// TC-VC-003` | `m/44'/60'/0'/0/1` equals the `@scure/bip32` /tmp cross-check value (recorded in `validation.md`) |
@@ -205,6 +205,8 @@ Vector transcription order: only after Task 0's sha256 + independent verificatio
 - `// TC-VC-017`: `importMnemonic` with the canonical 12-word bytes through the module path →
   non-empty handle → `deriveAddress(handle, "m/44'/60'/0'/0/0")` ==
   `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`; invalid path → typed code.
+  **代码评审轮 2026-10-16（MAJOR-1）：** 实装版本只断言模块注册并直调 `Bip39`/`Bip32`，**未**调用
+  `importMnemonic`/`deriveAddress`，故此处端到端意图未达成，改记 T1.3-H8。
 
 ### 6.3 Gradle runs
 

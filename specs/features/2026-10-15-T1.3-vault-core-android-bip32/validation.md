@@ -3,7 +3,8 @@
 > Feature spec (validation record). Branch: `feature/T1.3-vault-core-android-bip32`.
 > Status: **`[x]` verified 2026-10-15** — JVM vector gate 26/26, real-device instrumentation
 > 4/4 on Pixel 6a / Android 17 (`BUILD SUCCESSFUL in 4m 22s`), zeroization review recorded.
-> H3 is closed by the device run; the remaining open Handoffs are non-T1.3 items.
+> T1.3-H3（device smoke）由该次真机运行关闭；桥接事项（T1.2-H3，本文件记为 T1.3-H8）与其余
+> 编号 Handoff 仍开放。2026-10-16 代码评审轮修订了规格并复跑 JVM 门禁——见文末 §Code review round。
 > No task is marked `[x]` without command + observed output below.
 > Status scale (AGENTS.md B.4): `[x]` verified (both sides with evidence) · `[~]` implemented
 > but unverified · `[ ]` not started.
@@ -225,7 +226,7 @@ Status: `[x]`
 | R1 grep | `grep -rnEi 'mnemonic\|privateKey\|secretKey\|seedPhrase\|xprv' apps/mobile --include='*.ts' …` | 1 | zero matches |
 | R5 grep | `grep -rnE 'console\.(log\|warn\|error\|info)\(…\)'` | 1 | zero matches |
 | Kotlin log | code-level `Log.[vdiew]`/`println(`/`System.out` scan | 1 | zero real calls (only a KDoc sentence mentions `Log.*`) |
-| JCE provider | `grep -rn 'BouncyCastleProvider\|Security.addProvider'` src/main | 1 | only the KDoc note; **never registered** |
+| JCE provider | `grep -rn 'BouncyCastleProvider\|Security.addProvider'` src/main | 0 | **代码评审轮 2026-10-16（NIT-1）更正：原记录 exit `1` 与命令不符**——该命令命中 `Bip32.kt:21` 的 KDoc 句子（本次复核复现为 exit 0）；实质不变：从未注册 provider，仅注释命中 |
 | TypeScript | `cd apps/mobile && npx --no-install tsc --noEmit` | 0 | clean |
 
 Zeroization review (file:line, all `fill(0)` in `finally`):
@@ -243,6 +244,9 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | Fingerprint HASH160 buffers | `Bip32.kt:237-239` | PASS |
 | `writeSer256` BigInteger copy | `Bip32.kt:261` | PASS |
 | BC `BigInteger` private-key intermediates (immutable, GC-released) | `Node.key`, `offset`, `childKey` | **[C] caveat** — same class as the T1.2 String/BigInteger caveat; never [P] |
+| BC `HMac` interior (`inputPad`/`outputBuf`/`opadState`; fields verified with `javap` on 1.86) — XOR-derived copy of the chain code / master HMAC key | not wiped, GC-released only (BC exposes no wipe API) | **[C] caveat — added by the 2026-10-16 review round (MINOR-3); the original table listed only `BigInteger`** |
+| CKD serialization buffer `data` (`Bip32.kt:89-108`) | wiped on the success path (`:108`), but the `fill(0)` sits **outside** `finally`: if `hmacSha512` throws, the hardened-branch buffer (`ser256(parent.key)`) survives | **[C] residual — Handoff T1.3-H9** (patch: `val i = try { hmacSha512(parent.chainCode, data) } finally { data.fill(0) }`) |
+| EIP-55 `body.toByteArray(US_ASCII)` temp (`Bip32.kt:183`, public address hex) | unwiped temp; the derived `String`s are not wipeable | **[C] (public data only, no key material)** |
 
 ## Gate checklist
 
@@ -262,7 +266,8 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | T1.3-H5 | JS wrapper evidence via throwaway harness | `[ ]` open | T1.1 closure should absorb it as committed jest tests |
 | T1.3-H6 | BC 1.86 pin carried to T1.4 signing work | `[ ]` open | Replan to T1.4 |
 | T1.3-H7 | BIP-32 vector 5 (16 invalid extended keys) not gated | `[ ]` open | No production extended-key parser; absorb with a future xpub/parser feature |
-| T1.3-H8 | **JS→native bridge invocation still not exercised** (the instrumentation suite calls the same code the `AsyncFunction` runs, but not through the JS runtime) | `[ ]` open | Cover with a dev-build screen smoke (T4.1/UI items) or jest once the app wires the module |
+| T1.3-H8 | **JS→native bridge invocation still not exercised** (the instrumentation suite calls the same code the `AsyncFunction` runs, but not through the JS runtime) — **= the T1.2-H3 item; owner D3 "Implement" is not achieved** (review round 2026-10-16, MAJOR-1) | `[ ]` open | **Feasibility verdict (round-2 action, evidence below):** the "AppContext-backed AsyncFunction call" route is not available inside the library-module instrumentation APK — `AppContext` requires a `WeakReference<ReactApplicationContext>` + `ModulesProvider` + legacy `ModuleRegistry` (expo-modules-core@57.0.22 `AppContext.kt:50-54`), i.e. a full RN host. Practical route = a dev-build app screen smoke (T4.1/UI) or jest once the app imports the module ⇒ **recommend owner-approved replan**, not implement-in-T1.3 |
+| T1.3-H9 | Zeroization residuals found by the 2026-10-16 review: `data.fill(0)` outside `finally` (`Bip32.kt` `deriveChild`, hardened branch holds `ser256(parent.key)`); BC `HMac` pad state; EIP-55 ASCII temp | `[ ]` open | Zeroization-only edits, no derivation/API change. **Round-2 action:** the `data` patch was applied and the JVM gate re-ran green (26/26), but the device re-run could not be performed (no device attached), so the patch was **reverted** to keep the T1.3 device evidence on the exact committed revision — apply in T1.4 together with its device suite re-run | AC-5 |
 
 ## Status board
 
@@ -279,3 +284,46 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | Task 6 device smoke (H3) | `[x]` verified — Pixel 6a / Android 17, 4/4 tests |
 | Task 7 verification + zeroization review | `[x]` verified |
 | T1.3 overall | **`[x]` verified 2026-10-15** — JVM vector gate 26/26 + real-device instrumentation 4/4 + zeroization review |
+| Code review round (2026-10-16) | **specs amended + JVM gate re-run 26/26**; H9 patch applied→reverted (no device to re-verify), H8 = replan candidate; no production code change — findings/dispositions + round-2 actions in §Code review round | `specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md` §Code review round |
+
+## Code review round (2026-10-16, independent reviewer)
+
+Independent re-verification performed by the reviewer (not read from this file):
+
+| Check | Method / command | Observed result |
+| --- | --- | --- |
+| BIP-32 vector transcription | reviewer's own Python Keccak-f[1600] + secp256k1 + CKDpriv + Base58Check, run against the `OfficialChain(...)` strings parsed out of `Bip32Test.kt` | all **17** chains (V1 6 · V2 6 · V3 2 · V4 3) reproduce xprv **and** xpub; `keccak256("")`/`("abc")` and the 4 ERC-55 vectors pass; BIP-39 seed `5eb00bbd…9e38e4` and both addresses match |
+| BIP-32 source revision | `curl … bip-0032.mediawiki` + `sha256sum` | `e5e00a8289db2f681052cf24a745320afc225e66b25d1e489a7c884d2fc7f11f`, 315 lines — matches the Task-0 record; V3 = 2 chains, V4 = 3 chains, V5 = exactly **16** malformed extended keys |
+| JVM gate | `cd apps/mobile/android && ./gradlew :vault-core:testDebugUnitTest --rerun` | `BUILD SUCCESSFUL in 32s`, exit 0; `Bip32Test tests="10"` + `Bip39Test tests="16"`, 0 failures/errors = **26/26** |
+| Device gate | XML + `…/connected/debug/Pixel 6a - 17/test-result.textproto` | `scheduled_test_case_count: 4`, `test_status: PASSED`, device `10.42.0.139:41771` (pinned serial), XML `tests="4" … errors="0"`, `timestamp="2026-10-15T18:51:49"`; run mtime 02:48–02:52 (+08) precedes commit `848d62f` (02:52:30) |
+| BC 1.86 | `sha256sum` of the Gradle-cached jar vs Maven Central `.sha256`; `maven-metadata.xml`; OSV API | jar `2af190b3…b371f` both sides; `<lastUpdated>20260911045244`; **OSV version query for 1.86 → `{}` (0 vulns)**, package total 12 (matches §6b) |
+| HDKey / Base58 absence | `unzip -l bcprov-jdk18on-1.86.jar` | 0 `hdkey` entries, 0 `base58` entries — the deviation note is factually correct |
+| Dependency graph | `./gradlew :vault-core:dependencies --configuration debugRuntimeClasspath` | exactly one artifact: `org.bouncycastle:bcprov-jdk18on:1.86` |
+| Greps / TS | R1 grep · R5 grep · Kotlin `Log./println/System.out` · `tsc --noEmit` | exit 1 · exit 1 · exit 1 · `tsc_exit=0`; JCE two-pattern grep = exit 0 (KDoc only — NIT-1) |
+| Device logcat | grep over the preserved `logcat-*` artifacts | no key material (only test names containing "Mnemonic") |
+
+Findings and dispositions:
+
+| # | Severity | Finding | Disposition in this round |
+| --- | --- | --- | --- |
+| MAJOR-1 | 🔴 MAJOR | FR-8/AC-9 "end-to-end via the bridge" is not implemented — the device test calls `Bip39`/`Bip32` directly; T1.2-H3 (owner D3 "Implement") was re-deferred as T1.3-H8 without amending Goal/FR-8/AC-9 | **Specs amended**: Goal bullet, D3 row, Handoff re-read row, AC-9, `plan.md` Task 6.2, and an explicit T1.3-H8 row added to `requirements.md`. The code gap stays open pending owner adjudication (implement or replan) |
+| MINOR-1 | 🟡 MINOR | Several claims still contradicted the corrections: V5 gated ("vectors 1–5") in Goal/FR-7 heading/AC-3; BC credited with `Base58`/Base58Check in FR-7 + `tech-stack.md:41` + `dependencies.md §6b`; `plan.md` called V4 "public-only" | **Specs amended** in all six locations; the underlying facts were re-verified by the reviewer (jar + fetched BIP-32) |
+| MINOR-2 | 🟡 MINOR | `specs/vault-core.md` §2.4 omitted the committed `E_VAULT_PBKDF2_UNAVAILABLE` (`VaultExceptions.kt:15`; documented in T1.2 FR/AC-7) | **Spec amended**: §2.4 row + revision note (no signature/behaviour change) |
+| MINOR-3 | 🟡 MINOR | Zeroization inventory incomplete: `data.fill(0)` outside `finally` (`Bip32.kt:108`); BC `HMac` interior holds an XOR copy of the chain code; EIP-55 ASCII temp unwiped | **Zeroization table corrected above + Handoff T1.3-H9 registered.** No production code touched this round: a zeroization-only edit would need a fresh device run to keep B.4-2 two-sided evidence intact — fold into T1.4 |
+| MINOR-4 | 🟡 MINOR | Second-address cross-check tool not named in Task 0 although AC-2/Q4 said `@scure/bip32` | **Specs amended** (FR-7 item 3, AC-2 — recorded tool: stdlib Python); the value itself was independently confirmed by the reviewer |
+| NIT-1 | 🔵 NIT | Task-7 JCE row recorded exit `1`; the recorded command actually yields `0` | **Corrected in the Task-7 table above** |
+| NIT-2 | 🔵 NIT | Path parser accepts undocumented aliases (trim / leading zeros / mixed `'`+`h`) while AC-1 said "exactly" | **Documented** in FR-2 + AC-1 |
+| NIT-3 | 🔵 NIT | The device XML path quoted here is the same file T1.2's validation quotes; it now holds `tests="4"`, so T1.2's `tests="2"` evidence is no longer reproducible at its quoted path | Accepted (build-dir artifact, not committed). Future features should copy device evidence into a per-feature location |
+| NIT-4 | 🔵 NIT | Android 17 / API 37 and the `bluejay` build fingerprint are quoted without an artifact (`device-info.pb` carries id/model/manufacturer only; adb not attached at review time) | Accepted — identical device record to T1.2; next device session should capture `adb shell getprop ro.build.fingerprint` into the evidence dir |
+| NIT-5 | 🔵 NIT | "First run failed 3/10" is narrative-only (the failing XML was overwritten; the pre-fix code was never committed) | **Accepted as truthful.** `HARDENED.toInt().toLong() == -2147483648L`, so the old check rejected every non-negative account (a real production defect), and exactly the 3 tests that pass a valid path through `parseEthereumPath` would fail — matching 3/10. No test was weakened: both overflow negatives and both acceptance assertions remain |
+| NIT-6 | 🔵 NIT | Both `SKILL.md` copies still teach `HDKeyDerivation` / "vectors 1–5" / BC `Base58` (the harness auto-loads them for future sessions) | **Superseded-pointer added** to `requirements.md`; the two copies stay sha256-frozen as provenance evidence |
+
+No production source was modified in this round, so the device evidence revision is unchanged. The JVM XMLs quoted in Task 6 were regenerated by the reviewer's rerun (`2026-10-16T04:12Z`); the pre-rerun copies are preserved at `/tmp/t13_evidence_backup/`.
+
+### Round-2 actions (main agent, 2026-10-16)
+
+| Action | Command / evidence | Result |
+| --- | --- | --- |
+| H9 production patch | applied `val i = try { hmacSha512(parent.chainCode, data) } finally { data.fill(0) }`; `./gradlew :vault-core:testDebugUnitTest --rerun` | JVM green (26/26, `BUILD SUCCESSFUL in 13s`) — then **reverted** because `adb devices -l` was empty (two attempts, minutes apart), and a production edit without a matching device run would invalidate the T1.3 device evidence. `git checkout -- …/Bip32.kt` restored the committed revision; `Bip32Test 10/10` + `Bip39Test 16/16` re-confirmed on the reverted revision (`BUILD SUCCESSFUL in 7s`, XML mtime `2026-10-16 12:22`) |
+| H8 feasibility | `javap` unavailable → read the shipped sources instead: `node_modules/.pnpm/expo-modules-core@57.0.22_…/android/src/main/java/expo/modules/kotlin/AppContext.kt:50-54` | `class AppContext(modulesProvider: ModulesProvider, val legacyModuleRegistry: ModuleRegistry, reactContextHolder: WeakReference<ReactApplicationContext>)` — a real `ReactApplicationContext` is mandatory, so an AsyncFunction bridge test needs an RN host ⇒ H8 is a **replan** candidate (dev-build screen / jest), recorded above |
+| Evidence durability (NIT-3/NIT-4) | `evidence/` in this feature dir: `device-TEST-Pixel6a-2026-10-15.xml`, `device-test-result-2026-10-15.pb`, `device-run-2026-10-15.log`, `jvm-TEST-Bip32Test.xml`, `jvm-TEST-Bip39Test.xml`, `device-info.md` (serial/model/Android 17/API 37/fingerprint `google/bluejay/bluejay:17/CP2A.260705.006/15641320:user/release-keys`) | Device evidence now lives outside the gitignored build dirs; the fingerprint NIT-4 asked for is captured with its provenance |

@@ -6,6 +6,7 @@
 > Parent roadmap item: `plans/3-day-implementation-plan.md` Day 1 T1.3（关键路径）.
 > Skill: `nexvault-t1-3-vault-core-android-bip32`（also copied in this feature directory as
 > `SKILL.md`; both copies sha256 `1c9aec107f717a765e17a3c1da06fa3d62da0e20500c45b78842a2ca30e07ad7`）.
+> **代码评审轮 2026-10-16：** SKILL.md 内的 `HDKeyDerivation`/`HDKey`、「向量 1–5」与 BC `Base58` 假设已在实现期被证伪并修正——上述三点以本文件与 `plan.md` 为准（证据：`validation.md` §Code review round）。
 > Sibling files: `plan.md`, `validation.md`.
 > Session status: planning round **2026-10-15** wrote this record. Implementation starts only
 > after `GATE-MODEL-SWITCH` (owner switches the model to V4.1-Flash) and `GATE-R4-BC`
@@ -22,11 +23,14 @@ Implement **only** `deriveAddress(handle: string, path: string) → Promise<stri
 - address bytes = `keccak256(x‖y)[12..32)` of the uncompressed secp256k1 public key
   (`0x04‖x‖y`, 64 bytes after the prefix), keccak = **pre-NIST Keccak-256**, never NIST SHA3-256;
 - EIP-55 mixed-case checksum output;
-- automated gates: official **BIP-32 test vectors 1–5** (JVM), the original-repo canonical
+- automated gates: official **BIP-32 test vectors 1–4** (JVM; V5 = 16 malformed extended keys is deliberately outside the gate — Handoff T1.3-H7), the original-repo canonical
   anchor **`0x9858EfFD232B4033E47d90003D41EC34EcaEda94`** (TC-VC-003, JVM + real device), an
   independently cross-checked second address, keccak-256 sanity and EIP-55 vectors;
-- H3 closure: device instrumentation executes the full `importMnemonic → deriveAddress`
-  bridge path and asserts the canonical address.
+- H3 closure: device instrumentation on the physical Pixel 6a asserts the module surface and
+  reproduces the canonical address with the packaged wordlist.
+  **代码评审轮 2026-10-16（MAJOR-1）：** 实装的 device test 直接调用 `Bip39`/`Bip32`，**未**调用
+  `importMnemonic`/`deriveAddress` AsyncFunction，故上方「bridge path」口径**未达成**；
+  AsyncFunction/JS 桥接调用改记为 T1.3-H8（= T1.2-H3 事项），待 owner 裁定 implement 或 replan。
 
 `signDigest` / `destroy` stay T1.4; iOS stays T1.5; web keeps the fail-closed stub (R7).
 
@@ -38,7 +42,7 @@ Owner dispositions carried into this round (given 2026-10-15):
 | --- | --- | --- |
 | D1 | T1.2 Handoff H1 (`destroy` absent) | **T1.4** — `destroy` remains out of T1.3 scope |
 | D2 | T1.2 Handoff H2 (`specs/vault-core.md` conflicts) | **Amend the spec this round** (Task 1 scope, Q1) |
-| D3 | T1.2 Handoff H3 (JS-bridge invocation deferred) | **Implement** — the T1.3 device test is the canonical-address bridge path |
+| D3 | T1.2 Handoff H3 (JS-bridge invocation deferred) | **Implement** — the T1.3 device test is the canonical-address bridge path. **代码评审轮 2026-10-16：未达成**（device test 未调用模块函数）；改记 T1.3-H8，待 owner 裁定 |
 | D4 | T1.2 Handoff H6/H7 (T1.1 scaffold debt; `expo-doctor` patch drift) | **T1.1 closure** — out of T1.3 scope; T1.3 must not upgrade expo |
 | D5 | R4 dependency for secp256k1 | **Propose `org.bouncycastle:bcprov-jdk18on:1.86`**; a separate owner approval (GATE-R4-BC) precedes any `build.gradle` change |
 | D6 | Model switch | **GATE-MODEL-SWITCH** — stop after the spec files are committed; implementation runs only after the owner switches the model to V4.1-Flash |
@@ -76,7 +80,7 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
 | --- | --- | --- |
 | T1.2 `validation.md` H1 | No `destroy`; handle store lives per process | **Replan → T1.4** (owner D1). T1.3 reads the store but does not add destruction |
 | T1.2 `validation.md` H2 | `specs/vault-core.md` conflicts (Int vs UUID handle; checksum error split) | **Implement → Task 1** (owner D2; Q1 scope) |
-| T1.2 `validation.md` H3 | JS-bridge `importMnemonic` invocation deferred to T1.3 | **Implement → Task 6** device test: `importMnemonic → deriveAddress` == canonical address (owner D3; Q2/Q5) |
+| T1.2 `validation.md` H3 | JS-bridge `importMnemonic` invocation deferred to T1.3 | **Implement → Task 6** (owner D3; Q2/Q5) — **代码评审轮 2026-10-16：未达成**，实装 device test 直调密码核心；改记 T1.3-H8（补 AsyncFunction/JS smoke，或 owner 批准 replan） |
 | T1.2 `validation.md` H6 | T1.1 scaffold debt (no eslint/jest; `packages/vault-core` absent) | **Replan → T1.1 closure** (owner D4). T1.3 reuses the T1.2 throwaway-harness pattern for JS-wrapper evidence |
 | T1.2 `validation.md` H7 | `expo-doctor` expo `57.0.28` vs expected `~57.0.29` | **Replan → T1.1 closure** (owner D4). T1.3 must not upgrade expo |
 | AGENTS.md B.7-3 | iOS mlock semantics / native word-grid keyboard / vault-core C++-ification / Secure Enclave wrap | Unchanged — all remain roadmap stage-2 items; not touched by T1.3 |
@@ -97,7 +101,10 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
   `m/44'/60'/<account>'/0/<index>` (single-quote or `h` hardened spellings, nothing else;
   non-negative `account, index < 0x80000000`) and returns
   `[44|H, 60|H, account|H, 0, index]`. Any violation throws `E_VAULT_INVALID_PATH` with a fixed
-  template that may echo the path **syntax class** but never key material.
+  template that may echo the path **syntax class** but never key material. **已接受语法类（2026-10-16 评审
+  NIT-2 记录）：** 首尾空白被 trim；`<account>`/`<index>` 为 `\d+`（接受前导零，故
+  `m/44'/60'/007'/0/0` 与 `…/7'/…` 同索引）；`'` 与 `h` 硬化标记可混用。三者均为良性别名
+  （派生索引相同），不是白名单逃逸；AC-1 已同步。
 - **FR-3 — BIP32 core (BouncyCastle lightweight API + self-written CKD glue).** New
   `modules/vault-core/android/src/main/java/expo/modules/vaultcore/Bip32.kt` with `internal`
   functions: `parseEthereumPath`, `masterNode(seed)`, `deriveChild(node, index)`,
@@ -135,9 +142,11 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
   boundary and the no-key-material-logging rule are **[P]** within T1.3 scope.
 - **FR-7 — JVM vector gate (mandatory automated gate).** New
   `modules/vault-core/android/src/test/java/expo/modules/vaultcore/Bip32Test.kt`:
-  1. **BIP-32 official vectors 1–5** — seeds and chain lists as pinned in the "Vectors" section
+  1. **BIP-32 official vectors 1–4**（V5 在门禁之外，见下）— seeds and chain lists as pinned in the
+     "Vectors" section
      below; the test implements a test-side 78-byte serializer (version|depth|parentFingerprint|
-     childNumber|chainCode|key + Base58Check via BC `Base58`/`SHA256Digest`; `xprv=0x0488ADE4`,
+     childNumber|chainCode|key + **测试侧自写** Base58Check（BC 1.86 无 `Base58` 类，仅复用其
+     `SHA256Digest`——代码评审轮 2026-10-16，MINOR-1）; `xprv=0x0488ADE4`,
      `xpub=0x0488B21E`; parent fingerprint = first 4 bytes of `RIPEMD160(SHA256(pub))`) and
      asserts master + every listed chain for vectors 1–4. **Vector 5 is deliberately outside the
      T1.3 gate**: the fetched revision lists 16 invalid/malformed *extended keys* (version mismatch,
@@ -152,8 +161,10 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
   2. **Canonical address (TC-VC-003)** — `Bip39.mnemonicToSeed("abandon ×23 about", "")` →
      `deriveAddressBytes` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`
      (original-repo TC-SEC-005 anchor).
-  3. **Second-address cross-check** — `m/44'/60'/0'/0/1` value pinned via `@scure/bip32` in a
-     throwaway `/tmp` script (Q4; zero repo dependency change), then embedded in the test.
+  3. **Second-address cross-check** — `m/44'/60'/0'/0/1` value pinned by the Task-0 independent
+     cross-check recorded in `validation.md`（记录的工具为 stdlib-Python 实现，符合 plan Task 0 的
+     回退规则；Q4 的 `@scure/bip32` 未被记录为实际运行——代码评审轮 2026-10-16，MINOR-4；
+     zero repo dependency change），then embedded in the test.
   4. **Keccak sanity** (FR-4 vector) and **EIP-55** (four vectors above).
   5. **Negatives (TC-VC-016)** — `m/`, `m/49'/60'/0'/0/0`, non-numeric segments, hardened
      change/index (`m/44'/60'/0'/1'/0`), `account ≥ 2^31` → `E_VAULT_INVALID_PATH`; unknown
@@ -244,15 +255,15 @@ Provenance: original repo `/home/superguo/Projects/NexVault/core/core-security/s
 
 | AC | Content | Test/gate |
 | --- | --- | --- |
-| AC-1 | Path whitelist accepts exactly `m/44'/60'/<account>'/0/<index>` (`h` spelling allowed); all other shapes rejected | TC-VC-016 (JVM negatives) |
-| AC-2 | Canonical anchor reproduced: `abandon×23 about` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`; second address matches the `@scure/bip32` cross-check | TC-VC-003 (JVM) + TC-VC-017 (device) |
-| AC-3 | BIP-32 official vectors 1–4: master + every listed chain xprv/xpub match; vector 5 invalid derivations fail | TC-VC-013 (JVM, `BUILD SUCCESSFUL`) |
+| AC-1 | Path whitelist accepts exactly `m/44'/60'/<account>'/0/<index>` (`h` spelling allowed; plus the documented benign aliases of FR-2 — 首尾空白 trim、前导零、`'`/`h` 混用); all other shapes rejected | TC-VC-016 (JVM negatives) |
+| AC-2 | Canonical anchor reproduced: `abandon×23 about` @ `m/44'/60'/0'/0/0` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`; second address matches the Task-0 independent cross-check value（记录工具：stdlib Python——代码评审轮 2026-10-16，MINOR-4） | TC-VC-003 (JVM) + TC-VC-017 (device) |
+| AC-3 | BIP-32 official vectors 1–4: master + every listed chain xprv/xpub match（共 17 链）。Vector 5（16 条畸形扩展密钥）**不在门禁内**——无生产解析器；Handoff T1.3-H7（代码评审轮 2026-10-16 修订，MINOR-1） | TC-VC-013 (JVM, `BUILD SUCCESSFUL`) |
 | AC-4 | `keccak256("")` sanity vector and the four ERC-55 vectors pass | TC-VC-015 (JVM) |
 | AC-5 | R1/R5 greps clean; zeroization review lists every scratch buffer with file:line; `[C]` caveat for BC `BigInteger` intermediates recorded | TC-VC-018 review + CI-style greps |
 | AC-6 | Typed errors `E_VAULT_INVALID_PATH` / `E_VAULT_HANDLE_NOT_FOUND` / `E_VAULT_CRYPTO_INTERNAL`; messages contain no input fragments | TC-VC-016 (JVM) + TC-VC-017 (device) |
 | AC-7 | `specs/vault-core.md` H2 amendment applied and its diff recorded | Task 1 evidence |
 | AC-8 | R4: BouncyCastle package approved by the owner and the approval recorded before any `build.gradle` change; `specs/tech-stack.md` + `doc/dependencies.md` amended | GATE-R4-BC evidence (Task 3) |
-| AC-9 | Device instrumentation green on the physical Pixel 6a (Android 17): `BUILD SUCCESSFUL`, end-to-end canonical address via the bridge | TC-VC-017 (`connectedDebugAndroidTest` with `ANDROID_SERIAL` pinned) |
+| AC-9 | Device instrumentation green on the physical Pixel 6a (Android 17): `BUILD SUCCESSFUL`, `tests="4" failures="0"`, canonical anchor reproduced on-device with the packaged wordlist. **代码评审轮 2026-10-16：** 「via the bridge」未达成——AsyncFunction/JS 调用属 T1.3-H8，不在 AC-9 内 | TC-VC-017 (`connectedDebugAndroidTest` with `ANDROID_SERIAL` pinned) |
 | AC-10 | Zero new npm deps (`package.json` / `apps/mobile/package.json` / `pnpm-lock.yaml` diff); `tsc --noEmit` exit 0 | Task 7 static checks |
 | AC-11 | `validation.md` contains command + exit code + observed output for every task; no `[x]` without evidence | B.4/B.6 audit |
 | AC-12 | `GATE-MODEL-SWITCH` recorded before any code write (this planning session) | FR-12 / plan Task 0 |
@@ -278,3 +289,4 @@ Provenance: original repo `/home/superguo/Projects/NexVault/core/core-security/s
 | T1.3-H5 | JS wrapper evidence still uses the throwaway `/tmp` harness | Repo has no JS test runner (T1.2 H6) | T1.1 closure should absorb the harness as committed jest tests | AC-10 |
 | T1.3-H6 | BC version pin (1.86) must carry to T1.4 signing work | T1.4 uses the same provider | Replan to T1.4 | AC-8 |
 | T1.3-H7 | BIP-32 vector 5 (16 invalid extended keys) not gated | No production extended-key parser in T1.3; the vector tests serialization validity | Absorb when an xpub-export/parser feature exists (roadmap stage 2) | AC-3 |
+| T1.3-H8 | Module/JS-bridge invocation not exercised by the device test (= the T1.2-H3 item; owner D3 "Implement" not achieved) | 代码评审轮 2026-10-16：instrumentation test 直调 `Bip39`/`Bip32`，未调用 AsyncFunction/JS | Implement via an AppContext-backed AsyncFunction call or a dev-build JS smoke; otherwise owner-approved replan (e.g. T4.1) | AC-9 / TC-VC-017 |

@@ -2,6 +2,7 @@
 
 > Status: draft | Date: 2026-10-14 | Evidence: doc/research-report.md §3.5、§3.6（调研依据 nexvault-rn_dim07、dim02、cross_verification H11/C6）
 > 修订：2026-10-15（T1.3 / H2，owner 批准）——§2.1 `VaultHandle` 由 `number` 改为品牌化 `string`（对齐 T1.2 冻结实现：native `UUID.randomUUID().toString()`）；§2.2/§2.3 双端签名 `handle: Int` → `handle: String`；§2.4 合并 `E_VAULT_CHECKSUM_MISMATCH` 入 `E_VAULT_INVALID_MNEMONIC`；TC-VC-002 同步。证据：specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md Task 1。
+> 修订：2026-10-16（T1.3 代码评审轮 / MINOR-2）——§2.4 补登 T1.2 已实装但此前漏列的 `E_VAULT_PBKDF2_UNAVAILABLE`；无签名/行为变更。证据：同 validation.md §Code review round。
 
 ## 1. 目标（Goal 与范围）
 
@@ -92,6 +93,7 @@ public class VaultCoreModule: Module {
 | code | 含义 | 触发条件 | 备注 |
 |---|---|---|---|
 | `E_VAULT_INVALID_MNEMONIC` | 词不在 BIP-39 词表 / 词数非法 / checksum 不匹配（2026-10-15 T1.3/H2：原 `E_VAULT_CHECKSUM_MISMATCH` 已合并，实现侧 fail-closed 单一错误码） | importMnemonic | 错误消息不得回显任何词 [^6^] |
+| `E_VAULT_PBKDF2_UNAVAILABLE` | PBKDF2-HMAC-SHA512 不可用（JDK provider 与自写回退均失败） | importMnemonic | 固定模板；T1.2 已实装（`VaultExceptions.kt`）；2026-10-16 T1.3 代码评审补登（原 §2.4 漏列） |
 | `E_VAULT_INVALID_PATH` | 路径语法/范围非法 | deriveAddress/signDigest | 仅回显路径语法错误，不回显密钥 |
 | `E_VAULT_INVALID_DIGEST_LENGTH` | digest ≠ 32 字节 | signDigest | — |
 | `E_VAULT_HANDLE_NOT_FOUND` | handle 不存在或已销毁 | 全部 | 幂等 destroy 不抛此错 |
