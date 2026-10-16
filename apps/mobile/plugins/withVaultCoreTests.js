@@ -1,5 +1,11 @@
 const path = require('path');
-const { withPodfile } = require('@expo/config-plugins');
+// Import from `expo/config-plugins`, not `@expo/config-plugins`: under pnpm's isolated layout this
+// app has no node_modules edge to the latter, so the Xcode script phase that generates the prebuilt
+// Constants manifest (expo-constants -> @expo/config library path, i.e. without the Expo CLI's own
+// resolution hooks) aborted with INVALID_PLUGIN_IMPORT / "Cannot find module
+// '@expo/config-plugins'". `expo` is a declared dependency of this app and re-exports the identical
+// API. Evidence: specs/features/2026-10-16-T1.5-vault-core-ios-port/validation.md (plugin-import fix).
+const { withPodfile } = require('expo/config-plugins');
 
 /**
  * T1.5 (vault-core iOS port) — integrate the `modules/vault-core` iOS pod's test spec.

@@ -1,0 +1,44 @@
+# T1.5 — plugin-import defect found by the full-app link check (2026-10-17)
+#
+# Host: macOS 26.2 (25C56) arm64; Xcode 26.5 (17F42). Device: iPhone 17 simulator, iOS 26.5 (23F77).
+#
+# WHY the app target was built at all: the T1.5 gates only build the VaultCore pod. Building the app
+# end-to-end is the check that (a) the SwiftPM-based P256K still links into the app (React Native warns
+# about static SPM + static pods), and (b) the config plugin that creates the test scheme is loadable
+# by the library code path Xcode uses.
+#
+# BEFORE THE FIX — xcodebuild -scheme NexVault -> exit 65, 3 failed commands, 0 compiler errors:
+#   PhaseScriptExecution [CP-User] Generate app.config for prebuilt Constants.manifest (EXConstants)
+#   Libtool .../libReactAppDependencyProvider.a
+#   Text of the failing script:
+#     Node found at: /opt/homebrew/Cellar/node/25.2.0/bin/node
+#     Error: Cannot find module '@expo/config-plugins'
+#     Require stack:
+#     - /Users/superguo/Projects/NexVaultRN/apps/mobile/plugins/withVaultCoreTests.js
+#     - .../@expo/require-utils/build/load.js
+#     - .../@expo/config/build/Config.js
+#     - .../expo/config/index.js
+#     - .../expo-constants/scripts/build/getAppConfig.js
+#     { name: 'PluginError', isPluginError: true, code: 'INVALID_PLUGIN_IMPORT' }
+#   Root cause: under pnpm's isolated linker the app has no node_modules edge to
+#   @expo/config-plugins (it exists only inside .pnpm/@expo+config-plugins@57.0.10_...). The Expo CLI
+#   path tolerates that (its own resolution hooks), but the expo-constants script uses the plain
+#   @expo/config library path, which does not. Reproduced standalone:
+#     $ cd apps/mobile && node -e "require('./plugins/withVaultCoreTests.js')"
+#     MODULE_NOT_FOUND: Cannot find module '@expo/config-plugins'
+#
+# FIX — require the re-export from the app's own declared dependency (no new dependency, no R4
+# amendment):  const { withPodfile } = require('expo/config-plugins');
+#
+# AFTER THE FIX:
+#   $ node -e "require('./plugins/withVaultCoreTests.js')"        -> loaded OK (addVaultCoreTestSpec=function)
+#   $ npx --no-install expo config --type prebuild                 -> exit 0
+#   $ node -e "addVaultCoreTestSpec(<generated Podfile>, ...)"      -> unchanged (idempotent, declaration present)
+#   $ xcodebuild -workspace ios/NexVault.xcworkspace -scheme NexVault \
+#       -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#       -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
+#     -> xcodebuild exit=0, 0 "error:" lines, ** BUILD SUCCEEDED ** (raw log /tmp/nv-app-build-2.log)
+#
+# Interpretation: the app (Expo + React Native 0.86 + the vault-core pod) links with the SwiftPM-built
+# P256K, so the T1.5 route amendment holds beyond the pod target, and the "static SPM + static pod"
+# linker warning did not materialise. Not a substitute for a device run.

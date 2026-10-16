@@ -210,6 +210,44 @@ Durable evidence: `evidence/simulator-test-2026-10-17-run3.txt`,
 `evidence/simulator-mlock-probe-2026-10-17.txt`.
 
 
+### Task 3 follow-up (Mac) — the full-app link check found and fixed a plugin-import defect
+
+Building the whole app (`-scheme NexVault`) — the T1.5 gates only build the pod — is what proves the
+route amendment holds beyond the pod target. It failed first (exit 65, **0 compiler errors**) inside a
+script phase, with `apps/mobile/plugins/withVaultCoreTests.js` in the require stack:
+
+```
+Error: Cannot find module '@expo/config-plugins'
+Require stack:
+- apps/mobile/plugins/withVaultCoreTests.js
+- .../@expo/require-utils/build/load.js
+- .../@expo/config/build/Config.js
+- .../expo-constants/scripts/build/getAppConfig.js
+{ name: 'PluginError', isPluginError: true, code: 'INVALID_PLUGIN_IMPORT' }
+```
+
+Root cause: under pnpm's isolated linker the app has no `node_modules` edge to
+`@expo/config-plugins` (it lives only in `.pnpm/@expo+config-plugins@57.0.10_...`). The Expo **CLI**
+path tolerates that (its own resolution hooks), which is why `expo prebuild` / `expo config` worked,
+but the `expo-constants` script that generates the prebuilt Constants manifest uses the plain
+`@expo/config` library path, which does not — so every Xcode build of the app (EAS included) would
+have aborted there. Reproduced standalone: `node -e "require('./plugins/withVaultCoreTests.js')"` →
+`MODULE_NOT_FOUND: Cannot find module '@expo/config-plugins'`.
+
+Fix (**no new dependency, no R4 amendment**): import the re-export from the app's own declared
+dependency — `const { withPodfile } = require('expo/config-plugins');`.
+
+Verified after the fix: the plugin loads standalone (`addVaultCoreTestSpec` exported);
+`npx --no-install expo config --type prebuild` exits 0; the pure transform is idempotent on the
+generated Podfile (declaration present, output unchanged); and
+`xcodebuild -scheme NexVault ... build` → **exit 0, 0 `error:` lines, BUILD SUCCEEDED** — the app links
+with the SwiftPM-built P256K, so React Native's "static SPM + static pod" linker warning did not
+materialise here.
+
+Re-running the module suite after the fix (`VaultCore-Unit-Tests`, run 4) confirms no regression:
+**19 tests, 0 failures, TEST SUCCEEDED** (`evidence/simulator-test-2026-10-17-run4.txt`).
+
+Evidence: `evidence/app-build-plugin-import-fix-2026-10-17.txt`.
 ### Task 5 (Mac) — MAN-012 / MAN-013
 
 **Not executed — no reachable device.** The only attached iPhone (`iPaaad (2)`, 26.5,
@@ -357,8 +395,10 @@ Evidence directory: none yet — xcresult/device artefacts belong to the Mac ses
 ## Task 7 — Board + git (owner-gated)
 
 Status: `[~]` — **2026-10-17 (Mac session): the working tree was committed and the branch pushed.**
-Observed: `git commit` → `e620fb3` (implementation + evidence + spec/doc amendments) and `git push
-origin feature/T1.5-vault-core-ios-port` → `29892de..e620fb3` (branch in sync with origin, 0/0).
+Observed: `git commit` → `e620fb3` (implementation + evidence + spec/doc amendments), `f424d88`
+(MAN-012 in-test carrier) and `cd82ba7` (MAN-013 probe carrier); `git push origin
+feature/T1.5-vault-core-ios-port` → `29892de..e620fb3`, then `f424d88` and `cd82ba7` (branch in sync
+with origin, 0/0).
 **Not** executed: merging into `main`, the AGENTS.md Part A board row, and the T1.5 closure call —
 all pending the owner's explicit instruction after an independent review (Q6).
 
