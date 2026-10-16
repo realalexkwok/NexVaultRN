@@ -44,3 +44,19 @@
 # - Consequence to fix before a Release/EAS build or the device test run: the local Pods tree needs
 #   the Release (hermes-engine) and device (ReactNativeDependencies) slices. Registered as T1.5-H8
 #   so it is not silently lost; it is NOT a T1.5 deliverable.
+#
+# MECHANISM (inspected while diagnosing)
+# - hermes-engine.podspec sets prepare_command = create-dummy-hermes-xcframework.sh: `pod install`
+#   plants a *dummy* hermesvm.xcframework and the real one is swapped in by a script phase
+#   ("[Hermes] Replace Hermes for the right configuration, if needed") during the build. Observed
+#   now: Pods/hermes-engine/destroot/Library/Frameworks/universal/ is EMPTY (consumed by the Debug
+#   builds), consistent with a Release build finding no slice.
+# - The same podspec documents RN's PRODUCTION handling ("even reinstalling pods with the PRODUCTION
+#   flag turned on does not change the version of hermes that is downloaded"), i.e. the release
+#   artifact is selected at pod-install time via the documented `PRODUCTION=1 pod install` flow.
+# - Fix direction for T1.5-H8: re-create the pods for the configuration being built (e.g.
+#   `PRODUCTION=1 pod install` before a Release/EAS build) instead of building Release on top of a
+#   Debug-installed Pods tree; the device (iphoneos) slice of ReactNativeDependencies needs the same
+#   treatment. Deliberately not attempted here: switching the Pods tree to PRODUCTION would
+#   invalidate the green Debug evidence above, so it belongs to the round that needs a Release or
+#   device build.
