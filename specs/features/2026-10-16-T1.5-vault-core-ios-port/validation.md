@@ -11,7 +11,7 @@
 >
 > Session status 2: **Mac session 2026-10-17 (HKT) / 2026-10-16 19:2x UTC** — MAC-HANDOFF.md was
 > executed on the owner's Mac (macOS 26.2 arm64, **Xcode 26.5 / Swift 6.3.2**): the module now
-> **compiles** and the XCTest suite is **18/18 green on the pinned iOS 26.5 simulator** (section
+> **compiles** and the XCTest suite is **19/19 green on the pinned iOS 26.5 simulator** (section
 > "Mac session" below). The authoritative real-device gate is still open (the attached iPhone was
 > offline), and the P256K integration route was amended (needs owner ratification — **T1.5-H6**),
 > so T1.5 stays `[~]`.
@@ -189,6 +189,25 @@ Durable evidence: `evidence/simulator-test-2026-10-17-run2.txt`,
 `evidence/simulator-memory-walk-2026-10-17.txt`. This is **auxiliary** (simulator) evidence: the
 MAN-012 row stays ☐ 待走查 until the walk runs on a physical iPhone with an Instruments residency
 curve, and the `AsyncFunction` bridge path remains T1.5-H2 → T4.1.
+**Same round: MAN-013 carrier added (mlock probe).** MAN-013 asks for a one-line `mlock`/`munlock`
+probe on a test page with the result recorded. Added `Tests/MlockProbeTests.swift` so the raw result
+and errno land in the xcresult instead of a terminal transcript: it page-aligns a `posix_memalign`
+buffer, calls `mlock` and then (only on success) `munlock`, attaches the report, and asserts only
+that the probe executed and captured a definite outcome — the MAN row accepts success *or*
+EPERM/ENOMEM, so nothing asserts that locking must succeed (no functional dependency: vault-core
+never calls `mlock`).
+
+Run 3 (`-resultBundlePath /tmp/VaultCore-Unit-Tests-3.xcresult`): **19 tests, 0 failures**;
+`MlockProbeTests` recorded `page size 16384 B, page-aligned true, mlock -> 0 (errno 0),
+munlock -> 0 (errno 0)`; the memory walk in the same run produced `30004736 ×7 then 29808128 ×3`
+(flat to −0.66%, non-monotonic).
+
+**This probe result is NOT the MAN-013 conclusion** — the row pins a physical iPhone (B.4-5) and the
+macOS host sandbox is not the iOS sandbox; the simulator run proves only that the carrier works.
+
+Durable evidence: `evidence/simulator-test-2026-10-17-run3.txt`,
+`evidence/simulator-test-xcresult-summary-2026-10-17-run3.json`,
+`evidence/simulator-mlock-probe-2026-10-17.txt`.
 
 
 ### Task 5 (Mac) — MAN-012 / MAN-013
@@ -299,6 +318,7 @@ Status: `[~]` — authored, **not run** (T1.5-H1)
 | `EcdsaTests` | probe KAT, six TC-VC-027 pinned signatures (byte-equal, normalized coverage asserted), determinism + canonical signature, 24-digest recovery (TC-VC-028), digest-length negatives, §2.4 code table |
 | `VaultStoreTests` | destroy wipe/idempotency, copy independence (MINOR-1), 1000-cycle loop |
 | `MemoryWalkTests` | MAN-012 carrier (added 2026-10-17, Mac session): 1000 × validate/PBKDF2 → put → derive → sign → evict, per-round oracle equality, in-test `phys_footprint` ±5% band, destroy idempotency |
+| `MlockProbeTests` | MAN-013 carrier (added 2026-10-17, Mac session): page-aligned `mlock`/`munlock` probe whose result + errno are attached to the xcresult; asserts only that the probe ran (either outcome is acceptable per the MAN row) |
 | `Vectors.swift` | mechanically transcribed oracle data (generator + Kotlin sha256s in the file header) |
 
 ## Task 5 — Manual side (MAN-012 / MAN-013)
@@ -326,7 +346,7 @@ Evidence directory: none yet — xcresult/device artefacts belong to the Mac ses
 
 | # | Item | Status 2026-10-16 | Disposal |
 | --- | --- | --- | --- |
-| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 18/18 on the pinned iOS 26.5 simulator); **real-device side still open** (the only attached device is an offline iPad 8th gen, not an iPhone) | `[~]` partially closed | Run the same `xcodebuild test` against the pinned iPhone UDID, then MAN-012/013; only then does the B.4 manual side exist |
+| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open** (the only attached device is an offline iPad 8th gen, not an iPhone) | `[~]` partially closed | Run the same `xcodebuild test` against the pinned iPhone UDID, then MAN-012/013; only then does the B.4 manual side exist |
 | T1.5-H2 | JS→native bridge invocation (H8 class) | `[ ]` open | Replan → T4.1 dev-build screen smoke; the iOS device tests exercise the same code the AsyncFunction runs, honestly labelled |
 | T1.5-H3 | At-rest key wrap / Keychain / Secure Enclave | `[ ]` open | Replan → security-ios feature |
 | T1.5-H4 | mlock probe result + `[C]` labelling | `[ ]` open | MAN-013 on the iPhone; roadmap follow-up if the probe shows usable semantics |
@@ -351,8 +371,8 @@ all pending the owner's explicit instruction after an independent review (Q6).
 | Task 1 R4 amendments + deployment target | `[x]` verified (docs/config) |
 | Task 2 Swift cores | `[~]` **compiled 2026-10-17** (Mac, 0 errors) and exercised by the passing simulator suite; real-device side pending |
 | Task 3 module wiring + podspec | `[~]` compile + `pod install` verified 2026-10-17; **integration route amended to the SwiftPM source build of the same pin (T1.5-H6, owner ratification pending)** |
-| Task 4 XCTest suites | `[~]` **run 2026-10-17: 17/17 oracle/unit tests**, then **18/18** after the MAN-012 carrier was added (same simulator); authoritative real-device run pending |
+| Task 4 XCTest suites | `[~]` **run 2026-10-17: 17/17 oracle/unit tests**, then **18/18** with the MAN-012 carrier and **19/19** with the MAN-013 probe carrier; authoritative real-device run pending |
 | Task 5 MAN-012/013 | `[ ]` registered, awaiting the iPhone session |
 | Task 6 verification + handoffs | `[~]` Linux + Mac automated checks green; device evidence pending |
 | Task 7 board + git | `[ ]` owner-gated |
-| T1.5 overall | **`[~]` — compiles and passes 18/18 on the iOS 26.5 simulator (2026-10-17); real-device gate + MAN-012/013 + owner ratification of the P256K route (T1.5-H6) still open** |
+| T1.5 overall | **`[~]` — compiles and passes 19/19 on the iOS 26.5 simulator (2026-10-17); real-device gate + MAN-012/013 + owner ratification of the P256K route (T1.5-H6) still open** |
