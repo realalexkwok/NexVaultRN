@@ -143,9 +143,7 @@ class VaultCoreModuleTest {
     val seed = Bip39.mnemonicToSeed(CANONICAL_MNEMONIC, "")
     val store = HandleStore()
     val handle = store.put(seed)
-    val stored = store.get(handle)
-    assertNotNull(stored)
-    val seedCopy = stored!!.copyOf()
+    val seedCopy = requireNotNull(store.copyOf(handle)) { "handle vanished after put" }
     try {
       val indices = Bip32.parseEthereumPath(CANONICAL_PATH)
       assertEquals(CANONICAL_ADDRESS, Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices)))
