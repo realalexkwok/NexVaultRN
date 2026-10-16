@@ -45,10 +45,10 @@ class VaultCoreModule : Module() {
 
     AsyncFunction("deriveAddress") Coroutine { handle: String, path: String ->
       withContext(Dispatchers.Default) {
-        // The seed stays native: only the public address string is returned (R1).
-        val seed = handleStore.get(handle) ?: throw HandleNotFoundException()
+        // The seed stays native: only the public address string is returned (R1). The store
+        // hands back an independent copy, so a concurrent destroy cannot zero it mid-derivation.
+        val seedCopy = handleStore.copyOf(handle) ?: throw HandleNotFoundException()
         val indices = Bip32.parseEthereumPath(path)
-        val seedCopy = seed.copyOf()
         try {
           Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices))
         } finally {
@@ -61,9 +61,8 @@ class VaultCoreModule : Module() {
       withContext(Dispatchers.Default) {
         // Fail fast before touching the store; the digest is a public tx hash (R1).
         Ecdsa.requireDigest32(digest)
-        val seed = handleStore.get(handle) ?: throw HandleNotFoundException()
+        val seedCopy = handleStore.copyOf(handle) ?: throw HandleNotFoundException()
         val indices = Bip32.parseEthereumPath(path)
-        val seedCopy = seed.copyOf()
         try {
           Ecdsa.signDigest(seedCopy, indices, digest)
         } finally {
@@ -74,8 +73,9 @@ class VaultCoreModule : Module() {
 
     AsyncFunction("destroy") Coroutine { handle: String ->
       withContext(Dispatchers.Default) {
-        // Evict first, then wipe: idempotent (a missing handle is a no-op, never an error).
-        handleStore.evict(handle)?.fill(0)
+        // The store evicts and wipes in one critical section: idempotent (a missing handle is
+        // a no-op, never an error) and race-free against an in-flight sign/derive.
+        handleStore.evict(handle)
         Unit
       }
     }

@@ -20,8 +20,10 @@ Implement **only** `signDigest(handle, path, digest32)` and `destroy(handle)` in
 
 - **`signDigest`** — RFC6979 deterministic ECDSA over secp256k1. Input: 32-byte digest
   (keccak256 of the serialized transaction, produced by web3-adapter — this module never
-  pre-hashes). Output: **65 bytes** `r(32) ‖ s(32) ‖ recid(1)` with
-  **recid = y-parity of R ∈ {0,1}** (spec: vault-core §2.1 取值 0/1) and **low-s normalization**
+  pre-hashes). Output: **65 bytes** `r(32) ‖ s(32) ‖ recid(1)` with **recid identifying the
+  recovery point** — R's y-parity, **flipped whenever low-s negates s** (review BLOCKER-1; the
+  earlier wording here claimed recid was unaffected, which was false) — so recid ∈ {0,1}
+  (spec: vault-core §2.1) and **low-s normalization**
   (`s > n/2 → s = n − s`, BIP146/EIP-2 style). Deterministic: same (handle, path, digest) →
   byte-identical output; the nonce is never externally supplied.
 - **`destroy`** — idempotent eviction of the handle-store entry followed by `fill(0)` of the
@@ -130,7 +132,7 @@ iOS stays T1.5; web keeps the fail-closed stub (R7); the JS→native bridge smok
   `k` from the DRBG; `R = G.multiply(k)` (BC point op only — no self-written curve math);
   `r = R.affineX mod n`; retry (h3) if `r == 0` **or `R.affineX ≥ n`** (keeps
   recid ∈ {0,1} recoverable) or `s = k.modInverse(n) · (z + r·d) mod n == 0`; then **low-s**:
-  `s > n/2 → s = n − s`; `recid = if (R.affineY.testBit(0)) 1 else 0`; output 32-byte BE r
+  `s > n/2 → s = n − s`; `recid = if (R.affineY.testBit(0)) 1 else 0`, **then flipped together with the low-s negation (`recid xor 1`) — BLOCKER-1**; output 32-byte BE r
   ‖ 32-byte BE s ‖ recid; `finally { drbg.wipe(); privKeyCopy.fill(0) }` — the caller-owned
   array is copied first and never passed straight into `BigInteger`.
 - **FR-4 — `signDigest(seed, pathIndices, digest32)`.** Derives the child node via the
@@ -226,8 +228,8 @@ iOS stays T1.5; web keeps the fail-closed stub (R7); the JS→native bridge smok
 | --- | --- | --- |
 | AC-1 | TS interface: 4 native declarations; guarded `signDigest`/`destroy` wrappers with machine-readable `error.code`; exact-65 ArrayBuffer return; digest fast-fail; harness executes both branches | FR-1 + /tmp harness evidence |
 | AC-2 | Probe vector KAT reproduced: d/digest → r/s/recid as pinned | TC-VC-020 (JVM) |
-| AC-3 | Determinism + format: same (seed, path, digest) twice → byte-identical; length 65; recid ∈ {0,1}; low-s | TC-VC-021 (JVM) + TC-VC-025 (device) |
-| AC-4 | E2E recovery: Kotlin r‖s == noble@2 compact output; viem `recoverPublicKey(yParity=recid)` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94` | TC-VC-022 + /tmp script (Task 7) |
+| AC-3 | Determinism + format: same (seed, path, digest) twice → byte-identical; length 65; recid ∈ {0,1}; low-s; **the public key recovered from (r,s,recid) equals the signing key, covering the normalizing branch** | TC-VC-021/TC-VC-027/TC-VC-028 (JVM) + TC-VC-025 (device) |
+| AC-4 | E2E recovery: for every pinned vector Kotlin's **full 65-byte signature** == noble@2 r‖s with an **independently trial-derived** recid (never read back out of the Kotlin test — MAJOR-1); viem `recoverPublicKey(yParity=recid)` → `0x9858EfFD232B4033E47d90003D41EC34EcaEda94` | TC-VC-022 + /tmp script (Task 7) |
 | AC-5 | destroy: idempotent; post-destroy ops throw `E_VAULT_HANDLE_NOT_FOUND`; 1000× loop no crash, store empty | TC-VC-024 (JVM) + TC-VC-025 (device) |
 | AC-6 | Typed errors `E_VAULT_INVALID_DIGEST_LENGTH` / `E_VAULT_INVALID_PATH` / `E_VAULT_HANDLE_NOT_FOUND` / `E_VAULT_CRYPTO_INTERNAL`; fixed templates, no fragments | TC-VC-023 (JVM) + TC-VC-025 (device) |
 | AC-7 | H9 patch applied early; both suites on the patched revision; zeroization review lists every scratch buffer with file:line; `[C]` caveats for BigInteger + BC HMac pad state | TC-VC-026 review + Task 5 diff |

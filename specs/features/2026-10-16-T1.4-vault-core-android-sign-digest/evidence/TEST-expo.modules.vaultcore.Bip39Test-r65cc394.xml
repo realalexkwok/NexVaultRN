@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="expo.modules.vaultcore.Bip39Test" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-16T13:58:24.653Z" hostname="superguo-SQM2270" time="0.135">
+  <properties/>
+  <testcase name="emptyWordlistFailsClosed" classname="expo.modules.vaultcore.Bip39Test" time="0.001"/>
+  <testcase name="vectorV1_abandonAbout" classname="expo.modules.vaultcore.Bip39Test" time="0.031"/>
+  <testcase name="emptyPassphraseDerivesDistinctVectorSeed" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="rejectsWrongWordCount" classname="expo.modules.vaultcore.Bip39Test" time="0.002"/>
+  <testcase name="vectorV8_onesEntropy21Words" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="vectorV2_legalWinner" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="vectorV3_letterAdvice" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="rejectsUnknownWord" classname="expo.modules.vaultcore.Bip39Test" time="0.003"/>
+  <testcase name="vectorV4_zooWrong" classname="expo.modules.vaultcore.Bip39Test" time="0.009"/>
+  <testcase name="rejectsChecksumMismatch" classname="expo.modules.vaultcore.Bip39Test" time="0.002"/>
+  <testcase name="vectorV5_abandonAgent" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="fallbackLoopMatchesVectorV1" classname="expo.modules.vaultcore.Bip39Test" time="0.013"/>
+  <testcase name="vectorV7_zeroEntropy15Words" classname="expo.modules.vaultcore.Bip39Test" time="0.01"/>
+  <testcase name="vectorEntropyAndChecksumMatchMnemonic" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="vectorV6_abandonArt" classname="expo.modules.vaultcore.Bip39Test" time="0.008"/>
+  <testcase name="wordlistHasExactly2048Words" classname="expo.modules.vaultcore.Bip39Test" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

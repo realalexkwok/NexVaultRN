@@ -40,9 +40,13 @@ Rejected as primary sources: Trust Wallet `wallet-core` skill (library banned �
    ArrayBuffer-only wrapper shape.
 2. **RFC6979 determinism**: same (handle, path, digest) → byte-identical output (TC-VC-004).
    Never accept an external nonce (k reuse leaks the private key).
-3. **recid ∈ {0,1}**: normalize to low-s first (`s > n/2 → s = n − s`, BIP146/EIP-2 style);
-   with low-s the recovery id equals the y-parity of R (`recid = R.y.testBit(0)`), so 0/1
-   semantics match `specs/vault-core.md` §2.1.
+3. **recid ∈ {0,1} identifies the recovery point** (review BLOCKER-1 corrected the original
+   rule here — it wrongly claimed recid is unaffected by normalization): start from the y-parity
+   of R, then normalize to low-s (`s > n/2 → s = n − s`) **and flip recid whenever s is negated**
+   — negating s negates the recovery point, exactly as libsecp256k1's recoverable signing does.
+   Verified by recovery, not by parity alone: the public key recovered from `(r, s, recid)` must
+   equal the signing key for every digest, and the pinned vector set must cover both the
+   normalizing and the non-normalizing branch.
 4. **Retry rules** (bitcoin-ecdsa skill): k must satisfy 1 ≤ k < n; retry the DRBG h3
    continuation if r == 0 or s == 0; cap retries and fail with `E_VAULT_CRYPTO_INTERNAL`.
 5. **BC lightweight API only** (`org.bouncycastle.crypto.*`); **never** register a JCE provider.
@@ -137,7 +141,8 @@ SHA256Digest) and point ops (`ECPoint.multiply`); write the DRBG glue yourself (
   - drbg loop: `R = G.multiply(k)`; `r = R.x mod n`; if `r == 0` → nextK; 
     `s = k.modInverse(n) * (z + r * d) mod n` with `z = BigInteger(1, digest32)`; if `s == 0`
     → nextK;
-  - low-s: if `s > n/2` then `s = n − s`; `recid = if (R.y.testBit(0)) 1 else 0`;
+  - low-s: `recid = if (R.y.testBit(0)) 1 else 0`; if `s > n/2` then `s = n − s` **and
+    `recid = recid xor 1`** (the flip is mandatory — the recovery point is negated);
   - output = 32-byte BE r ‖ 32-byte BE s ‖ recid byte;
   - `finally { drbg.wipe(); privKeyCopy.fill(0) }` — never pass the stored seed/privKey array
     directly into BigInteger without a copy.

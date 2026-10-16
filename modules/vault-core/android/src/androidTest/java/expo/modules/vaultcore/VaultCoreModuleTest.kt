@@ -5,7 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -84,21 +84,28 @@ class VaultCoreModuleTest {
     assertEquals("E_VAULT_INVALID_PATH", error!!.code)
   }
 
-  // TC-VC-025
+  // TC-VC-025 / TC-VC-027
   @Test
   fun signAndDestroyOnDevice() {
     val seed = Bip39.mnemonicToSeed(CANONICAL_MNEMONIC, "")
-    val digest = Bip32.keccak256(DIGEST_MESSAGE.toByteArray(Charsets.UTF_8))
-    val signature = Ecdsa.signDigest(seed, Bip32.parseEthereumPath(CANONICAL_PATH), digest)
     try {
-      assertEquals(65, signature.size)
-      val recid = signature[64].toInt()
-      assertTrue("recid must be 0 or 1 (got $recid)", recid == 0 || recid == 1)
-      assertEquals("on-device signature must equal the noble@2 cross-check", CANONICAL_SIGNATURE, signature.toHex())
+      val indices = Bip32.parseEthereumPath(CANONICAL_PATH)
+      // Both a non-normalizing and a normalizing (raw s > n/2 → recid flip) vector run on ART.
+      for ((message, expected) in PINNED_DEVICE_VECTORS) {
+        val digest = Bip32.keccak256(message.toByteArray(Charsets.UTF_8))
+        val signature = Ecdsa.signDigest(seed, indices, digest)
+        try {
+          assertEquals(65, signature.size)
+          val recid = signature[64].toInt()
+          assertTrue("recid must be 0 or 1 (got $recid)", recid == 0 || recid == 1)
+          assertEquals("on-device signature must equal the noble@2 cross-check", expected, signature.toHex())
+        } finally {
+          digest.fill(0)
+          signature.fill(0)
+        }
+      }
     } finally {
       seed.fill(0)
-      digest.fill(0)
-      signature.fill(0)
     }
 
     // destroy semantics, exercised on the exact store object the AsyncFunction uses.
@@ -106,12 +113,10 @@ class VaultCoreModuleTest {
     val stored = ByteArray(64) { index -> (index + 3).toByte() }
     val handle = store.put(stored)
     assertEquals(1, store.size())
-    val evicted = store.evict(handle)
-    assertNotNull("destroy must hand the stored seed back for wiping", evicted)
-    evicted!!.fill(0)
-    assertArrayEquals(ByteArray(64), evicted)
-    assertNull("the handle must be gone after destroy", store.get(handle))
-    assertNull("a second destroy must be a no-op, not an error", store.evict(handle))
+    assertTrue("first destroy must evict", store.evict(handle))
+    assertArrayEquals("destroy must wipe the stored seed in place", ByteArray(64), stored)
+    assertNull("the handle must be gone after destroy", store.copyOf(handle))
+    assertFalse("a second destroy must be a no-op, not an error", store.evict(handle))
     assertEquals(0, store.size())
   }
 
@@ -138,9 +143,7 @@ class VaultCoreModuleTest {
     val seed = Bip39.mnemonicToSeed(CANONICAL_MNEMONIC, "")
     val store = HandleStore()
     val handle = store.put(seed)
-    val stored = store.get(handle)
-    assertNotNull(stored)
-    val seedCopy = stored!!.copyOf()
+    val seedCopy = requireNotNull(store.copyOf(handle)) { "handle vanished after put" }
     try {
       val indices = Bip32.parseEthereumPath(CANONICAL_PATH)
       assertEquals(CANONICAL_ADDRESS, Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices)))
@@ -155,7 +158,7 @@ class VaultCoreModuleTest {
     } finally {
       seedCopy.fill(0)
     }
-    store.evict(handle)?.fill(0)
+    assertTrue(store.evict(handle))
   }
 
   /**
@@ -186,11 +189,16 @@ class VaultCoreModuleTest {
     const val MEASURED_ROUNDS = 1000
     const val CANONICAL_ADDRESS = "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     const val DIGEST_MESSAGE = "nexvault-test-vector"
-    // Pinned by /tmp/t14-xcheck (noble@2 compact r‖s + recid=1, viem-recovered canonical address);
-    // identical to the JVM EcdsaTest TC-VC-022 literal.
-    const val CANONICAL_SIGNATURE =
-      "36eba619abb6f0c6aea1f504ca79613270ef55b72313036ce574dad1e87106ea" +
-        "72aa8de93f14ca6e5921b06ece96fe727fc6f4573d70090cc9556f25745f4595" +
-        "01"
+    // Pinned by /tmp/t14-xcheck (noble@2 compact r‖s + viem trial recovery); identical to the JVM
+    // EcdsaTest literals. The second vector's raw s > n/2, so its recid is the flipped one
+    // (review BLOCKER-1) and its s also starts with a 0x00 byte (leading-zero encoding).
+    val PINNED_DEVICE_VECTORS = listOf(
+      "nexvault-test-vector" to
+        ("36eba619abb6f0c6aea1f504ca79613270ef55b72313036ce574dad1e87106ea" +
+          "72aa8de93f14ca6e5921b06ece96fe727fc6f4573d70090cc9556f25745f4595" + "01"),
+      "nexvault-test-vector-2" to
+        ("631e7a792cece9ea44f574fe6dba7e1ce1b62fa462d53767801980a37a9a79bd" +
+          "00783a080ad2c9d3881163b882c5fb2c9f890dc470623a10ab8c7c948f1bbe38" + "00"),
+    )
   }
 }

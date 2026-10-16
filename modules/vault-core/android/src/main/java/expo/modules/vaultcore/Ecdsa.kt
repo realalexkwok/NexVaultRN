@@ -15,9 +15,11 @@ import org.bouncycastle.crypto.params.KeyParameter
  * - **all curve arithmetic stays in BouncyCastle** (`CustomNamedCurves` secp256k1 +
  *   `ECPoint.multiply`) — spec: vault-core §2.2 forbids self-written point math;
  * - output is 65 bytes `r(32) ‖ s(32) ‖ recid(1)` with **low-s normalization**
- *   (`s > n/2 → s = n − s`, BIP146/EIP-2 style) and **recid = y-parity of R ∈ {0,1}**
- *   (spec: vault-core §2.1); when `x(R) ≥ n` the nonce is retried instead of widening recid
- *   to 2/3, so the frozen {0,1} contract holds;
+ *   (`s > n/2 → s = n − s`, BIP146/EIP-2 style); **recid identifies the recovery point** —
+ *   the y-parity of R, flipped whenever low-s negates s (negating s negates the recovery point,
+ *   exactly as libsecp256k1's recoverable signing does), so recid ∈ {0,1} (spec: vault-core
+ *   §2.1); when `x(R) ≥ n` the nonce is retried instead of widening recid to 2/3, so the
+ *   frozen {0,1} contract holds;
  * - the nonce is never supplied externally — k reuse would leak the private key (skill
  *   invariant 2);
  * - `java.math.BigInteger` intermediates (d, z, k, r, s, R coordinates) are immutable and not
@@ -95,16 +97,19 @@ internal class Rfc6979Drbg(x: ByteArray, digest32: ByteArray) {
   }
 
   /**
-   * Next candidate nonce (32-byte BE) per the h-loop; k ∈ [1, n−1] is guaranteed by the
-   * `mod n` + zero check, with the §3.2 h.3 continuation applied internally.
+   * Next candidate nonce (32-byte BE) per the h-loop: RFC 6979 §3.2 h.3 accepts only
+   * 1 ≤ k ≤ n−1 and otherwise continues the DRBG (no `mod n` reduction), with the h.3
+   * continuation applied internally.
    */
   internal fun nextK(): ByteArray {
     while (true) {
       val candidate = hmac(key, value)
       System.arraycopy(candidate, 0, value, 0, macLength)
-      val k = BigInteger(1, candidate).mod(secp256k1.n)
+      val k = BigInteger(1, candidate)
       candidate.fill(0)
-      if (k.signum() > 0) {
+      // RFC 6979 §3.2 h.3: accept only 1 <= k <= n-1, else continue the DRBG. Reducing mod n
+      // would diverge from libsecp256k1/noble on the T >= n branch (review NIT-2).
+      if (k.signum() > 0 && k < secp256k1.n) {
         return toFixedLength(k)
       }
       retry()
@@ -232,11 +237,13 @@ internal object Ecdsa {
             drbg.retry()
             continue
           }
-          // low-s normalization (BIP146/EIP-2 style) — R and therefore recid are unaffected.
+          var recid = if (point.affineYCoord.toBigInteger().testBit(0)) 1 else 0
+          // Low-s normalization (BIP146/EIP-2 style) negates s, which negates the recovery point:
+          // recid must flip with it (libsecp256k1 does the same) — review BLOCKER-1.
           if (s > halfOrder) {
             s = secp256k1.n.subtract(s)
+            recid = recid xor 1
           }
-          val recid = if (point.affineYCoord.toBigInteger().testBit(0)) 1 else 0
           val rBytes = toFixedLength(r)
           val sBytes = toFixedLength(s)
           try {

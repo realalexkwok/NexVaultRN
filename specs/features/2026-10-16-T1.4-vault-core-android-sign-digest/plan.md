@@ -125,7 +125,7 @@ Algorithm checklist (must):
   `n = CustomNamedCurves.getByName("secp256k1").n`; loop: `R = G.multiply(k)` (BC point op);
   `r = R.affineX mod n`; retry if `r == 0` **or `R.affineX ≥ n`** (keeps recid ∈ {0,1}
   recoverable) or `s = k.modInverse(n) · (z + r·d) mod n == 0`; **low-s**:
-  `s > n/2 → s = n − s`; `recid = if (R.affineY.testBit(0)) 1 else 0`; output
+  `s > n/2 → s = n − s`; `recid = if (R.affineY.testBit(0)) 1 else 0` **flipped with the low-s negation (`recid xor 1`)**; output
   `r(32BE) ‖ s(32BE) ‖ recid`; `finally { drbg.wipe(); privKeyCopy.fill(0) }`.
 - **signDigest** — derive the child node via `Bip32.masterNode`/`deriveChild`; normalize
   `Node.key.toByteArray()` to 32-byte BE (strip the 33-byte leading sign byte); wipe key
@@ -199,7 +199,10 @@ mirrors `src/main`; `// TC-VC-XXX` marker above each `@Test`):
 | `apiDeterminismAndFormat` | TC-VC-021 | canonical seed @ `m/44'/60'/0'/0/0` + digest keccak256("nexvault-test-vector") twice → byte-identical; length 65; recid ∈ {0,1}; s ≤ n/2 |
 | `e2ePinnedSignature` | TC-VC-022 | same signature equals the r‖s‖recid values pinned by the /tmp noble/viem script (Task 7 — transcribe only after the script ran) |
 | `rejectsInvalidDigestLength` | TC-VC-023 | digest 0/31/33 bytes → `E_VAULT_INVALID_DIGEST_LENGTH`; bad path → `E_VAULT_INVALID_PATH` (via `Bip32`) |
-| `destroyEvictsWipesIdempotent` | TC-VC-024 | `HandleStore`: put → evict returns bytes now zeroed; get → null; second evict → null (no throw); 1000× put/evict loop → size 0, process alive |
+| `destroyEvictsWipesIdempotent` | TC-VC-024 | `HandleStore`: put → evict wipes in place and returns true; `copyOf` → null; second evict → false (no throw); 1000× put/evict loop → size 0, process alive |
+| `copyOfIsIndependentOfTheStoredBuffer` | TC-VC-024 | `copyOf` hands out a distinct array; wiping the copy leaves the stored seed readable (review MINOR-1) |
+| `pinnedVectorsWithAndWithoutLowSNormalization` | TC-VC-027 | 6 pinned vectors (3 normalizing / 3 not): exact 65-byte equality + recovery ⇒ signing key; vector -2's `s` starts with `0x00` (BLOCKER-1 gate) |
+| `recidRecoversTheSigningKeyForManyDigests` | TC-VC-028 | 24 digests: BC-based recovery from (r,s,recid) equals the signer's public key; pinned table must cover both branches |
 
 ### 6.2 Instrumentation `VaultCoreModuleTest.kt` (device, TC-VC-025)
 
@@ -208,8 +211,11 @@ mirrors `src/main`; `// TC-VC-XXX` marker above each `@Test`):
 - `signAndDestroyOnDevice` — canonical seed/path/digest via `Bip39`/`Bip32`/`Ecdsa`
   (direct calls, honestly labeled): 65 bytes, recid ∈ {0,1}, r‖s equals the pinned values;
   `HandleStore` evict + wipe + idempotency on-device.
-- `thousandRoundLoop` — 1000× import→derive→sign→destroy; `/proc/self/status` VmRSS
-  before/after (3-sample post-GC average), tolerance ±5%; no crash.
+- `thousandRoundLoop` — 1000× import→derive→sign→destroy; **post-GC settled PSS**
+  (`Debug.MemoryInfo.totalPss`, 3-sample average) after a 100-round warm-up, tolerance ±5%;
+  no crash. (Superseded wording: this task originally specified `/proc/self/status` VmRSS; the
+  2026-10-16 review round records the protocol change — see the trailing note and validation.md
+  §Review round. The ±5% tolerance is unchanged.)
 - The existing 4 tests stay green.
 - **Honest scope label (FR-9):** this exercises the same code the AsyncFunction runs, **not**
   through the JS runtime — the bridge smoke is T1.3-H8, owner-adjudicated replan → T4.1. Never
@@ -238,8 +244,12 @@ evidence (Q3).
   from the JVM run) byte-equals noble's compact; then **await** viem 2.56.9
   `recoverPublicKey({hash, signature: {r, s, yParity: recid}})` → address ==
   `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`.
-- Record script + full output in `validation.md`; transcribe the pinned r/s/recid into
-  TC-VC-022 only after this run (never transcribe blind).
+- Record script + full output in `validation.md`; transcribe the pinned full 65-byte signature
+  into the JVM test only after this run (never transcribe blind).
+- **Review round (MAJOR-1) amendment:** the script must derive the recovery id **independently**
+  (trial yParity 0/1 against the address derived from the private key) and compare the **full
+  65-byte** signature for **every** pinned vector — never parse a recid back out of `EcdsaTest.kt`;
+  that is what made the original check blind to the BLOCKER-1 rule error.
 
 ## Task 8 — Verification, MAN-011, evidence, Handoff
 
@@ -292,7 +302,7 @@ cd apps/mobile && npx --no-install tsc --noEmit                    # exit 0
 ## Edge cases & failure modes
 
 - digest ≠ 32 → `E_VAULT_INVALID_DIGEST_LENGTH` before any store access (module + core).
-- k out of range / r==0 / s==0 / x(R)≥n → h3 retry; 64-attempt cap → `E_VAULT_CRYPTO_INTERNAL`.
+- k out of range / r==0 / s==0 / x(R)≥n → RFC 6979 §3.2 h.3 continuation (reject `bits2int(T) ≥ n`, never reduce mod n — review NIT-2); 64-attempt cap → `E_VAULT_CRYPTO_INTERNAL`.
 - `BigInteger.toByteArray()` sign byte → normalize to 32-byte BE.
 - destroy during in-flight derive/sign → stored seed evicted+wiped; in-flight op finishes on
   its own copy; later calls throw `E_VAULT_HANDLE_NOT_FOUND`.
