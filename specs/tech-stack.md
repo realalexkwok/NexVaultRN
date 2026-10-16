@@ -38,6 +38,7 @@
 | pnpm | ≥9（isolated 安装） | 工具链 | 异常时回退 hoisted + 双层屏蔽 |
 | modules/vault-core | 自写（Kotlin+Swift） | modules/ | 四方法闭环；roadmap：libsecp256k1 v0.7.0 经 CMake |
 | junit / androidx.test（modules/vault-core 测试） | junit 4.13.2；androidx.test.ext:junit 1.3.0；androidx.test:runner / rules / core 1.7.0 | modules/vault-core/android（test + androidTest） | **T1.2 R4 修宪（owner 2026-10-14 批准）**；BIP39 前 4 向量自动门禁；版本参照原 NexVault 仓库 + Expo SDK 57 自身测试用法（dependencies.md §6a） |
+| org.bouncycastle:bcprov-jdk18on | 1.86（精确钉版） | modules/vault-core/android（`implementation`） | **T1.3 R4 修宪（owner 2026-10-15 批准）**；BIP-32/44 secp256k1 派生 + pre-NIST Keccak-256 + 78 字节扩展密钥序列化与 Base58Check **由测试侧自写**（BC 1.86 无 `HDKeyDerivation`/`HDKey`/`Base58` 类，仅提供 `SHA256Digest` 等原语；2026-10-16 T1.3 代码评审更正措辞）；仅 lightweight API（`org.bouncycastle.crypto.*`），禁止注册 JCE Provider；OSV 1.86 零已知漏洞（dependencies.md §6b） |
 | libsecp256k1（bitcoin-core/secp256k1） | v0.7.0（roadmap） | modules/vault-core（CMake） | **roadmap 项**，引入时按 R4 复核 GitHub releases |
 
 ## 3. 全局禁用表（摘要；详表以 doc/dependencies.md §8 为准）

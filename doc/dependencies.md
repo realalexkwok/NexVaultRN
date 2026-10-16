@@ -80,6 +80,16 @@
 | androidx.test:rules | 1.7.0 | Instrumentation test rules（按需） | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：同 runner 1.7.0 family；原 NexVault 仓库同版。 |
 | androidx.test:core | 1.7.0 | `ApplicationProvider`/context（按需） | modules/vault-core/android `androidTestImplementation` | 高（Google AndroidX） | 无未修公告 | 信任依据：Expo SDK 57 `expo-modules-core` 自身同版 1.7.0。 |
 
+## 6b. Android 生产密码学依赖（modules/vault-core，T1.3 R4 修宪）
+
+> **修宪记录：** 2026-10-15 owner 批准（T1.3 GATE-R4-BC）。仅 `modules/vault-core/android` 的
+> `implementation` 配置；生产运行时依赖，用于 BIP-32/44 HD 派生（secp256k1）与 pre-NIST
+> Keccak-256。依据 `specs/vault-core.md` §2.2/§6「MVP 用打包新版 BouncyCastle」定案。[^24^]
+
+| 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
+|---|---|---|---|---|---|---|
+| org.bouncycastle:bcprov-jdk18on | 1.86（精确钉版；Maven Central `<lastUpdated>` 2026-09-11，jar last-modified Fri, 11 Sep 2026 02:42:07 GMT） | BIP-32/44 HD 派生（secp256k1 点乘、HMAC-SHA512 CKD）、pre-NIST Keccak-256；78 字节扩展密钥序列化与 Base58Check **由测试侧自写**，BC 仅提供 `SHA256Digest` 等原语（1.86 无 `HDKeyDerivation`/`HDKey`/`Base58` 类；2026-10-16 T1.3 代码评审更正同一修宪记录的措辞） | modules/vault-core/android `implementation` | 极高（BouncyCastle 官方，1.8x 线持续维护） | **OSV 查询 1.86 → 0 条受影响公告**；该包历史 12 条公告全部在 ≤1.85 修复（最新含 GHSA-9pwp-9qqc-pr26、GHSA-qp49-qgx5-5m26 = 1.85） | 信任依据：官方 Maven Central 制品，jar sha256 `2af190b300cbb0b35e248ccf5f4a06b6072030aeb3da7a98ec73abe5b4cb371f` 与官方 `.sha256` 一致；生态广泛（bitcoinj 等）。风险点：JCE Provider 与 Android 平台内置 BC 残留冲突；助记词/私钥经 BC `BigInteger` 中间态（不可清零，[C] 级，见 T1.3 validation）。缓解：**仅用 lightweight API**（`org.bouncycastle.crypto.*`），**禁止注册 `BouncyCastleProvider`**；版本钉死 1.86，升级走 R4。[^24^] |
+
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
@@ -131,4 +141,5 @@
 [^20^]: NVD/cvefeed CVE-2025-66692 + Snyk wallet-core 条目 + wallet-core README（无官方 RN binding、String 助记词）；`research/nexvault-rn_dim07.md` §1。
 [^21^]: docs.expo.dev/eas-update/code-signing 与 runtime-versions（一手核实 2026-10-14）；`research/nexvault-rn_dim11.md` §2。
 [^22^]: Expo 官方 monorepo 指南 https://docs.expo.dev/guides/monorepos/ + SDK 55 pnpm 实战案例；`research/nexvault-rn_dim02.md` §4。
+[^24^]: Maven Central `org.bouncycastle:bcprov-jdk18on/1.86`（`maven-metadata.xml` lastUpdated 20260911045244；jar sha256 `2af190b300cbb0b35e248ccf5f4a06b6072030aeb3da7a98ec73abe5b4cb371f`）+ OSV API 查询（1.86 受影响公告 0 条，全包 12 条均在 ≤1.85 修复）+ `specs/vault-core.md` §2.2/§6；T1.3 owner 批准（2026-10-15）。
 [^23^]: 原 NexVault 仓库 `/home/superguo/Projects/NexVault/gradle/libs.versions.toml` 与 `specs/tech-stack.md`（JUnit 4.13.2 / androidx.test 1.3.0 / 1.7.0）；本仓库安装的 `expo-modules-core@57.0.22` `android/build.gradle` 测试配置；T1.2 owner 批准（2026-10-14）。

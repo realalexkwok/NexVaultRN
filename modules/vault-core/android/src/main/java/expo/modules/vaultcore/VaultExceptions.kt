@@ -17,3 +17,24 @@ internal class Pbkdf2UnavailableException : CodedException(
   "PBKDF2-HMAC-SHA512 is unavailable on this device",
   null
 )
+
+/** T1.3: derivation path outside the BIP-44 EVM whitelist (syntax class echo only). */
+internal class InvalidPathException : CodedException(
+  "E_VAULT_INVALID_PATH",
+  "Invalid derivation path",
+  null
+)
+
+/** T1.3: handle missing from the native store (never distinguishes empty store from bad handle). */
+internal class HandleNotFoundException : CodedException(
+  "E_VAULT_HANDLE_NOT_FOUND",
+  "Handle not found",
+  null
+)
+
+/** T1.3: underlying BIP-32/keccak primitive failed (never carries key fragments). */
+internal class CryptoInternalException : CodedException(
+  "E_VAULT_CRYPTO_INTERNAL",
+  "Cryptographic operation failed",
+  null
+)
