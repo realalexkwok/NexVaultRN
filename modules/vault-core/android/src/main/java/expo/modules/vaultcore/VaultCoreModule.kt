@@ -4,13 +4,11 @@ import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.text.Normalizer
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class VaultCoreModule : Module() {
-  private val handleStore = ConcurrentHashMap<String, ByteArray>()
+  private val handleStore = HandleStore()
 
   private val wordlist: List<String> by lazy {
     Bip39.loadWordlist(requireNotNull(appContext.reactContext))
@@ -35,16 +33,20 @@ class VaultCoreModule : Module() {
 
         // T1.3/T1.4 consume this seed; T1.2 never returns or logs it.
         val seed = Bip39.mnemonicToSeed(mnemonic, "")
-        val handle = UUID.randomUUID().toString()
-        handleStore[handle] = seed
-        handle
+        try {
+          handleStore.put(seed)
+        } catch (error: Throwable) {
+          // The store owns the seed only once put() succeeded; never leak it on failure.
+          seed.fill(0)
+          throw error
+        }
       }
     }
 
     AsyncFunction("deriveAddress") Coroutine { handle: String, path: String ->
       withContext(Dispatchers.Default) {
         // The seed stays native: only the public address string is returned (R1).
-        val seed = handleStore[handle] ?: throw HandleNotFoundException()
+        val seed = handleStore.get(handle) ?: throw HandleNotFoundException()
         val indices = Bip32.parseEthereumPath(path)
         val seedCopy = seed.copyOf()
         try {
@@ -52,6 +54,29 @@ class VaultCoreModule : Module() {
         } finally {
           seedCopy.fill(0)
         }
+      }
+    }
+
+    AsyncFunction("signDigest") Coroutine { handle: String, path: String, digest: ByteArray ->
+      withContext(Dispatchers.Default) {
+        // Fail fast before touching the store; the digest is a public tx hash (R1).
+        Ecdsa.requireDigest32(digest)
+        val seed = handleStore.get(handle) ?: throw HandleNotFoundException()
+        val indices = Bip32.parseEthereumPath(path)
+        val seedCopy = seed.copyOf()
+        try {
+          Ecdsa.signDigest(seedCopy, indices, digest)
+        } finally {
+          seedCopy.fill(0)
+        }
+      }
+    }
+
+    AsyncFunction("destroy") Coroutine { handle: String ->
+      withContext(Dispatchers.Default) {
+        // Evict first, then wipe: idempotent (a missing handle is a no-op, never an error).
+        handleStore.evict(handle)?.fill(0)
+        Unit
       }
     }
   }
