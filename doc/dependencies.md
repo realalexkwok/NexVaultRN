@@ -90,6 +90,18 @@
 |---|---|---|---|---|---|---|
 | org.bouncycastle:bcprov-jdk18on | 1.86（精确钉版；Maven Central `<lastUpdated>` 2026-09-11，jar last-modified Fri, 11 Sep 2026 02:42:07 GMT） | BIP-32/44 HD 派生（secp256k1 点乘、HMAC-SHA512 CKD）、pre-NIST Keccak-256；78 字节扩展密钥序列化与 Base58Check **由测试侧自写**，BC 仅提供 `SHA256Digest` 等原语（1.86 无 `HDKeyDerivation`/`HDKey`/`Base58` 类；2026-10-16 T1.3 代码评审更正同一修宪记录的措辞） | modules/vault-core/android `implementation` | 极高（BouncyCastle 官方，1.8x 线持续维护） | **OSV 查询 1.86 → 0 条受影响公告**；该包历史 12 条公告全部在 ≤1.85 修复（最新含 GHSA-9pwp-9qqc-pr26、GHSA-qp49-qgx5-5m26 = 1.85） | 信任依据：官方 Maven Central 制品，jar sha256 `2af190b300cbb0b35e248ccf5f4a06b6072030aeb3da7a98ec73abe5b4cb371f` 与官方 `.sha256` 一致；生态广泛（bitcoinj 等）。风险点：JCE Provider 与 Android 平台内置 BC 残留冲突；助记词/私钥经 BC `BigInteger` 中间态（不可清零，[C] 级，见 T1.3 validation）。缓解：**仅用 lightweight API**（`org.bouncycastle.crypto.*`），**禁止注册 `BouncyCastleProvider`**；版本钉死 1.86，升级走 R4。[^24^] |
 
+## 6c. iOS 生产密码学依赖（modules/vault-core，T1.5 R4 修宪）
+
+> **修宪记录：** 2026-10-16 owner 批准（T1.5 GATE-R4-SWIFTSECP，规划轮 Q1）。仅
+> `modules/vault-core/ios` 的 podspec `s.dependency`；生产运行时依赖，用于 BIP-32/44 HD
+> 派生所需的 secp256k1 曲线运算与 RFC6979 可恢复 ECDSA 签名。依据 `specs/vault-core.md`
+> §2.3「secp256k1 用 Blockstream swift-secp256k1（SPM，集成时锁版本）」定案；集成路线在
+> 规划轮被裁定为 **CocoaPods pod**（vendored xcframework 与 SPM-via-app-target 均被否，
+> 理由见 T1.5 validation Task 1）；项目/维护方 2026 年更名为 21-DOT-DEV（R4-5 包名核对）。[^25^]
+
+| 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
+|---|---|---|---|---|---|---|
+| swift-secp256k1（21-DOT-DEV，ex-Blockstream） | **0.23.2 精确钉版**（GitHub tag `0.23.2`；release published 2026-05-23T07:46:28Z，≥7 天冷静期；CocoaPods trunk 已收录 0.23.2） | BIP-32/44 HD 派生所需的 secp256k1 公钥运算（`P256K.Recovery.PrivateKey.publicKey`）与 **RFC6979 可恢复 ECDSA 签名**（`secp256k1_ecdsa_sign_recoverable`，noncefp = NULL；low-s 归一化与 recid 翻转由库内完成，与 Android T1.4 BLOCKER-1 修复后的语义一致） | modules/vault-core/ios `VaultCore.podspec` → `s.dependency 'swift-secp256k1', '0.23.2'` | 活跃（repo pushed 2026-10-16；160 stars；非 fork、未归档；MIT） | **未发现已知 CVE**；供应链核对：CocoaPods trunk podspec 的 `source` 指向 GitHub release 制品 `P256K.xcframework.zip`，sha256 `0084b98982506a85dfbdf4568236c7c95cc77f10c2b8cdc0e567647844c00f77`（podspec 内钉死） | 信任依据：官方 21-DOT-DEV 仓库 + CocoaPods trunk 收录 + 制品 sha256 钉死；**库自述 pre-1.0**（docs.21.dev 明示生产前须读 Security Considerations）→ 记录为成熟度备注，与本工程 `[C]/[P]` 标注纪律一致；风险点：**pod 平台下限 iOS 18.0**（`app.json` 同步 `ios.deploymentTarget = 18.0`）；内置 nonce 生成使 k 字节位于库内部内存、无法 `memset_s` 清零 → 清零评审记为 **[C]**（owner 2026-10-16 Q2 裁定）。缓解：版本钉死 0.23.2，升级走 R4；BIP-32 CKD 胶水/Keccak-256/RIPEMD-160 仍自写并由官方向量门禁。[^25^]
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |

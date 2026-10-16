@@ -20,6 +20,8 @@
 | MAN-009 | 助记词不落盘审查：断网环境下全流程 + 本地文件/日志检查 | 无 plaintext 助记词/私钥落盘；日志零泄露（R5） | TC-VC-002/008 | 双端真机 + adb 检查 | ☐ 待走查 |
 | MAN-010 | 弱网/断链链交互：广播超时、回执超时、断网降级 | 提示可重试、无重复广播、无悬挂状态 | TC-W3A-002/005 | 真机 + 网络调节 | ☐ 待走查 |
 | MAN-011 | 真机内存卫生走查（TC-VC-005 人工侧）：1000 轮 import→derive→sign→destroy 期间以 `adb shell dumpsys meminfo` 采样 PSS/TOTAL，观察驻留曲线 | PSS/RSS 无单调增长（±5% 容差）；无 OOM/崩溃；destroy 后旧 handle 调用抛 E_VAULT_HANDLE_NOT_FOUND | TC-VC-005、TC-VC-025 | Pixel 6a / Android 17 | ☑ **通过** 2026-10-16（Pixel 6a / Android 17；`am instrument` 两次 `OK (6 tests)`；PSS 曲线非单调 62.8k→112.7k→92.6k kB，无 OOM/崩溃；±5% 驻留带由测试内 post-GC PSS 前后对比断言承载）。证据：`specs/features/2026-10-16-T1.4-vault-core-android-sign-digest/validation.md` Task 6.2 |
+| MAN-012 | iOS 真机内存卫生走查（TC-VC-005 iOS 侧）：1000 轮 import→derive→sign→destroy 期间以 Instruments / Profiler 采样驻留曲线 | 无单调增长（±5% 容差由测试内断言承载）；无 OOM/崩溃；destroy 后旧 handle 抛 E_VAULT_HANDLE_NOT_FOUND | TC-VC-005、TC-VC-024 | iPhone（实体真机，B.4-5） | ☐ 待走查（T1.5-H1：待 Mac/iPhone 会话执行） |
+| MAN-013 | iOS mlock 语义一行探针（cross_verification C6）：真机对测试页调用 mlock/munlock，记录返回值与 errno | 记录 mlock 在 iOS 沙盒中的实际行为（成功或 EPERM/ENOMEM 均可接受）；结果仅用于 **[C]** 标注复核，无功能依赖 | TC-VC-009 | iPhone（实体真机） | ☐ 待走查（T1.5-H1：待 Mac/iPhone 会话执行） |
 
 ## 规则
 
