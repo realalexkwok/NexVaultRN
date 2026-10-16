@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="expo.modules.vaultcore.EcdsaTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-16T09:25:06.418Z" hostname="superguo-SQM2270" time="0.049">
+  <properties/>
+  <testcase name="drbgDeterminismAndRange" classname="expo.modules.vaultcore.EcdsaTest" time="0.004"/>
+  <testcase name="e2ePinnedSignature" classname="expo.modules.vaultcore.EcdsaTest" time="0.011"/>
+  <testcase name="probeVectorKAT" classname="expo.modules.vaultcore.EcdsaTest" time="0.004"/>
+  <testcase name="errorCodeTableMatchesSpec" classname="expo.modules.vaultcore.EcdsaTest" time="0.005"/>
+  <testcase name="rejectsInvalidDigestLength" classname="expo.modules.vaultcore.EcdsaTest" time="0.011"/>
+  <testcase name="apiDeterminismAndFormat" classname="expo.modules.vaultcore.EcdsaTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

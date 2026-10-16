@@ -18,6 +18,13 @@ internal class Pbkdf2UnavailableException : CodedException(
   null
 )
 
+/** T1.4: signDigest input digest is not exactly 32 bytes. */
+internal class InvalidDigestLengthException : CodedException(
+  "E_VAULT_INVALID_DIGEST_LENGTH",
+  "Invalid digest length",
+  null
+)
+
 /** T1.3: derivation path outside the BIP-44 EVM whitelist (syntax class echo only). */
 internal class InvalidPathException : CodedException(
   "E_VAULT_INVALID_PATH",

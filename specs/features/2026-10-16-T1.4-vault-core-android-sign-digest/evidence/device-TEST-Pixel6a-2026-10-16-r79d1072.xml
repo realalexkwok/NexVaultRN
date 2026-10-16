@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="expo.modules.vaultcore.VaultCoreModuleTest" tests="6" failures="0" errors="0" skipped="0" time="31.197" timestamp="2026-10-16T09:26:43" hostname="localhost">
+  <properties>
+    <property name="device" value="Pixel 6a - 17" />
+    <property name="flavor" value="" />
+    <property name="project" value=":vault-core" />
+  </properties>
+  <testcase name="invalidPathExposesTypedCode" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="0.017" />
+  <testcase name="signAndDestroyOnDevice" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="0.109" />
+  <testcase name="moduleDefinitionExposesAllFourFunctions" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="0.029" />
+  <testcase name="rawWordlistHasExactly2048Words" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="0.005" />
+  <testcase name="thousandRoundLoop" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="30.187" />
+  <testcase name="canonicalAddressOnDevice" classname="expo.modules.vaultcore.VaultCoreModuleTest" time="0.03" />
+</testsuite>

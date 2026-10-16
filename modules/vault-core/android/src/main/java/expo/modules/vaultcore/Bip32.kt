@@ -104,8 +104,12 @@ internal object Bip32 {
       }
     }
 
-    val i = hmacSha512(parent.chainCode, data)
-    data.fill(0)
+    // T1.3-H9: the serialized parent key (hardened branch) must be wiped even if HMAC throws.
+    val i = try {
+      hmacSha512(parent.chainCode, data)
+    } finally {
+      data.fill(0)
+    }
     try {
       val il = i.copyOfRange(0, 32)
       val ir = i.copyOfRange(32, 64)
@@ -180,7 +184,13 @@ internal object Bip32 {
       }
     }
     val body = lower.substring(2)
-    val hash = keccak256(body.toByteArray(Charsets.US_ASCII))
+    // T1.3-H9: wipe the ASCII scratch copy (public data, but the temp must not linger).
+    val bodyBytes = body.toByteArray(Charsets.US_ASCII)
+    val hash = try {
+      keccak256(bodyBytes)
+    } finally {
+      bodyBytes.fill(0)
+    }
     try {
       val hashHex = buildString(hash.size * 2) {
         for (byte in hash) {

@@ -3,6 +3,12 @@ import VaultCoreModule from './src/VaultCoreModule';
 /** Fixed error code for the fail-closed platform guard (FR-8). */
 const UNSUPPORTED_PLATFORM_CODE = 'E_VAULT_UNSUPPORTED_PLATFORM';
 
+/** Fixed error code for a digest whose length is not exactly 32 bytes (spec: vault-core §2.4). */
+const INVALID_DIGEST_LENGTH_CODE = 'E_VAULT_INVALID_DIGEST_LENGTH';
+
+/** Fixed error code for a native return value that violates a frozen contract (spec: vault-core §2.4). */
+const CRYPTO_INTERNAL_CODE = 'E_VAULT_CRYPTO_INTERNAL';
+
 /**
  * Opaque handle returned by {@link importMnemonic}. String-branded: it is an ID only and
  * carries no key semantics (spec: vault-core §2.1, amended 2026-10-15 for T1.3/H2).
@@ -60,4 +66,56 @@ export async function deriveAddress(handle: VaultHandle, path: string): Promise<
     throw unsupportedPlatformError('deriveAddress');
   }
   return await VaultCoreModule.deriveAddress(handle, path);
+}
+
+/**
+ * Signs a 32-byte digest with the secp256k1 key derived at `path` and returns the 65-byte
+ * signature `r(32) ‖ s(32) ‖ recid(1)` (RFC6979 deterministic ECDSA; recid ∈ {0,1}).
+ *
+ * The digest is a public transaction hash, not key material, so it is not wiped (R1); the
+ * private key never leaves native. The returned buffer owns exactly 65 bytes — the native
+ * buffer may be pooled, so it is never handed out directly.
+ *
+ * R7: same fail-closed platform guard as {@link importMnemonic}.
+ */
+export async function signDigest(
+  handle: VaultHandle,
+  path: string,
+  digest: ArrayBuffer
+): Promise<ArrayBuffer> {
+  if (typeof VaultCoreModule.signDigest !== 'function') {
+    throw unsupportedPlatformError('signDigest');
+  }
+  if (digest.byteLength !== 32) {
+    const error = new Error(
+      `${INVALID_DIGEST_LENGTH_CODE}: digest must be exactly 32 bytes`
+    ) as Error & { code: string };
+    error.code = INVALID_DIGEST_LENGTH_CODE;
+    throw error;
+  }
+  const signature = await VaultCoreModule.signDigest(handle, path, new Uint8Array(digest));
+  if (signature.byteLength !== 65) {
+    const error = new Error(
+      `${CRYPTO_INTERNAL_CODE}: native signature length contract violated`
+    ) as Error & { code: string };
+    error.code = CRYPTO_INTERNAL_CODE;
+    throw error;
+  }
+  const copy = new Uint8Array(65);
+  copy.set(signature);
+  return copy.buffer;
+}
+
+/**
+ * Destroys the handle: the native store evicts the entry and wipes the stored seed. Idempotent —
+ * a second call (or an unknown handle) resolves without throwing (spec: vault-core §2.4); after
+ * destroy, every operation with the old handle rejects with `E_VAULT_HANDLE_NOT_FOUND`.
+ *
+ * R7: same fail-closed platform guard as {@link importMnemonic}.
+ */
+export async function destroy(handle: VaultHandle): Promise<void> {
+  if (typeof VaultCoreModule.destroy !== 'function') {
+    throw unsupportedPlatformError('destroy');
+  }
+  await VaultCoreModule.destroy(handle);
 }
