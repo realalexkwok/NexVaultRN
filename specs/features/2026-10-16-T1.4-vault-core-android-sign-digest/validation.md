@@ -298,7 +298,18 @@ Status: `[x]`
 
 ## Task 9 — Board + git closure + push
 
-Status: `[ ]` — filled by the closure step (board line, merge, branch deletion, push).
+Status: `[x]`
+
+| Step | Command | Observed result |
+| --- | --- | --- |
+| Artifacts commit | `git commit -m "docs(T1.4): validation record, durable evidence and MAN-011"` | `bb03f90` (feature branch); evidence ×9 + `validation.md` + `specs/pending-manual-test-cases.md` |
+| Merge | `git checkout main && git merge --no-ff -F /tmp/t14-merge-msg.txt feature/T1.4-vault-core-android-sign-digest` | **`0ee9370`** `Merge branch 'feature/T1.4-vault-core-android-sign-digest' into main` |
+| Branch deletion | `git branch -d feature/T1.4-vault-core-android-sign-digest` | `Deleted branch feature/T1.4-vault-core-android-sign-digest (was bb03f90)`; only `main` remains |
+| Board | `AGENTS.md` Part A (stage cell, 自动化验证 / 手工验证 cells, 最近关闭记录 row) | committed with this record; the row carries merge `0ee9370`, branch deletion and the handoff dispositions |
+| Push | `git push origin main` (owner Q6) | closure report records the push output; the branch was 24 commits ahead of `origin/main` at merge time |
+
+Lesson reused (T1.3): `git merge -F -` cannot read stdin — the merge message went to
+`/tmp/t14-merge-msg.txt` first.
 
 ## Status board
 
@@ -316,5 +327,5 @@ Status: `[ ]` — filled by the closure step (board line, merge, branch deletion
 | Task 6.2 MAN-011 manual walk | `[x]` verified — `OK (6 tests)`, non-monotonic PSS curve recorded |
 | Task 7 E2E cross-check | `[x]` verified — noble equality + viem recovery PASS |
 | Task 8 verification + Handoff | `[x]` verified |
-| Task 9 board + git closure + push | `[ ]` |
+| Task 9 board + git closure + push | `[x]` verified — merge `0ee9370` (`--no-ff`), feature branch deleted (`bb03f90`), board row committed, `origin/main` pushed |
 | T1.4 overall | **`[x]` verified 2026-10-16** — JVM 34/34 + device 6/6 + E2E recovery + zeroization review |
