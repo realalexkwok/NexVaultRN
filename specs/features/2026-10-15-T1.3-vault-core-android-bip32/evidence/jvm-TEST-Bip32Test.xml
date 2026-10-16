@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="expo.modules.vaultcore.Bip32Test" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-16T04:22:57.385Z" hostname="superguo-SQM2270" time="0.443">
+<testsuite name="expo.modules.vaultcore.Bip32Test" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-16T04:56:24.127Z" hostname="superguo-SQM2270" time="0.438">
   <properties/>
-  <testcase name="canonicalAddress" classname="expo.modules.vaultcore.Bip32Test" time="0.335"/>
-  <testcase name="keccakSanity" classname="expo.modules.vaultcore.Bip32Test" time="0.006"/>
+  <testcase name="canonicalAddress" classname="expo.modules.vaultcore.Bip32Test" time="0.352"/>
+  <testcase name="keccakSanity" classname="expo.modules.vaultcore.Bip32Test" time="0.002"/>
   <testcase name="rejectsInvalidPaths" classname="expo.modules.vaultcore.Bip32Test" time="0.002"/>
   <testcase name="acceptsHardenedSpellings" classname="expo.modules.vaultcore.Bip32Test" time="0.001"/>
-  <testcase name="secondAddressCrossCheck" classname="expo.modules.vaultcore.Bip32Test" time="0.037"/>
-  <testcase name="bip32Vector1" classname="expo.modules.vaultcore.Bip32Test" time="0.041"/>
+  <testcase name="secondAddressCrossCheck" classname="expo.modules.vaultcore.Bip32Test" time="0.027"/>
+  <testcase name="bip32Vector1" classname="expo.modules.vaultcore.Bip32Test" time="0.026"/>
   <testcase name="bip32Vector2" classname="expo.modules.vaultcore.Bip32Test" time="0.009"/>
   <testcase name="bip32Vector3" classname="expo.modules.vaultcore.Bip32Test" time="0.002"/>
-  <testcase name="bip32Vector4" classname="expo.modules.vaultcore.Bip32Test" time="0.003"/>
+  <testcase name="bip32Vector4" classname="expo.modules.vaultcore.Bip32Test" time="0.004"/>
   <testcase name="erc55Vectors" classname="expo.modules.vaultcore.Bip32Test" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

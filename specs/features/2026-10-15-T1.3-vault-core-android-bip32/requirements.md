@@ -30,7 +30,7 @@ Implement **only** `deriveAddress(handle: string, path: string) → Promise<stri
   reproduces the canonical address with the packaged wordlist.
   **代码评审轮 2026-10-16（MAJOR-1）：** 实装的 device test 直接调用 `Bip39`/`Bip32`，**未**调用
   `importMnemonic`/`deriveAddress` AsyncFunction，故上方「bridge path」口径**未达成**；
-  AsyncFunction/JS 桥接调用改记为 T1.3-H8（= T1.2-H3 事项），待 owner 裁定 implement 或 replan。
+  AsyncFunction/JS 桥接调用改记为 T1.3-H8（= T1.2-H3 事项）；**owner 裁定 2026-10-16：replan → T4.1**（dev-build 页面 smoke），由 T4.1 规划轮再裁定（B.7-2）。
 
 `signDigest` / `destroy` stay T1.4; iOS stays T1.5; web keeps the fail-closed stub (R7).
 
@@ -42,7 +42,7 @@ Owner dispositions carried into this round (given 2026-10-15):
 | --- | --- | --- |
 | D1 | T1.2 Handoff H1 (`destroy` absent) | **T1.4** — `destroy` remains out of T1.3 scope |
 | D2 | T1.2 Handoff H2 (`specs/vault-core.md` conflicts) | **Amend the spec this round** (Task 1 scope, Q1) |
-| D3 | T1.2 Handoff H3 (JS-bridge invocation deferred) | **Implement** — the T1.3 device test is the canonical-address bridge path. **代码评审轮 2026-10-16：未达成**（device test 未调用模块函数）；改记 T1.3-H8，待 owner 裁定 |
+| D3 | T1.2 Handoff H3 (JS-bridge invocation deferred) | **Implement** — the T1.3 device test is the canonical-address bridge path. **代码评审轮 2026-10-16：未达成**（device test 未调用模块函数）；改记 T1.3-H8；**owner 裁定 2026-10-16：replan → T4.1**（dev-build 页面 smoke） |
 | D4 | T1.2 Handoff H6/H7 (T1.1 scaffold debt; `expo-doctor` patch drift) | **T1.1 closure** — out of T1.3 scope; T1.3 must not upgrade expo |
 | D5 | R4 dependency for secp256k1 | **Propose `org.bouncycastle:bcprov-jdk18on:1.86`**; a separate owner approval (GATE-R4-BC) precedes any `build.gradle` change |
 | D6 | Model switch | **GATE-MODEL-SWITCH** — stop after the spec files are committed; implementation runs only after the owner switches the model to V4.1-Flash |
@@ -80,7 +80,7 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
 | --- | --- | --- |
 | T1.2 `validation.md` H1 | No `destroy`; handle store lives per process | **Replan → T1.4** (owner D1). T1.3 reads the store but does not add destruction |
 | T1.2 `validation.md` H2 | `specs/vault-core.md` conflicts (Int vs UUID handle; checksum error split) | **Implement → Task 1** (owner D2; Q1 scope) |
-| T1.2 `validation.md` H3 | JS-bridge `importMnemonic` invocation deferred to T1.3 | **Implement → Task 6** (owner D3; Q2/Q5) — **代码评审轮 2026-10-16：未达成**，实装 device test 直调密码核心；改记 T1.3-H8（补 AsyncFunction/JS smoke，或 owner 批准 replan） |
+| T1.2 `validation.md` H3 | JS-bridge `importMnemonic` invocation deferred to T1.3 | **Implement → Task 6** (owner D3; Q2/Q5) — **代码评审轮 2026-10-16：未达成**，实装 device test 直调密码核心；**owner 裁定 2026-10-16：replan → T4.1**（dev-build 页面 smoke：onboarding 导入 → `deriveAddress` 走 JS 桥接） |
 | T1.2 `validation.md` H6 | T1.1 scaffold debt (no eslint/jest; `packages/vault-core` absent) | **Replan → T1.1 closure** (owner D4). T1.3 reuses the T1.2 throwaway-harness pattern for JS-wrapper evidence |
 | T1.2 `validation.md` H7 | `expo-doctor` expo `57.0.28` vs expected `~57.0.29` | **Replan → T1.1 closure** (owner D4). T1.3 must not upgrade expo |
 | AGENTS.md B.7-3 | iOS mlock semantics / native word-grid keyboard / vault-core C++-ification / Secure Enclave wrap | Unchanged — all remain roadmap stage-2 items; not touched by T1.3 |
@@ -169,12 +169,19 @@ Ask-user round answers (all confirmed by the owner, 2026-10-15):
   5. **Negatives (TC-VC-016)** — `m/`, `m/49'/60'/0'/0/0`, non-numeric segments, hardened
      change/index (`m/44'/60'/0'/1'/0`), `account ≥ 2^31` → `E_VAULT_INVALID_PATH`; unknown
      handle → `E_VAULT_HANDLE_NOT_FOUND`; every error message contains no input fragments.
-- **FR-8 — Instrumentation (H3 closure, TC-VC-017).** Update
-  `modules/vault-core/android/src/androidTest/java/expo/modules/vaultcore/VaultCoreModuleTest.kt`:
-  assert the module definition exposes `deriveAddress` (**no map-size pin** — T1.2 lesson);
-  end-to-end device test: `importMnemonic` with the canonical 12-word bytes through the module
-  path → non-empty handle → `deriveAddress(handle, "m/44'/60'/0'/0/0")` == the canonical anchor;
-  invalid path → typed error with machine-readable code. Run pinned to one transport:
+- **FR-8 — Instrumentation (H3 closure, TC-VC-017).**
+  **Delivered scope (2026-10-16 code-review round, MINOR-R2-1):** the shipped device test asserts
+  the module definition exposes `deriveAddress` (**no map-size pin** — T1.2 lesson) and reproduces
+  the canonical anchor on-device with the packaged wordlist via `Bip39`/`Bip32`; it does **not**
+  invoke the `AsyncFunction`. The originally specified end-to-end form below (JS-bridge
+  `importMnemonic → deriveAddress`) is **deferred → T1.3-H8 → replanned to T4.1** (owner
+  2026-10-16; a dev-build screen smoke is the carrier — `AppContext` needs a real
+  `ReactApplicationContext`, expo-modules-core@57.0.22 `AppContext.kt:50-54`). This note, AC-9 and
+  the H8 row are the single consistent story.
+  Original specification (not delivered in T1.3): `importMnemonic` with the canonical 12-word
+  bytes through the module path → non-empty handle →
+  `deriveAddress(handle, "m/44'/60'/0'/0/0")` == the canonical anchor; invalid path → typed error
+  with machine-readable code. Either form runs pinned to one transport:
   `ANDROID_SERIAL=<serial> ./gradlew :vault-core:connectedDebugAndroidTest` (T1.2
   duplicate-transport lesson).
 - **FR-9 — R4 dependency amendment (GATE-R4-BC, owner approval required).**

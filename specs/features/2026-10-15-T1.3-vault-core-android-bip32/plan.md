@@ -206,7 +206,8 @@ Vector transcription order: only after Task 0's sha256 + independent verificatio
   non-empty handle → `deriveAddress(handle, "m/44'/60'/0'/0/0")` ==
   `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`; invalid path → typed code.
   **代码评审轮 2026-10-16（MAJOR-1）：** 实装版本只断言模块注册并直调 `Bip39`/`Bip32`，**未**调用
-  `importMnemonic`/`deriveAddress`，故此处端到端意图未达成，改记 T1.3-H8。
+  `importMnemonic`/`deriveAddress`，故此处端到端意图未达成，改记 T1.3-H8；
+  **owner 裁定 2026-10-16：replan → T4.1**（dev-build 页面 smoke 承载该端到端口径；T4.1 规划轮再裁定）。
 
 ### 6.3 Gradle runs
 

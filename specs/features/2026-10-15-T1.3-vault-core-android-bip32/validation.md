@@ -187,6 +187,14 @@ ANDROID_SERIAL=10.42.0.139:41771 ./gradlew :vault-core:connectedDebugAndroidTest
 ```
 
 Observed:
+> **Durable copies (2026-10-16 review round, NIT-R2-1/NIT-R2-2):** the build-dir paths below are
+> ephemeral (overwritten by every rerun). The committed copies of record live in
+> `specs/features/2026-10-15-T1.3-vault-core-android-bip32/evidence/` —
+> device: `device-TEST-Pixel6a-2026-10-15.xml` + `device-test-result-2026-10-15.pb` +
+> `device-run-2026-10-15.log` (run of 2026-10-15T18:51:49, tests=4);
+> JVM: `jvm-TEST-Bip32Test.xml` + `jvm-TEST-Bip39Test.xml` (rerun of 2026-10-16T04:56:24Z
+> on the committed revision, 10+16 tests).
+
 - **JVM gate green:** `BUILD SUCCESSFUL`; XMLs
   `/home/superguo/Projects/NexVaultRN/modules/vault-core/android/build/test-results/testDebugUnitTest/TEST-expo.modules.vaultcore.Bip32Test.xml`
   → `tests="10" skipped="0" failures="0" errors="0"` and
@@ -284,7 +292,7 @@ Zeroization review (file:line, all `fill(0)` in `finally`):
 | Task 6 device smoke (H3) | `[x]` verified — Pixel 6a / Android 17, 4/4 tests |
 | Task 7 verification + zeroization review | `[x]` verified |
 | T1.3 overall | **`[x]` verified 2026-10-15** — JVM vector gate 26/26 + real-device instrumentation 4/4 + zeroization review |
-| Code review round (2026-10-16) | **specs amended + JVM gate re-run 26/26**; H9 patch applied→reverted (no device to re-verify), H8 = replan candidate; no production code change — findings/dispositions + round-2 actions in §Code review round | `specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md` §Code review round |
+| Code review round (2026-10-16) | **specs amended + JVM gate re-run 26/26**; H9 patch applied→reverted (no device to re-verify); **H8 adjudicated by owner 2026-10-16: replan → T4.1** (dev-build screen smoke); no production code change — findings/dispositions + round-2 actions + round-3 corrections in §Code review round | `specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md` §Code review round |
 
 ## Code review round (2026-10-16, independent reviewer)
 
@@ -306,7 +314,7 @@ Findings and dispositions:
 
 | # | Severity | Finding | Disposition in this round |
 | --- | --- | --- | --- |
-| MAJOR-1 | 🔴 MAJOR | FR-8/AC-9 "end-to-end via the bridge" is not implemented — the device test calls `Bip39`/`Bip32` directly; T1.2-H3 (owner D3 "Implement") was re-deferred as T1.3-H8 without amending Goal/FR-8/AC-9 | **Specs amended**: Goal bullet, D3 row, Handoff re-read row, AC-9, `plan.md` Task 6.2, and an explicit T1.3-H8 row added to `requirements.md`. The code gap stays open pending owner adjudication (implement or replan) |
+| MAJOR-1 | 🔴 MAJOR | FR-8/AC-9 "end-to-end via the bridge" is not implemented — the device test calls `Bip39`/`Bip32` directly; T1.2-H3 (owner D3 "Implement") was re-deferred as T1.3-H8 without amending Goal/FR-8/AC-9. **Owner adjudicated 2026-10-16: replan → T4.1** (round-3 note: FR-8 body now carries the delivered-scope pointer too, MINOR-R2-1) | **Specs amended**: Goal bullet, D3 row, Handoff re-read row, AC-9, `plan.md` Task 6.2, and an explicit T1.3-H8 row added to `requirements.md`. The code gap is **adjudicated**: owner 2026-10-16 → **replan to T4.1** (dev-build screen smoke); T1.3-H8 stays open in the Handoff list and T4.1's planning round re-adjudicates it per B.7-2 |
 | MINOR-1 | 🟡 MINOR | Several claims still contradicted the corrections: V5 gated ("vectors 1–5") in Goal/FR-7 heading/AC-3; BC credited with `Base58`/Base58Check in FR-7 + `tech-stack.md:41` + `dependencies.md §6b`; `plan.md` called V4 "public-only" | **Specs amended** in all six locations; the underlying facts were re-verified by the reviewer (jar + fetched BIP-32) |
 | MINOR-2 | 🟡 MINOR | `specs/vault-core.md` §2.4 omitted the committed `E_VAULT_PBKDF2_UNAVAILABLE` (`VaultExceptions.kt:15`; documented in T1.2 FR/AC-7) | **Spec amended**: §2.4 row + revision note (no signature/behaviour change) |
 | MINOR-3 | 🟡 MINOR | Zeroization inventory incomplete: `data.fill(0)` outside `finally` (`Bip32.kt:108`); BC `HMac` interior holds an XOR copy of the chain code; EIP-55 ASCII temp unwiped | **Zeroization table corrected above + Handoff T1.3-H9 registered.** No production code touched this round: a zeroization-only edit would need a fresh device run to keep B.4-2 two-sided evidence intact — fold into T1.4 |
@@ -325,5 +333,5 @@ No production source was modified in this round, so the device evidence revision
 | Action | Command / evidence | Result |
 | --- | --- | --- |
 | H9 production patch | applied `val i = try { hmacSha512(parent.chainCode, data) } finally { data.fill(0) }`; `./gradlew :vault-core:testDebugUnitTest --rerun` | JVM green (26/26, `BUILD SUCCESSFUL in 13s`) — then **reverted** because `adb devices -l` was empty (two attempts, minutes apart), and a production edit without a matching device run would invalidate the T1.3 device evidence. `git checkout -- …/Bip32.kt` restored the committed revision; `Bip32Test 10/10` + `Bip39Test 16/16` re-confirmed on the reverted revision (`BUILD SUCCESSFUL in 7s`, XML mtime `2026-10-16 12:22`) |
-| H8 feasibility | `javap` unavailable → read the shipped sources instead: `node_modules/.pnpm/expo-modules-core@57.0.22_…/android/src/main/java/expo/modules/kotlin/AppContext.kt:50-54` | `class AppContext(modulesProvider: ModulesProvider, val legacyModuleRegistry: ModuleRegistry, reactContextHolder: WeakReference<ReactApplicationContext>)` — a real `ReactApplicationContext` is mandatory, so an AsyncFunction bridge test needs an RN host ⇒ H8 is a **replan** candidate (dev-build screen / jest), recorded above |
-| Evidence durability (NIT-3/NIT-4) | `evidence/` in this feature dir: `device-TEST-Pixel6a-2026-10-15.xml`, `device-test-result-2026-10-15.pb`, `device-run-2026-10-15.log`, `jvm-TEST-Bip32Test.xml`, `jvm-TEST-Bip39Test.xml`, `device-info.md` (serial/model/Android 17/API 37/fingerprint `google/bluejay/bluejay:17/CP2A.260705.006/15641320:user/release-keys`) | Device evidence now lives outside the gitignored build dirs; the fingerprint NIT-4 asked for is captured with its provenance |
+| H8 feasibility (`javap` exists at `/home/superguo/tools/jdk-17/bin/javap`, just not on PATH — reading the shipped source is equivalent evidence) → source: `node_modules/.pnpm/expo-modules-core@57.0.22_…/android/src/main/java/expo/modules/kotlin/AppContext.kt:50-54` | `class AppContext(modulesProvider: ModulesProvider, val legacyModuleRegistry: ModuleRegistry, reactContextHolder: WeakReference<ReactApplicationContext>)` — a real `ReactApplicationContext` is mandatory, so an AsyncFunction bridge test needs an RN host ⇒ H8 is a **replan** candidate (dev-build screen / jest), recorded above |
+| Evidence durability (NIT-3/NIT-4) | `evidence/` in this feature dir: `device-TEST-Pixel6a-2026-10-15.xml`, `device-test-result-2026-10-15.pb`, `device-run-2026-10-15.log` (**terminal `tee` capture of the pinned device run** from the implementation session; its mtime is the 2026-10-16 copy time, and it will not match the preserved UTP artifacts `utp.0.log`/`test-results.log` because it is the Gradle console stream, not the UTP device output), `jvm-TEST-Bip32Test.xml` + `jvm-TEST-Bip39Test.xml` (**2026-10-16T04:56:24Z run on the committed revision** — Task 6 quotes the earlier 2026-10-15T15:23Z run; same tests/counts 10+16=26), `device-info.md` (serial/model/Android 17/API 37/fingerprint `google/bluejay/bluejay:17/CP2A.260705.006/15641320:user/release-keys`) | Device evidence now lives outside the gitignored build dirs; the fingerprint NIT-4 asked for is captured with its provenance |
