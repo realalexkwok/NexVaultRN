@@ -97,3 +97,39 @@ If the scheme name differs, list it with `xcodebuild -workspace ios/NexVault.xcw
   closes it explicitly after an independent review (owner Q6).
 - Do not edit `Vectors.swift` by hand; regenerate it with the transcription script so the oracle
   stays mechanical (`Vectors.swift` records the Kotlin file sha256s).
+## 6. Mac session addendum — 2026-10-17 (executed)
+
+The runbook above was executed on the owner's Mac (macOS 26.2 arm64, Xcode 26.5 / Swift 6.3.2).
+Three deviations from the text above, all recorded in `validation.md` §"Mac session":
+
+1. **P256K integration route changed** — from the prebuilt CocoaPods xcframework to the SwiftPM
+   source build of the same exact pin 0.23.2: the prebuilt artifact cannot be loaded by this
+   toolchain (its `.swiftinterface` imports a Clang module the pod does not ship, and its
+   `UInt256.Words` conformance is written through the module name that the enum `P256K` shadows).
+   **Owner ratification pending (T1.5-H6).**
+2. **`-skipPackagePluginValidation -skipMacroValidation` are required** on every `xcodebuild`
+   command: the package ships a build-tool plugin (`SharedSourcesPlugin`) that Xcode must be told to
+   trust, otherwise the build stops at "Validate plug-in 'SharedSourcesPlugin'".
+3. **Simulator**: no "iPhone 16" runtime exists here; the pinned auxiliary destination is
+   **iPhone 17, iOS 26.5 (23F77), UDID `8A63EA78-9400-4324-A81F-58C2A499FAD9`**.
+
+Commands as actually run (cwd `apps/mobile`):
+
+```bash
+pod install
+
+xcodebuild -workspace ios/NexVault.xcworkspace -scheme VaultCore \
+  -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+  -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
+# ** BUILD SUCCEEDED ** (0 errors)
+
+xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+  -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+  -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+  -resultBundlePath /tmp/VaultCore-Unit-Tests.xcresult
+# ** TEST SUCCEEDED ** — 17/17, 0 failures (Bip32 3, Bip39 4, Ecdsa 5, Keccak 2, VaultStore 3)
+```
+
+Still open from §2: the **real-device** run (`platform=iOS,id=<UDID>`) — the only attached iPhone
+(`iPaaad (2)`, 26.5) was offline, so MAN-012/013 stay open too. The `[C]` caveats and the "do not do"
+list in §5 remain in force.

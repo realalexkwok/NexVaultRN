@@ -29,7 +29,11 @@ enum Ecdsa {
     } catch {
       throw Bip32.cryptoInternal()
     }
-    let signature = key.signature(for: P256K.HashDigest(digest32))
+    // `HashDigest` is a module-level type in P256K and the module also declares an enum
+    // named `P256K`, so the qualified spelling `P256K.HashDigest` resolves to the enum and
+    // fails ("type 'P256K' has no member 'HashDigest'"); the unqualified name is unambiguous.
+    // See validation.md Task 2/3 (Mac session).
+    let signature = key.signature(for: HashDigest(digest32))
     let compact = signature.compactRepresentation
     let recoveryId = compact.recoveryId
     guard recoveryId >= 0, recoveryId <= 3 else { throw Bip32.cryptoInternal() }
@@ -62,7 +66,7 @@ enum Ecdsa {
       throw Bip32.cryptoInternal()
     }
     let publicKey = P256K.Recovery.PublicKey(
-      P256K.HashDigest(digest32),
+      HashDigest(digest32),
       signature: ecdsaSignature,
       format: compressed ? .compressed : .uncompressed
     )

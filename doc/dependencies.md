@@ -98,10 +98,26 @@
 > §2.3「secp256k1 用 Blockstream swift-secp256k1（SPM，集成时锁版本）」定案；集成路线在
 > 规划轮被裁定为 **CocoaPods pod**（vendored xcframework 与 SPM-via-app-target 均被否，
 > 理由见 T1.5 validation Task 1）；项目/维护方 2026 年更名为 21-DOT-DEV（R4-5 包名核对）。[^25^]
+>
+> **2026-10-17 路线修订（Mac 会话；待 owner 追认，T1.5-H6）。** 上条「CocoaPods 预编译
+> xcframework」路线在 Xcode 26.5 / Swift 6.3.2 上**无法消费**，两个独立缺陷均已复现并留证：
+> (a) 制品 interface 第 10 行 `import libsecp256k1`，但 pod/zip 不含该 Clang 模块与头文件
+> （`unzip -l P256K.xcframework.zip` 仅 `P256K.xcframework/**`；两版 interface 内 `secp256k1_`
+> 命中数 = 0）；(b) 补足该 import 后 interface 仍无法加载——`UInt256.Words` 以
+> `P256K._UInt256Words` 限定，而 `P256K` 被同模块内同名 `enum P256K` 遮蔽（66 条诊断，
+> 冷模块缓存复现，非缓存伪影）。0.23.2 为 CocoaPods trunk（2026-05-23）与 GitHub Releases
+> 的最新版本，不存在修复制品。因此改为**同一钉版的源码构建**：`spm_dependency`（RN 提供、
+> podspec 可调用）声明 `exactVersion 0.23.2` + product `P256K`，由 SwiftPM 编译 tag `0.23.2`
+> （commit `e70a10e036a55fffea31568f0af92d69b6d449cd`）；本机 `git clone --branch 0.23.2` +
+> `swift build` → `Build complete! (13.79s)`，上游 README 亦明示「Source (SwiftPM) builds are
+> unaffected」。**版本钉版、上游仓库/commit、许可证与全部向量/测试不变**；副作用是包内
+> build-tool plugin（`SharedSourcesPlugin`）需 `-skipPackagePluginValidation -skipMacroValidation`
+> 或等价信任步骤（T1.5-H7）。证据：`specs/features/2026-10-16-T1.5-vault-core-ios-port/validation.md`
+> §Mac session（含两个缺陷的复现命令与 `VaultCore-Unit-Tests` 17/17 结果）。
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
-| swift-secp256k1（21-DOT-DEV，ex-Blockstream） | **0.23.2 精确钉版**（GitHub tag `0.23.2`；release published 2026-05-23T07:46:28Z，≥7 天冷静期；CocoaPods trunk 已收录 0.23.2） | BIP-32/44 HD 派生所需的 secp256k1 公钥运算（`P256K.Recovery.PrivateKey.publicKey`）与 **RFC6979 可恢复 ECDSA 签名**（`secp256k1_ecdsa_sign_recoverable`，noncefp = NULL；low-s 归一化与 recid 翻转由库内完成，与 Android T1.4 BLOCKER-1 修复后的语义一致） | modules/vault-core/ios `VaultCore.podspec` → `s.dependency 'swift-secp256k1', '0.23.2'` | 活跃（repo pushed 2026-10-16；160 stars；非 fork、未归档；MIT） | **未发现已知 CVE**；供应链核对：CocoaPods trunk podspec 的 `source` 指向 GitHub release 制品 `P256K.xcframework.zip`，sha256 `0084b98982506a85dfbdf4568236c7c95cc77f10c2b8cdc0e567647844c00f77`（podspec 内钉死） | 信任依据：官方 21-DOT-DEV 仓库 + CocoaPods trunk 收录 + 制品 sha256 钉死；**库自述 pre-1.0**（docs.21.dev 明示生产前须读 Security Considerations）→ 记录为成熟度备注，与本工程 `[C]/[P]` 标注纪律一致；风险点：**pod 平台下限 iOS 18.0**（`app.json` 同步 `ios.deploymentTarget = 18.0`）；内置 nonce 生成使 k 字节位于库内部内存、无法 `memset_s` 清零 → 清零评审记为 **[C]**（owner 2026-10-16 Q2 裁定）。缓解：版本钉死 0.23.2，升级走 R4；BIP-32 CKD 胶水/Keccak-256/RIPEMD-160 仍自写并由官方向量门禁。[^25^]
+| swift-secp256k1（21-DOT-DEV，ex-Blockstream） | **0.23.2 精确钉版**（GitHub tag `0.23.2`；release published 2026-05-23T07:46:28Z，≥7 天冷静期；CocoaPods trunk 已收录 0.23.2） | BIP-32/44 HD 派生所需的 secp256k1 公钥运算（`P256K.Recovery.PrivateKey.publicKey`）与 **RFC6979 可恢复 ECDSA 签名**（`secp256k1_ecdsa_sign_recoverable`，noncefp = NULL；low-s 归一化与 recid 翻转由库内完成，与 Android T1.4 BLOCKER-1 修复后的语义一致） | modules/vault-core/ios `VaultCore.podspec` → `spm_dependency(s, …, requirement: { kind: 'exactVersion', version: '0.23.2' }, products: ['P256K'])`（**2026-10-17 路线修订**：原 `s.dependency` 预编译 xcframework 路线作废，理由与证据见本节顶部） | 活跃（repo pushed 2026-10-16；160 stars；非 fork、未归档；MIT） | **未发现已知 CVE**；供应链核对：CocoaPods trunk podspec 的 `source` 指向 GitHub release 制品 `P256K.xcframework.zip`，sha256 `0084b98982506a85dfbdf4568236c7c95cc77f10c2b8cdc0e567647844c00f77`（podspec 内钉死） | 信任依据：官方 21-DOT-DEV 仓库 + CocoaPods trunk 收录 + 制品 sha256 钉死；**库自述 pre-1.0**（docs.21.dev 明示生产前须读 Security Considerations）→ 记录为成熟度备注，与本工程 `[C]/[P]` 标注纪律一致；风险点：**pod 平台下限 iOS 18.0**（`app.json` 同步 `ios.deploymentTarget = 18.0`）；内置 nonce 生成使 k 字节位于库内部内存、无法 `memset_s` 清零 → 清零评审记为 **[C]**（owner 2026-10-16 Q2 裁定）。缓解：版本钉死 0.23.2，升级走 R4；BIP-32 CKD 胶水/Keccak-256/RIPEMD-160 仍自写并由官方向量门禁。[^25^]
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
