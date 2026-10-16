@@ -1,0 +1,50 @@
+# T1.5 — device-SDK build repaired (React Native prebuilt-dependency materialization) — 2026-10-17
+#
+# WHY: the T1.5 device gate needs a device-SDK build (the runbook builds for iphoneos). That build
+# failed before compiling vault-core: see workspace-config-checks-2026-10-17.txt, CHECK 2.
+#
+# BEFORE
+#   $ xcodebuild -workspace ios/NexVault.xcworkspace -scheme VaultCore -destination 'generic/platform=iOS' \
+#       -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
+#   -> exit 65; rsync error: Pods/ReactNativeDependencies/framework/packages/react-native/
+#      ReactNativeDependencies.xcframework/ios-arm64/*: (l)stat: No such file or directory
+#
+# ROOT CAUSE (inspected, not guessed)
+# - ReactNativeDependencies.podspec's prepare_command copies the *parent directory* of the extracted
+#   xcframework (cp -R "$XCFRAMEWORK_PATH/../." framework/packages/react-native/), so pod install
+#   leaves it nested: framework/packages/react-native/third-party/ReactNativeDependencies.xcframework
+# - The build phase "[RNDeps] Replace React Native Dependencies for the right configuration, if
+#   needed" runs RN's third-party-podspecs/replace_dependencies_version.js, which extracts the
+#   configuration's tarball and moves the xcframework up to the expected path - but it
+#   short-circuits ("No previous build detected, but Debug Configuration. No need to replace
+#   RNDeps") when ReactNativeDependencies/.last_build_configuration is absent and the configuration
+#   is Debug, which is exactly the state left by the last pod install.
+# - The failure only surfaces when CocoaPods' copy-XCFrameworks phase actually has to run for a
+#   slice that is not already in the build products, i.e. the first device (or Release) build;
+#   Debug-simulator builds had up-to-date outputs and skipped it.
+#
+# REPAIR (React Native's own script, run from the Pods root; no repo file touched)
+#   $ cd apps/mobile/ios/Pods
+#   $ node <react-native>/third-party-podspecs/replace_dependencies_version.js -c Release -r 0.86.3 -p "$PWD"
+#   $ node <react-native>/third-party-podspecs/replace_dependencies_version.js -c Debug   -r 0.86.3 -p "$PWD"
+#   -> "Done replacing React Native Dependencies" twice; layout becomes
+#      framework/packages/react-native/ReactNativeDependencies.xcframework (slices: ios-arm64,
+#      ios-arm64_x86_64-simulator, maccatalyst, macos, tvos, xros) and the marker file
+#      ReactNativeDependencies/.last_build_configuration = Debug
+#
+# AFTER
+#   $ xcodebuild -workspace ios/NexVault.xcworkspace -scheme VaultCore -destination 'generic/platform=iOS' \
+#       -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+#   -> exit 0, 0 "error:" lines, ** BUILD SUCCEEDED **
+#   Debug-iphoneos build products include P256K.o and libsecp256k1.o: the SwiftPM *source* build of
+#   the pinned swift-secp256k1 0.23.2 compiles for the device architecture.
+#   Re-verified after the repair: VaultCore-Unit-Tests on the pinned simulator -> 19 tests, 0
+#   failures, TEST SUCCEEDED (/tmp/vc-test-5.log); full app link -> 0 errors, BUILD SUCCEEDED
+#   (/tmp/nv-app-build-3.log).
+#
+# STILL OPEN (Release path only): Pods/hermes-engine-artifacts/ holds only
+# hermes-ios-250829098.0.17-debug.tar.gz; the *release* Hermes tarball is fetched when the pods are
+# installed with PRODUCTION=1 ("PRODUCTION=1 pod install"), RN's documented flow for release
+# builds. Not executed here on purpose - switching the Pods tree to production would invalidate the
+# Debug evidence above. T1.5-H8 therefore shrinks to "Release/EAS build needs PRODUCTION=1 pod
+# install", while the device build is unblocked.
