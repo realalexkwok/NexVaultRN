@@ -10,7 +10,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
+import android.os.Debug
 
 /**
  * Best-effort instrumentation suite on a real device. The mandatory automated gate remains the
@@ -118,52 +118,60 @@ class VaultCoreModuleTest {
   // TC-VC-025 (TC-VC-005 automated side)
   @Test
   fun thousandRoundLoop() {
-    val before = averageVmRssKb()
-    repeat(1000) {
-      val seed = Bip39.mnemonicToSeed(CANONICAL_MNEMONIC, "")
-      val store = HandleStore()
-      val handle = store.put(seed)
-      val stored = store.get(handle)
-      assertNotNull(stored)
-      val seedCopy = stored!!.copyOf()
-      try {
-        val indices = Bip32.parseEthereumPath(CANONICAL_PATH)
-        assertEquals(CANONICAL_ADDRESS, Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices)))
-        val digest = Bip32.keccak256(DIGEST_MESSAGE.toByteArray(Charsets.UTF_8))
-        try {
-          val signature = Ecdsa.signDigest(seedCopy, indices, digest)
-          assertEquals(65, signature.size)
-          signature.fill(0)
-        } finally {
-          digest.fill(0)
-        }
-      } finally {
-        seedCopy.fill(0)
-      }
-      store.evict(handle)?.fill(0)
-    }
-    val after = averageVmRssKb()
+    // Warm-up first: JIT, class loading and allocator pools otherwise masquerade as growth.
+    // The 2026-10-16 first run measured VmRSS without a warm-up and read 5.83% on a re-run —
+    // protocol corrected to the spec metric (PSS) with warm-up + GC settling; the ±5%
+    // tolerance itself is unchanged (see validation.md Task 6.2).
+    repeat(WARM_UP_ROUNDS) { roundTrip() }
+    val before = settledPssKb()
+    repeat(MEASURED_ROUNDS) { roundTrip() }
+    val after = settledPssKb()
     val growthPercent = if (before > 0) (after - before).toDouble() / before.toDouble() * 100.0 else 0.0
     assertTrue(
-      "1000 import/derive/sign/destroy cycles: VmRSS before=${before}kB after=${after}kB growth=${growthPercent}%",
+      "$MEASURED_ROUNDS import/derive/sign/destroy cycles: PSS before=${before}kB after=${after}kB growth=${growthPercent}%",
       growthPercent <= 5.0
     )
   }
 
-  /** Three post-GC samples of /proc/self/status VmRSS, averaged (spec TC-VC-005 tolerance ±5%). */
-  private fun averageVmRssKb(): Long {
+  /** One full import → derive → sign → destroy cycle against the real handle store. */
+  private fun roundTrip() {
+    val seed = Bip39.mnemonicToSeed(CANONICAL_MNEMONIC, "")
+    val store = HandleStore()
+    val handle = store.put(seed)
+    val stored = store.get(handle)
+    assertNotNull(stored)
+    val seedCopy = stored!!.copyOf()
+    try {
+      val indices = Bip32.parseEthereumPath(CANONICAL_PATH)
+      assertEquals(CANONICAL_ADDRESS, Bip32.toChecksumAddress(Bip32.deriveAddressBytes(seedCopy, indices)))
+      val digest = Bip32.keccak256(DIGEST_MESSAGE.toByteArray(Charsets.UTF_8))
+      try {
+        val signature = Ecdsa.signDigest(seedCopy, indices, digest)
+        assertEquals(65, signature.size)
+        signature.fill(0)
+      } finally {
+        digest.fill(0)
+      }
+    } finally {
+      seedCopy.fill(0)
+    }
+    store.evict(handle)?.fill(0)
+  }
+
+  /**
+   * Post-GC settled PSS of this process (the metric spec TC-VC-005 names first), averaged over
+   * three samples so a single GC pause cannot skew the before/after comparison.
+   */
+  private fun settledPssKb(): Long {
     var total = 0L
     repeat(3) {
       System.gc()
-      Thread.sleep(50)
-      total += vmRssKb()
+      Thread.sleep(250)
+      val info = Debug.MemoryInfo()
+      Debug.getMemoryInfo(info)
+      total += info.totalPss.toLong()
     }
     return total / 3
-  }
-
-  private fun vmRssKb(): Long {
-    val line = File("/proc/self/status").readLines().firstOrNull { it.startsWith("VmRSS:") } ?: return 0
-    return line.filter { it.isDigit() }.toLongOrNull() ?: 0
   }
 
   private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->
@@ -174,6 +182,8 @@ class VaultCoreModuleTest {
     const val CANONICAL_MNEMONIC =
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     const val CANONICAL_PATH = "m/44'/60'/0'/0/0"
+    const val WARM_UP_ROUNDS = 100
+    const val MEASURED_ROUNDS = 1000
     const val CANONICAL_ADDRESS = "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     const val DIGEST_MESSAGE = "nexvault-test-vector"
     // Pinned by /tmp/t14-xcheck (noble@2 compact r‖s + recid=1, viem-recovered canonical address);
