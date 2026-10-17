@@ -1,5 +1,5 @@
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// TC-VC-015 — keccak-256 (pre-NIST) and EIP-55 gates, oracle-transcribed from Bip32Test.kt.
 final class KeccakTests: XCTestCase {

@@ -1,5 +1,5 @@
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// TC-VC-001/002/010 — oracle-transcribed from the committed Android Bip39Test.kt.
 final class Bip39Tests: XCTestCase {

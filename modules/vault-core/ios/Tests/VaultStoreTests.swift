@@ -1,5 +1,5 @@
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// TC-VC-024 (plus the T1.4 MINOR-1 copy-independence contract and the TC-VC-005 automated side).
 final class VaultStoreTests: XCTestCase {

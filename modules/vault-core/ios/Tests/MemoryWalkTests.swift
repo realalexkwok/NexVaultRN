@@ -1,6 +1,6 @@
 import Darwin
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// MAN-012 carrier (TC-VC-005, iOS side) — the iOS twin of the Android MAN-011 walk.
 ///

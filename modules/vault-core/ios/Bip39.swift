@@ -16,7 +16,10 @@ enum Bip39 {
   /// Wordlist bundled with the module (`Resources/bip39_english.txt`, byte-identical to the
   /// Android `res/raw` copy; sha256 asserted in the XCTest suite). Fails closed when invalid.
   static func loadWordlist() -> [String] {
-    let bundle = Bundle(for: VaultCoreModule.self)
+    // Anchor on a type from this (core) module: the Expo bridge class lives in the separate
+    // VaultCore pod since T1.5-r2. In the app this resolves to the main bundle (static framework),
+    // in the XCTest bundle to the test bundle — both carry `Resources/bip39_english.txt`.
+    let bundle = Bundle(for: VaultStore.self)
     guard let url = bundle.url(forResource: "bip39_english", withExtension: "txt"),
           let data = try? Data(contentsOf: url),
           let content = String(data: data, encoding: .utf8) else {

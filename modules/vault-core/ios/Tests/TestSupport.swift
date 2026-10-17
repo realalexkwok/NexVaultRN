@@ -1,6 +1,11 @@
 import CommonCrypto
 import Foundation
-@testable import VaultCore
+@testable import VaultCoreCore
+
+/// Anchor for `Bundle(for:)` — the wordlist is copied into the test bundle by the core podspec's
+/// test spec (`t.resources`); `VaultCoreModule` now lives in the separate Expo bridge pod, so it can
+/// no longer serve as the anchor.
+private final class BundleToken {}
 
 enum Hex {
   static func bytes(_ hex: String) -> [UInt8] {
@@ -40,7 +45,7 @@ enum TestSupport {
   }
 
   static func wordlistSha256Hex() -> String {
-    let bundle = Bundle(for: VaultCoreModule.self)
+    let bundle = Bundle(for: BundleToken.self)
     guard let url = bundle.url(forResource: "bip39_english", withExtension: "txt"),
           let data = try? Data(contentsOf: url) else { return "MISSING" }
     return Hex.string(sha256([UInt8](data)))

@@ -1,5 +1,5 @@
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// TC-VC-020/021/022/023/027/028 — oracle-transcribed from the committed Android EcdsaTest.kt.
 /// These are the cross-platform gates: the six pinned signatures must be byte-identical to the

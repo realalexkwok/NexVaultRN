@@ -248,6 +248,38 @@ Re-running the module suite after the fix (`VaultCore-Unit-Tests`, run 4) confir
 **19 tests, 0 failures, TEST SUCCEEDED** (`evidence/simulator-test-2026-10-17-run4.txt`).
 
 Evidence: `evidence/app-build-plugin-import-fix-2026-10-17.txt`.
+### T1.5-r2 execution (2026-10-17) — core/bridge split, test bundle at iOS 15.1
+
+Implemented the replan in `plan.md` §T1.5-r2 and verified the macOS side:
+
+| Step | Result |
+| --- | --- |
+| Core pod `VaultCoreCore` (`:ios => '15.1'`, no Expo, SPM `P256K`, owns the `Tests` test spec) | created; `pod install` exit 0 |
+| Bridge pod `VaultCore` (`:ios => '16.4'`, `ExpoModulesCore` + `VaultCoreCore`, no test spec) | created; pod name unchanged, so Expo autolinking is untouched |
+| `expo-module.config.json` | gained `apple.podspecPath = "./ios/VaultCore.podspec"` — without it Expo autolinking treated **both** podspecs as module pods and its post-install step *raised* `VaultCoreCore` to iOS 16.4 (observed: "[Expo] Raised deployment target … VaultCoreCore (iOS=16.4)"), silently undoing the replan |
+| Config plugin | injects both pods (testspec on the core) and resolves the podspec dir by walking up from the app root (prebuild reports the app dir, not the repo root) |
+| Public facades | `VaultCoreService` (four operations) + Expo-free `VaultCodedException`/`VaultErrorCode`; the bridge maps them onto `Exception(name:description:code:)`, so JS still sees the frozen `E_VAULT_*` codes |
+| Floors (verified) | `VaultCoreCore-Unit-Tests` → `IPHONEOS_DEPLOYMENT_TARGET = 15.1`; `VaultCoreCore` → 15.1; bridge → 16.4 |
+| Suite | `xcodebuild test -scheme VaultCoreCore-Unit-Tests` (iPhone 17 / iOS 26.5 simulator) → **19/19, 0 failures, TEST SUCCEEDED** |
+
+**Device attempt (iPad mini 4, iOS 15.8.8).** The destination is now accepted by Xcode for this
+scheme (no more "ineligible"), but the run stops at a different wall:
+
+```
+xcodebuild: error: Cannot test target "VaultCoreCore-Unit-Tests" on "郭浩然的iPad":
+  Logic Testing Unavailable. Logic Testing on iOS devices is not supported.
+```
+
+Hostless (logic) XCTest bundles only run on the Simulator. Adding
+`t.requires_app_host = true` makes CocoaPods scaffold `AppHost-VaultCoreCore-Unit-Tests`
+(`BUNDLE_LOADER`/`TEST_HOST` resolve to `Debug-iphoneos/AppHost-VaultCoreCore-Unit-Tests.app`,
+`IPHONEOS_DEPLOYMENT_TARGET = 15.1`, bundle id `org.cocoapods.AppHost-…`), but the existing
+`VaultCoreCore-Unit-Tests` scheme still executes as a logic test on device and the generated
+`AppHost-…` scheme is not configured for the test action — the remaining gap is the device-hosted
+test wiring/signing, not the crypto or the platform floor.
+
+**Scope note (unchanged):** the *app* still cannot run on iOS 15.8 (ExpoModulesCore 16.4); this
+replan only moves the core verification onto that device.
 ### Device eligibility attempt (Mac, 2026-10-17 11:28 HKT)
 
 A device was attached and is **online** — `郭浩然的iPad`, UDID `dd3c667bc2c60856086f7cbfcbd23fcd5eebd252`

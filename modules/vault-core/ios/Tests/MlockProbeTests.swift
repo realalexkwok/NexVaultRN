@@ -1,6 +1,6 @@
 import Darwin
 import XCTest
-@testable import VaultCore
+@testable import VaultCoreCore
 
 /// MAN-013 carrier (cross_verification C6): the "one-line" `mlock`/`munlock` probe, run as a test so
 /// the raw result and errno land in the xcresult instead of a terminal transcript that nobody keeps.

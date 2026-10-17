@@ -1,11 +1,15 @@
 import ExpoModulesCore
 import Foundation
+import VaultCoreCore
 
-/// vault-core iOS module: the four frozen methods (spec: vault-core §2.3). The TypeScript layer is
-/// untouched — same method names, `Data` in/out, opaque string handle.
+/// Expo bridge for the four frozen methods (spec: vault-core §2.3).
+///
+/// Deliberately thin: all logic lives in `VaultCoreCore`, which carries the **iOS 15.0** floor so the
+/// XCTest bundle can run on an iOS 15.8 device (T1.5-r2). This pod keeps the **iOS 16.4** floor that
+/// ExpoModulesCore requires. The only thing that happens here is input copying/zeroization and the
+/// mapping of the core's coded errors onto the frozen `E_VAULT_*` exception the JS layer sees.
 public class VaultCoreModule: Module {
-  private let store = VaultStore()
-  private lazy var wordlist: [String] = Bip39.loadWordlist()
+  private let service = VaultCoreService()
 
   public func definition() -> ModuleDefinition {
     Name("VaultCore")
@@ -13,52 +17,32 @@ public class VaultCoreModule: Module {
     AsyncFunction("importMnemonic") { (bytes: Data) throws -> String in
       var input = [UInt8](bytes)
       defer { wipe(&input) }
-      guard let decoded = String(bytes: input, encoding: .utf8) else {
-        throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")
-      }
-      let normalized = decoded
-        .decomposedStringWithCompatibilityMapping
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-      guard Bip39.validate(normalized: normalized, wordlist: self.wordlist) else {
-        throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")
-      }
-      guard let seed = Bip39.mnemonicToSeed(normalizedMnemonic: normalized, passphrase: "") else {
-        throw vaultException(VaultErrorCode.pbkdf2Unavailable, "PBKDF2-HMAC-SHA512 is unavailable on this device")
-      }
-      var seedBuffer = seed
-      defer { wipe(&seedBuffer) }
-      return self.store.put(seed: seedBuffer)
+      return try self.bridged { try self.service.importMnemonic(bytes: input) }
     }
 
     AsyncFunction("deriveAddress") { (handle: String, path: String) throws -> String in
-      guard var seed = self.store.copyOf(handle: handle) else {
-        throw vaultException(VaultErrorCode.handleNotFound, "Handle not found")
-      }
-      defer { wipe(&seed) }
-      let indices = try Bip32.parseEthereumPath(path)
-      var privateKey = try Bip32.derivePrivateKey(seed: seed, indices: indices)
-      defer { wipe(&privateKey) }
-      var publicKey = try Bip32.uncompressedPublicKey(privateKey: privateKey)
-      defer { wipe(&publicKey) }
-      let addressBytes = try Bip32.addressBytes(uncompressedPublicKey: publicKey)
-      return try Bip32.checksumAddress(addressBytes: addressBytes)
+      try self.bridged { try self.service.deriveAddress(handle: handle, path: path) }
     }
 
     AsyncFunction("signDigest") { (handle: String, path: String, digest: Data) throws -> Data in
       var digestBytes = [UInt8](digest)
       defer { wipe(&digestBytes) }
-      try Ecdsa.requireDigest32(digestBytes)
-      guard var seed = self.store.copyOf(handle: handle) else {
-        throw vaultException(VaultErrorCode.handleNotFound, "Handle not found")
+      return try self.bridged {
+        try Data(self.service.signDigest(handle: handle, path: path, digest: digestBytes))
       }
-      defer { wipe(&seed) }
-      let indices = try Bip32.parseEthereumPath(path)
-      let signature = try Ecdsa.signDigest(seed: seed, indices: indices, digest32: digestBytes)
-      return Data(signature)
     }
 
     AsyncFunction("destroy") { (handle: String) in
-      _ = self.store.evict(handle: handle)
+      self.service.destroy(handle: handle)
+    }
+  }
+
+  /// Maps the core's coded error onto Expo's exception so `error.code` stays identical to Android.
+  private func bridged<T>(_ body: () throws -> T) throws -> T {
+    do {
+      return try body()
+    } catch let error as VaultCodedException {
+      throw Exception(name: error.code, description: error.reason, code: error.code)
     }
   }
 }
