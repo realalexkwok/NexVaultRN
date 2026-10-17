@@ -20,6 +20,17 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
+    # This target compiles Swift that imports VaultCoreCore -> P256K, so the SwiftPM product's
+    # module directory must be on its search path as well.
+    'SWIFT_INCLUDE_PATHS' => '$(inherited) ${SYMROOT}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/',
+  }
+
+  # T1.5-r2: the app target compiles Expo's generated ExpoModulesProvider.swift, which imports this
+  # bridge pod -> which imports VaultCoreCore -> which imports P256K. The SwiftPM product lives in
+  # SYMROOT, so the consumer target needs that search path too, otherwise the app build fails with
+  # "missing required module 'libsecp256k1'" (the C module of the same package).
+  s.user_target_xcconfig = {
+    'SWIFT_INCLUDE_PATHS' => '$(inherited) ${SYMROOT}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/',
   }
 
   s.source_files = 'VaultCoreModule.swift'

@@ -280,6 +280,20 @@ test wiring/signing, not the crypto or the platform floor.
 
 **Scope note (unchanged):** the *app* still cannot run on iOS 15.8 (ExpoModulesCore 16.4); this
 replan only moves the core verification onto that device.
+
+**Regression found after the split (2026-10-17, round 4).** The core XCTest bundle is green, but the
+**app** target no longer builds: `error: missing required module 'libsecp256k1'`, at the bridge pod
+(`VaultCore` emits its module / compiles `VaultCoreModule.swift`, which imports `VaultCoreCore` →
+`P256K`). Before the split the SwiftPM product was attached to the app-facing pod target, so the
+bridge could see the package's C module; now only `VaultCoreCore` carries it.
+Attempted fixes so far (both committed, neither sufficient):
+`SWIFT_INCLUDE_PATHS = $(inherited) ${SYMROOT}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}/` on the
+bridge via `user_target_xcconfig`, then via `pod_target_xcconfig`. Next step: inspect where the
+SwiftPM `libsecp256k1` module map actually lands (core target finds it, bridge does not — compare
+`Pods/Target Support Files/VaultCoreCore/VaultCoreCore.debug.xcconfig` with the bridge's) and add
+either the missing search path or attach the `P256K` product to the bridge target with
+`spm_dependency` as well.
+
 ### Device eligibility attempt (Mac, 2026-10-17 11:28 HKT)
 
 A device was attached and is **online** — `郭浩然的iPad`, UDID `dd3c667bc2c60856086f7cbfcbd23fcd5eebd252`
