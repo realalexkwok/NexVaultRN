@@ -151,3 +151,38 @@ validation discipline (AC-11) · GATE-MODEL-SWITCH + owner-gated closure/push (A
 | Pod install network/checksum | CocoaPods fetch fails | podspec pins the release; sha256 recorded; retry/record |
 | iOS 18.0 constraint | pod platform mismatch | deployment target already planned in app.json (D1) |
 | Device transport duplication | two UDID entries | pin one UDID per run |
+---
+
+## T1.5-r2 — iOS 15.8 device replan (owner-directed, 2026-10-17)
+
+**Trigger.** The only available device is an iPad mini 4 (`iPad5,1`) on **iOS 15.8.8 (19H422)**;
+Xcode lists it as an ineligible destination ("iOS 15.8.8 doesn't match
+VaultCore-Unit-Tests.xctest's iOS 18.0 deployment target"). Owner instruction: replan onto an
+iOS-15.8-compatible package/module instead of waiting for newer hardware.
+
+**Measured constraints (2026-10-17, this Mac).**
+
+1. `swift-secp256k1 0.23.2` **source** builds cleanly at an iOS 15 floor:
+   `xcodebuild -scheme P256K -destination 'generic/platform=iOS' IPHONEOS_DEPLOYMENT_TARGET=15.0 CODE_SIGNING_ALLOWED=NO build`
+   → **BUILD SUCCEEDED**, 0 errors. The SPM manifest declares no `platforms:` floor and the code is
+   `@available(iOS 13, …)`. ⇒ **no dependency swap is needed**; the approved pin survives and only
+   the deployment target changes (R4 record: floor note, not a new package).
+2. `Expo` / `ExpoModulesCore` 57.0.x declare **iOS 16.4** (`React-Core` 15.1), so the **app** can
+   never run on iOS 15.8; the app floor stays ≥ 16.4.
+3. A 15.8-only device can therefore host **only the crypto core's XCTest bundle** — which is exactly
+   T1.5's device gate (AC-8 + MAN-012/013). That needs the test target to stop linking ExpoModulesCore.
+
+**Design — split at the pod boundary; Expo autolinking untouched.**
+
+| Step | Change |
+| --- | --- |
+| 1 | New local pod `VaultCoreCore` (`modules/vault-core/ios/VaultCoreCore.podspec`): Bip39, Bip32, Keccak, Ripemd160, Ecdsa, Zeroize, VaultStore + a core error type; `platforms :ios => '15.0'`; SPM `P256K` via `spm_dependency`; **the `Tests` test spec moves here**. |
+| 2 | `VaultCore.podspec` becomes the Expo bridge only (`VaultCoreModule.swift`, `VaultErrors.swift`), `:ios => '16.4'`, deps `ExpoModulesCore` + `VaultCoreCore`, no test spec. Pod name unchanged, so autolinking and the frozen four-method surface stay put. |
+| 3 | Core exposes a small **public facade** for the four operations; the bridge maps core errors to the frozen `E_VAULT_*` exceptions via `VaultCodedException`. Crypto types stay `internal`. |
+| 4 | Config plugin declares both pods; the test scheme becomes **`VaultCoreCore-Unit-Tests`**. |
+| 5 | Test sources switch to `@testable import VaultCoreCore`; **no vector, oracle or assertion change** — byte-equality gates stay identical. |
+| 6 | Verification order: simulator suite at floor 15.0 → `xcodebuild test -destination 'platform=iOS,id=dd3c667bc2c60856086f7cbfcbd23fcd5eebd252'` on the iPad (valid `Apple Development: Haoran Guo (2R398LBPYG)` identity present) → MAN-012/MAN-013 walks. |
+
+**Explicitly out of scope:** making the *app* run on iOS 15.8 — Expo SDK 57's 16.4 floor forbids it
+and an SDK downgrade would be constitutional (R4/B.2). The demo app still needs an iOS 16.4+ device;
+only the crypto-core verification moves to 15.8.
