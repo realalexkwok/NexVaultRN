@@ -248,6 +248,33 @@ Re-running the module suite after the fix (`VaultCore-Unit-Tests`, run 4) confir
 **19 tests, 0 failures, TEST SUCCEEDED** (`evidence/simulator-test-2026-10-17-run4.txt`).
 
 Evidence: `evidence/app-build-plugin-import-fix-2026-10-17.txt`.
+### Device eligibility attempt (Mac, 2026-10-17 11:28 HKT)
+
+A device was attached and is **online** — `郭浩然的iPad`, UDID `dd3c667bc2c60856086f7cbfcbd23fcd5eebd252`
+(`xcrun xctrace list devices` → `郭浩然的iPad (15.8.8)`; `xcrun devicectl list devices` → model
+`iPad5,1`, i.e. iPad mini 4, iOS **15.8.8 (19H422)**). Xcode rejects it as a destination:
+
+```
+Ineligible destinations for the "VaultCore-Unit-Tests" scheme:
+  { platform:iOS, id:dd3c667bc2c60856086f7cbfcbd23fcd5eebd252, name:郭浩然的iPad,
+    error:郭浩然的iPad's iOS 15.8.8 doesn't match VaultCore-Unit-Tests.xctest's iOS 18.0
+           deployment target. Upgrade 郭浩然的iPad's iOS version or lower Va… }
+```
+
+An explicit `-destination 'platform=iOS,id=dd3c667…'` fails the same way
+(`xcodebuild: error: Unable to find a destination matching the provided destination specifier`),
+and the scheme's destination list contains only the generic `Any iOS Device` placeholder.
+
+**This is not a tooling problem — it is the approved platform floor.** iOS 18.0 is set by
+(a) the R4-approved crypto dependency: `swift-secp256k1 0.23.2` ships an iOS-18.0 floor
+(see `specs/tech-stack.md` + `doc/dependencies.md` §6c, owner Q1 2026-10-16); (b)
+`modules/vault-core/ios/VaultCore.podspec` `:ios => '18.0'`; (c) `apps/mobile/app.json`
+`ios.deploymentTarget = "18.0"`. The iPad mini 4 (2015, `iPad5,1`) tops out at iOS 15.8.x, so it
+**cannot ever** host this test bundle, regardless of cables, trust or signing.
+
+Consequence: the B.4-5 manual gate still cannot run; T1.5-H1 and MAN-012/013 stay open. An
+**iOS/iPadOS 18.0+ device** is required (or an owner decision to change the platform floor, which
+also means changing the R4-approved crypto dependency — a constitutional change, not a T1.5 edit).
 ### Task 5 (Mac) — MAN-012 / MAN-013
 
 **Not executed — no reachable device.** The only attached iPhone (`iPaaad (2)`, 26.5,
@@ -401,7 +428,7 @@ Evidence: `evidence/workspace-config-checks-2026-10-17.txt`.
 
 | # | Item | Status 2026-10-16 | Disposal |
 | --- | --- | --- | --- |
-| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open, now for one reason only**: no iPhone is attached (the only device seen is an offline iPad 8th gen). The device-SDK build blocker was fixed on 2026-10-17 — `xcodebuild -destination 'generic/platform=iOS'` succeeds and compiles `P256K.o`/`libsecp256k1.o` for iphoneos | `[~]` partially closed | Attach a trusted iPhone, run `xcodebuild test` against its UDID, then MAN-012/013; only then does the B.4 manual side exist |
+| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open, now for one reason only**: no **eligible** device — the attached `郭浩然的iPad` is an iPad mini 4 on iOS 15.8.8, below the app's iOS-18.0 floor, and Xcode reports it as an ineligible destination (exact error in the device-eligibility section). The device-SDK build blocker was fixed on 2026-10-17 — `xcodebuild -destination 'generic/platform=iOS'` succeeds and compiles `P256K.o`/`libsecp256k1.o` for iphoneos | `[~]` partially closed | Attach a trusted iPhone, run `xcodebuild test` against its UDID, then MAN-012/013; only then does the B.4 manual side exist |
 | T1.5-H2 | JS→native bridge invocation (H8 class) | `[ ]` open | Replan → T4.1 dev-build screen smoke; the iOS device tests exercise the same code the AsyncFunction runs, honestly labelled |
 | T1.5-H3 | At-rest key wrap / Keychain / Secure Enclave | `[ ]` open | Replan → security-ios feature |
 | T1.5-H4 | mlock probe result + `[C]` labelling | `[ ]` open | MAN-013 on the iPhone; roadmap follow-up if the probe shows usable semantics |
