@@ -1,5 +1,5 @@
 import Foundation
-import P256K
+@_implementationOnly import P256K
 
 /// RFC6979 deterministic ECDSA over secp256k1 (T1.5).
 ///

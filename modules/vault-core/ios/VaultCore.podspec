@@ -18,6 +18,11 @@ Pod::Spec.new do |s|
   s.dependency 'ExpoModulesCore'
   s.dependency 'VaultCoreCore'
 
+  # T1.5-r2: the P256K product is deliberately attached to VaultCoreCore ONLY. Declaring it here as
+  # well makes both static pods embed the package's objects and the app link fails with duplicate
+  # P256K symbols. Instead the core hides the import from its consumers with
+  # `@_implementationOnly` (Ecdsa.swift / Bip32.swift), so this bridge compiles without P256K.
+
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     # This target compiles Swift that imports VaultCoreCore -> P256K, so the SwiftPM product's

@@ -1,6 +1,6 @@
 import CommonCrypto
 import Foundation
-import P256K
+@_implementationOnly import P256K
 
 /// One BIP-32 node: private scalar + chain code + serialization metadata (Android parity).
 struct Bip32Node {
