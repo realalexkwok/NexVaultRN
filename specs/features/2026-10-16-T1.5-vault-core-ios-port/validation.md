@@ -554,6 +554,18 @@ ratification of the prebuilt-pod → SwiftPM-source route), **T1.5-H8** (Release
 `PRODUCTION=1 pod install`), and the **device gate** blocked by Xcode 26.5 vs the iOS 15.8.8 iPad
 (documented; `DeviceHost/run-device-tests.sh` ready). T1.5 remains `[~]` — closure is the owner's
 call after review.
+
+**Pre-review self-checks (author, 2026-10-18, `781246b`)** — all green:
+
+| Check | Command / evidence | Result |
+| --- | --- | --- |
+| Core is Expo-free | `grep "^import"` over the 9 core files → only `Foundation`/`CommonCrypto`/`Darwin` (the two `ExpoModulesCore` matches in `VaultErrors.swift` are comments) | clean |
+| Tests pull no Expo | `grep -rn "import Expo" Tests/*.swift` | no matches |
+| Podspec source list complete | 9 `.swift` files on disk vs `s.source_files` (bridge file excluded) | exact match |
+| No `@_implementationOnly` warnings | `grep -c implementationOnly` over the last app build log | 0 |
+| Signing team absent from the repo | `git grep F7Y3R4ZWAQ` | no matches (fixed in `781246b`) |
+
+Only finding of this pass was the committed signing team ID (fixed); no code defect surfaced.
 ## Status board
 
 | Task | Status |
