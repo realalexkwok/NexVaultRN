@@ -79,7 +79,7 @@ tests.build_configurations.each do |config|
 end
 test_group = ios_group.new_group('Tests', 'Tests')
 %w[Bip32Tests.swift Bip39Tests.swift EcdsaTests.swift KeccakTests.swift MlockProbeTests.swift
-   MemoryWalkTests.swift TestSupport.swift VaultStoreTests.swift Vectors.swift].each do |name|
+   MemoryWalkTests.swift ReviewRegressionTests.swift TestSupport.swift VaultCoreServiceTests.swift VaultStoreTests.swift Vectors.swift].each do |name|
   tests.source_build_phase.add_file_reference(test_group.new_file(name))
 end
 tests.resources_build_phase.add_file_reference(wordlist)

@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "B5094DD7AF4D7AC22173C518"
+               BlueprintIdentifier = "A26C99C5A670E0AA79963420"
                BuildableName = "DeviceHost.app"
                BlueprintName = "DeviceHost"
                ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">
@@ -28,7 +28,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5C4A81647CF27A405A94902C"
+               BlueprintIdentifier = "16B1847634211AB956760044"
                BuildableName = "VaultCoreCoreTests.xctest"
                BlueprintName = "VaultCoreCoreTests"
                ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">
@@ -44,7 +44,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "B5094DD7AF4D7AC22173C518"
+            BlueprintIdentifier = "A26C99C5A670E0AA79963420"
             BuildableName = "DeviceHost.app"
             BlueprintName = "DeviceHost"
             ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">
@@ -55,7 +55,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5C4A81647CF27A405A94902C"
+               BlueprintIdentifier = "16B1847634211AB956760044"
                BuildableName = "VaultCoreCoreTests.xctest"
                BlueprintName = "VaultCoreCoreTests"
                ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">
@@ -77,7 +77,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "B5094DD7AF4D7AC22173C518"
+            BlueprintIdentifier = "A26C99C5A670E0AA79963420"
             BuildableName = "DeviceHost.app"
             BlueprintName = "DeviceHost"
             ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">
@@ -94,7 +94,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "B5094DD7AF4D7AC22173C518"
+            BlueprintIdentifier = "A26C99C5A670E0AA79963420"
             BuildableName = "DeviceHost.app"
             BlueprintName = "DeviceHost"
             ReferencedContainer = "container:VaultCoreDeviceHost.xcodeproj">

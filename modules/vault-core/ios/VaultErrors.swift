@@ -15,7 +15,7 @@ public enum VaultErrorCode {
 }
 
 /// The core's coded error. It deliberately does **not** reference ExpoModulesCore: this pod targets
-/// iOS 15.0 so its XCTest bundle can run on an iOS 15.8 device (T1.5-r2), while the Expo bridge pod
+/// iOS 15.1 so its XCTest bundle can run on an iOS 15.8 device (T1.5-r2), while the Expo bridge pod
 /// keeps the iOS 16.4 floor that ExpoModulesCore requires. The bridge converts this value into
 /// Expo's `Exception(name:description:code:)` so JS still sees the frozen codes.
 public struct VaultCodedException: Error, Equatable {

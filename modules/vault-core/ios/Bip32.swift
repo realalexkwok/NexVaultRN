@@ -106,16 +106,24 @@ enum Bip32 {
       wipe(&right)
       throw cryptoInternal()
     }
-    guard let childKey = addScalarsModOrder(left, parent.privateKey), !isZero(childKey) else {
+    guard var childKey = addScalarsModOrder(left, parent.privateKey), !isZero(childKey) else {
       wipe(&right)
       throw cryptoInternal()
     }
-    let fingerprint = try fingerprint(privateKey: parent.privateKey)
+    // `fingerprint` can throw; the buffers created above must not survive that path (MINOR-3).
+    let parentFingerprintDigest: [UInt8]
+    do {
+      parentFingerprintDigest = try fingerprint(privateKey: parent.privateKey)
+    } catch {
+      wipe(&childKey)
+      wipe(&right)
+      throw error
+    }
     return Bip32Node(
       privateKey: childKey,
       chainCode: right,
       depth: parent.depth &+ 1,
-      parentFingerprint: fingerprint,
+      parentFingerprint: parentFingerprintDigest,
       childNumber: childNumber
     )
   }
@@ -129,7 +137,11 @@ enum Bip32 {
         current.destroy()          // wipe this node's key + chain code in place, then move on
         current = next
       }
-      return current.privateKey    // the caller wipes the returned buffer
+      // Success path: hand the key over and wipe the node's chain code in place. Copying the key
+      // into a local and calling destroy() would be the COW trap again (the wipe would hit a copy).
+      let key = current.privateKey
+      wipe(&current.chainCode)
+      return key
     } catch {
       current.destroy()            // throw paths must not leave the node's secrets behind
       throw error

@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.source         = { :git => 'https://github.com/realalexkwok/NexVaultRN.git', :tag => s.version.to_s }
   s.static_framework = true
 
-  # T1.5-r2 split (2026-10-17): the crypto core lives in its own pod with an iOS 15.0 floor so the
+  # T1.5-r2 split (2026-10-17): the crypto core lives in its own pod with an iOS 15.1 floor so the
   # XCTest bundle can run on an iOS 15.8 device. This bridge must keep ExpoModulesCore's iOS 16.4
   # floor, and the app target stays at its own deployment target (currently iOS 18.0). The pod name
   # is unchanged, so Expo autolinking and the frozen four-method surface are untouched.
