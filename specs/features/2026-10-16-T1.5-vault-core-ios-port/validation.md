@@ -566,6 +566,14 @@ call after review.
 | Signing team absent from the repo | `git grep F7Y3R4ZWAQ` | no matches (fixed in `781246b`) |
 
 Only finding of this pass was the committed signing team ID (fixed); no code defect surfaced.
+
+**Device harness verified (2026-10-18, `ccf3608`).** The committed `DeviceHost` project was executed
+for the first time: the first run failed `testBundledWordlistShapeAndHash` (`"MISSING"`) because the
+test bundle did not carry `Resources/bip39_english.txt` (the CocoaPods test spec used to supply it via
+`t.resources`). After adding the wordlist to the test target and teaching `generate.rb` to bundle it
+**and** write the shared scheme, a from-scratch regeneration followed by a run produced
+**19 tests, 0 failures, TEST SUCCEEDED** on the iPhone 17 / iOS 26.5 simulator. The harness itself is
+therefore validated; on a physical device only the destination changes.
 ## Status board
 
 | Task | Status |
