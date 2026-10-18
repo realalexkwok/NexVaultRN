@@ -24,6 +24,7 @@ fi
 echo "using: $(xcodebuild -version | tail -1)  ($(xcode-select -p))"
 
 xcodebuild test \
+  -skipPackagePluginValidation -skipMacroValidation \
   -project "$PROJECT" \
   -scheme VaultCoreCoreTests \
   -destination "platform=iOS,id=$DEVICE" \

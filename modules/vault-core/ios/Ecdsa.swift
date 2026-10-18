@@ -36,7 +36,10 @@ enum Ecdsa {
     let signature = key.signature(for: HashDigest(digest32))
     let compact = signature.compactRepresentation
     let recoveryId = compact.recoveryId
-    guard recoveryId >= 0, recoveryId <= 3 else { throw Bip32.cryptoInternal() }
+    // Frozen contract: recid ∈ {0,1}. libsecp256k1 can return 2/3 when x(R) >= n, which Android
+    // retries; iOS fails closed with E_VAULT_CRYPTO_INTERNAL instead of emitting an out-of-contract
+    // byte (MINOR-2).
+    guard recoveryId >= 0, recoveryId <= 1 else { throw Bip32.cryptoInternal() }
     var output = [UInt8](compact.signature)
     guard output.count == 64 else { throw Bip32.cryptoInternal() }
     output.append(UInt8(recoveryId))

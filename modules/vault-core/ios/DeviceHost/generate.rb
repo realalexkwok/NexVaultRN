@@ -45,7 +45,7 @@ ios_group = project.main_group.new_group('vault-core-ios', IOS)
 
 # --- framework: the crypto core ---------------------------------------------------------------
 framework = project.new_target(:framework, 'VaultCoreCore', :ios, DEPLOYMENT)
-configure(framework, 'ENABLE_TESTABILITY' => 'YES', 'DEFINES_MODULE' => 'YES',
+configure(framework, 'ENABLE_TESTABILITY' => 'YES', 'DEFINES_MODULE' => 'YES', 'MACH_O_TYPE' => 'staticlib',
                      'PRODUCT_BUNDLE_IDENTIFIER' => 'io.github.realalexkwok.nexvault.core')
 CORE_SOURCES.each { |name| framework.source_build_phase.add_file_reference(ios_group.new_file(name)) }
 resources = ios_group.new_group('Resources', 'Resources')

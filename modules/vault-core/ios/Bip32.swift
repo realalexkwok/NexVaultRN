@@ -4,11 +4,18 @@ import Foundation
 
 /// One BIP-32 node: private scalar + chain code + serialization metadata (Android parity).
 struct Bip32Node {
-  let privateKey: [UInt8]
-  let chainCode: [UInt8]
+  var privateKey: [UInt8]
+  var chainCode: [UInt8]
   let depth: UInt8
   let parentFingerprint: [UInt8]
   let childNumber: UInt32
+
+  /// Wipes both secret buffers **in place** (MINOR-3). A `var copy = node.privateKey` + `wipe(&copy)`
+  /// would be a CoW alias and zero only the copy — the trap that BLOCKER-1 fixed in `VaultStore`.
+  mutating func destroy() {
+    wipe(&privateKey)
+    wipe(&chainCode)
+  }
 }
 
 /// BIP-32 (secp256k1) + BIP-44 EVM path parsing + pre-NIST Keccak-256 + EIP-55 checksum.
@@ -34,6 +41,9 @@ enum Bip32 {
     let segments = trimmed.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
     guard segments.count == 6, segments[0] == "m" else { throw invalidPath() }
     guard isHardenedSegment(segments[1], "44"), isHardenedSegment(segments[2], "60") else { throw invalidPath() }
+    // The account segment must be hardened (Android parity): without this, `m/44'/60'/0/0/0` parsed
+    // successfully and silently derived `m/44'/60'/0'/0/0` (MAJOR-1).
+    guard segments[3].hasSuffix("'") || segments[3].hasSuffix("h") else { throw invalidPath() }
     let account = try hardenedIndex(segments[3])
     guard segments[4] == "0" else { throw invalidPath() }
     let index = try plainIndex(segments[5])
@@ -113,14 +123,17 @@ enum Bip32 {
   /// Derives the child private key at [indices] and returns it (caller wipes).
   static func derivePrivateKey(seed: [UInt8], indices: [UInt32]) throws -> [UInt8] {
     var current = try masterNode(seed: seed)
-    for index in indices {
-      var previousKey = current.privateKey
-      var previousChainCode = current.chainCode
-      current = try deriveChild(parent: current, childNumber: index)
-      wipe(&previousKey)
-      wipe(&previousChainCode)
+    do {
+      for index in indices {
+        let next = try deriveChild(parent: current, childNumber: index)
+        current.destroy()          // wipe this node's key + chain code in place, then move on
+        current = next
+      }
+      return current.privateKey    // the caller wipes the returned buffer
+    } catch {
+      current.destroy()            // throw paths must not leave the node's secrets behind
+      throw error
     }
-    return current.privateKey
   }
 
   // MARK: - Scalar arithmetic (no EC point math; spec §2.2)

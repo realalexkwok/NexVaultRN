@@ -34,38 +34,14 @@ final class MemoryWalkTests: XCTestCase {
     return status == KERN_SUCCESS ? info.phys_footprint : 0
   }
 
-  /// One round, written the way the module's AsyncFunctions are written: seed in, handle out,
-  /// derive, sign, destroy (the `defer` makes destroy unconditional).
-  private func round(store: VaultStore, wordlist: [String]) throws -> (address: String, signature: [UInt8]) {
-    let normalized = Vectors.canonicalMnemonic
-      .decomposedStringWithCompatibilityMapping
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard Bip39.validate(normalized: normalized, wordlist: wordlist) else {
-      throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")
-    }
-    guard var seed = Bip39.mnemonicToSeed(normalizedMnemonic: normalized, passphrase: "") else {
-      throw vaultException(VaultErrorCode.pbkdf2Unavailable, "PBKDF2-HMAC-SHA512 is unavailable")
-    }
-    defer { wipe(&seed) }
-
-    let handle = store.put(seed: seed)
-    defer { store.evict(handle: handle) }
-
-    guard var roundSeed = store.copyOf(handle: handle) else {
-      throw vaultException(VaultErrorCode.handleNotFound, "Handle not found")
-    }
-    defer { wipe(&roundSeed) }
-
-    let indices = try Bip32.parseEthereumPath(Vectors.canonicalPath)
-    var privateKey = try Bip32.derivePrivateKey(seed: roundSeed, indices: indices)
-    defer { wipe(&privateKey) }
-    var publicKey = try Bip32.uncompressedPublicKey(privateKey: privateKey)
-    defer { wipe(&publicKey) }
-    let addressBytes = try Bip32.addressBytes(uncompressedPublicKey: publicKey)
-    let address = try Bip32.checksumAddress(addressBytes: addressBytes)
-
+  /// One round through the **public facade** (MAJOR-2 from the code review): the walk must exercise
+  /// what the Expo bridge calls, not a re-implementation of it.
+  private func round(service: VaultCoreService) throws -> (address: String, signature: [UInt8]) {
+    let handle = try service.importMnemonic(bytes: Array(Vectors.canonicalMnemonic.utf8))
+    defer { service.destroy(handle: handle) }
+    let address = try service.deriveAddress(handle: handle, path: Vectors.canonicalPath)
     let digest = Bip32.keccak256(Array(Vectors.digestMessage.utf8))
-    let signature = try Ecdsa.signDigest(seed: roundSeed, indices: indices, digest32: digest)
+    let signature = try service.signDigest(handle: handle, path: Vectors.canonicalPath, digest: digest)
     return (address, signature)
   }
 
@@ -74,13 +50,13 @@ final class MemoryWalkTests: XCTestCase {
     let wordlist = Bip39.loadWordlist()
     XCTAssertEqual(wordlist.count, 2048)
 
-    let store = VaultStore()
+    let service = VaultCoreService()
     // Warm-up: first-touch allocations (wordlist, CommonCrypto, the secp256k1 context, allocator
     // pools) must not be attributed to the walk itself.
     for _ in 0..<Self.warmupRounds {
-      _ = try round(store: store, wordlist: wordlist)
+      _ = try round(service: service)
     }
-    XCTAssertEqual(store.count, 0, "every warm-up handle must be destroyed")
+    XCTAssertEqual(service.handleCount, 0, "every warm-up handle must be destroyed")
 
     let baseline = footprintBytes()
     XCTAssertGreaterThan(baseline, 0, "phys_footprint is unavailable on this platform")
@@ -90,7 +66,7 @@ final class MemoryWalkTests: XCTestCase {
     var firstMismatch = ""
     for index in 0..<Self.rounds {
       try autoreleasepool {
-        let (address, signature) = try round(store: store, wordlist: wordlist)
+        let (address, signature) = try round(service: service)
         if address != Vectors.canonicalAddress || Hex.string(signature) != Vectors.canonicalSignature {
           if mismatches == 0 {
             firstMismatch = "round \(index): address \(address), signature \(Hex.string(signature))"
@@ -111,7 +87,7 @@ final class MemoryWalkTests: XCTestCase {
     add(attachment)
 
     XCTAssertEqual(mismatches, 0, "walk output diverged from the pinned oracle at " + firstMismatch)
-    XCTAssertEqual(store.count, 0, "no handle may survive the walk")
+    XCTAssertEqual(service.handleCount, 0, "no handle may survive the walk")
 
     let peak = samples.max() ?? 0
     let allowed = UInt64(Double(baseline) * (1 + Self.tolerance))
@@ -120,9 +96,8 @@ final class MemoryWalkTests: XCTestCase {
       "footprint exceeded the ±5% band: baseline \(baseline) B, peak \(peak) B, samples \(curve)"
     )
 
-    // A destroyed handle stays unknown and destroy stays idempotent.
-    let unknown = UUID().uuidString
-    XCTAssertNil(store.copyOf(handle: unknown))
-    XCTAssertFalse(store.evict(handle: unknown))
+    // Destroy stays idempotent through the facade (unknown handle is a no-op).
+    service.destroy(handle: UUID().uuidString)
+    XCTAssertEqual(service.handleCount, 0)
   }
 }

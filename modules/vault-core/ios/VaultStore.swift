@@ -26,13 +26,21 @@ final class VaultStore {
     }
   }
 
-  /// Removes and wipes the stored seed; false when the handle was already gone.
+  /// Test seam (BLOCKER-1 regression): receives the evicted buffer **after** the wipe so a test can
+  /// assert buffer-level zeroization. Never set in production.
+  var onEvictWiped: (([UInt8]) -> Void)?
+
+  /// Removes and wipes the stored seed in place; false when the handle was already gone.
+  ///
+  /// The previous implementation used `guard let seed` + `var stored = seed`, which is a CoW alias:
+  /// `wipe(&stored)` zeroed a *copy* and left the stored buffer intact. Removing the value into a
+  /// `var` gives the store sole ownership, so the wipe hits the buffer that held the seed.
   @discardableResult
   func evict(handle: String) -> Bool {
     queue.sync {
-      guard let seed = entries.removeValue(forKey: handle) else { return false }
-      var stored = seed
-      wipe(&stored)
+      guard var seed = entries.removeValue(forKey: handle) else { return false }
+      wipe(&seed)
+      onEvictWiped?(seed)
       return true
     }
   }
