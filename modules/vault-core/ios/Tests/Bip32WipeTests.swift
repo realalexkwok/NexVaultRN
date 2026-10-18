@@ -20,4 +20,18 @@ final class Bip32WipeTests: XCTestCase {
       XCTAssertEqual(pair.1, [UInt8](repeating: 0, count: 32), "node \(index) chain code must be wiped")
     }
   }
+
+  func testFinalChainCodeIsWipedOnTheSuccessPath() throws {
+    var observed: [[UInt8]] = []
+    Bip32Node.onFinalChainCodeWiped = { observed.append($0) }
+    defer { Bip32Node.onFinalChainCodeWiped = nil }
+
+    let seed = try TestSupport.canonicalSeed()
+    let indices = try Bip32.parseEthereumPath(Vectors.canonicalPath)
+    var key = try Bip32.derivePrivateKey(seed: seed, indices: indices)
+    defer { wipe(&key) }
+
+    XCTAssertEqual(observed.count, 1, "the success path must wipe the final node's chain code")
+    XCTAssertEqual(observed.first, [UInt8](repeating: 0, count: 32))
+  }
 }

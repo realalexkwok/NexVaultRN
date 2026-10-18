@@ -67,6 +67,12 @@ configure(app, 'PRODUCT_BUNDLE_IDENTIFIER' => 'io.github.realalexkwok.nexvault.d
                'INFOPLIST_KEY_UILaunchScreen_Generation' => 'YES')
 app.source_build_phase.add_file_reference(ios_group.new_group('DeviceHost', 'DeviceHost').new_file('AppDelegate.swift'))
 
+app.frameworks_build_phase.add_file_reference(framework.product_reference)
+# MAJOR-3a: a dynamic framework must travel with the app, otherwise dyld cannot find it on a device.
+embed = app.new_copy_files_build_phase('Embed Frameworks')
+embed.dst_subfolder_spec = '10'
+embedded = embed.add_file_reference(framework.product_reference)
+embedded.settings = { 'ATTRIBUTES' => ['CodeSignOnCopy', 'RemoveHeadersOnCopy'] }
 # --- unit-test bundle hosted by the app -------------------------------------------------------
 tests = project.new_target(:unit_test_bundle, 'VaultCoreCoreTests', :ios, DEPLOYMENT)
 configure(tests, 'PRODUCT_BUNDLE_IDENTIFIER' => 'io.github.realalexkwok.nexvault.coretests')
@@ -100,6 +106,7 @@ if File.exist?(resolved)
   FileUtils.cp(resolved, File.join(swiftpm, 'Package.resolved'))
 end
 
+project.build_configurations.each { |c| c.build_settings['SDKROOT'] = 'iphoneos' }
 project.save
 puts "generated #{PROJECT_PATH}"
 puts project.targets.map { |t| "  target: #{t.name} (#{t.product_type})" }

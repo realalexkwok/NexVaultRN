@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name           = 'VaultCoreCore'
   s.version        = '1.0.0'
   s.summary        = 'NexVault vault-core crypto core (iOS): BIP-39/32/44, RFC6979 ECDSA, opaque handles.'
-  s.description    = 'Expo-free crypto core (T1.5-r2): targets iOS 15.0 so its XCTest bundle can run on an iOS 15.8 device. The Expo bridge lives in the separate VaultCore pod (iOS 16.4, ExpoModulesCore).'
+  s.description    = 'Expo-free crypto core (T1.5-r2): targets iOS 15.1 so its XCTest bundle can run on an iOS 15.8 device. The Expo bridge lives in the separate VaultCore pod (iOS 16.4, ExpoModulesCore).'
   s.author         = 'NexVault'
   s.homepage       = 'https://github.com/realalexkwok/NexVaultRN'
   # iOS 15.1, not 15.0: React Native's Podfile declares `platform :ios, 15.1`, and CocoaPods
@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   # recoverable ECDSA from the approved pin 0.23.2, built **from source** through React Native's
   # spm_dependency helper. The prebuilt xcframework cannot be loaded by Xcode 26.5 (missing
   # libsecp256k1 module + a UID256/module-name name-lookup defect in its shipped interface), and the
-  # *source* manifest declares no platform floor, so it compiles at this pod's iOS 15.0 floor —
+  # *source* manifest declares no platform floor, so it compiles at this pod's iOS 15.1 floor —
   # verified: xcodebuild -scheme P256K -destination 'generic/platform=iOS' IPHONEOS_DEPLOYMENT_TARGET=15.0
   # -> BUILD SUCCEEDED. Evidence: validation.md (Mac session + T1.5-r2).
   unless respond_to?(:spm_dependency, true)
@@ -33,8 +33,6 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    # Silences the ' without library evolution' warning (MINOR-1).
-    'BUILD_LIBRARY_FOR_EVOLUTION' => 'YES',
     # The XCTest suites use @testable import VaultCoreCore.
     'ENABLE_TESTABILITY' => 'YES',
     # React Native's SPM helper builds the product into this directory; the pod target and its test

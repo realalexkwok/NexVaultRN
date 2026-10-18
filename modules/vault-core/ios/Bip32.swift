@@ -23,6 +23,7 @@ struct Bip32Node {
   #if DEBUG
   /// Test seam (NIT-9): observes the buffers after they were wiped. Never set in production.
   static var onDestroyed: (([UInt8], [UInt8]) -> Void)?
+  static var onFinalChainCodeWiped: (([UInt8]) -> Void)?
   #endif
 }
 
@@ -149,6 +150,9 @@ enum Bip32 {
       // into a local and calling destroy() would be the COW trap again (the wipe would hit a copy).
       let key = current.privateKey
       wipe(&current.chainCode)
+      #if DEBUG
+      Bip32Node.onFinalChainCodeWiped?(current.chainCode)
+      #endif
       return key
     } catch {
       current.destroy()            // throw paths must not leave the node's secrets behind

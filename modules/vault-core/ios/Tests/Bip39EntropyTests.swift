@@ -28,7 +28,8 @@ final class Bip39EntropyTests: XCTestCase {
     XCTAssertEqual(Vectors.bip39.count, 8)
     for vector in Vectors.bip39 {
       XCTAssertEqual(mnemonic(fromEntropy: vector.entropyHex, wordlist: wordlist), vector.mnemonic, vector.id)
-      XCTAssertEqual(Hex.string(Hex.bytes(vector.entropyHex)), vector.entropyHex.lowercased(), vector.id)
+      // NIT-10: not a tautological round-trip - entropy length must imply the BIP-39 word count.
+      XCTAssertTrue([16, 20, 24, 28, 32].contains(Hex.bytes(vector.entropyHex).count), vector.id)
     }
   }
 }
