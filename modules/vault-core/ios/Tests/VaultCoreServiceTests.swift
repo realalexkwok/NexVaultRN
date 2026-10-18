@@ -29,6 +29,7 @@ final class VaultCoreServiceTests: XCTestCase {
 
     // two handles are independent vaults; destroying one leaves the other usable
     let second = try service.importMnemonic(bytes: mnemonic)
+    defer { service.destroy(handle: second) }
     service.destroy(handle: handle)
     XCTAssertEqual(service.handleCount, 1)
     XCTAssertEqual(try service.deriveAddress(handle: second, path: Vectors.canonicalPath), Vectors.canonicalAddress)

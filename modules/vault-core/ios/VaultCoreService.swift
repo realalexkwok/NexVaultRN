@@ -13,9 +13,7 @@ public final class VaultCoreService {
 
   /// Validates + normalises the mnemonic, runs PBKDF2, stores the seed and returns a fresh handle.
   public func importMnemonic(bytes: [UInt8]) throws -> String {
-    var input = bytes
-    defer { wipe(&input) }
-    guard let decoded = String(bytes: input, encoding: .utf8) else {
+    guard let decoded = String(bytes: bytes, encoding: .utf8) else {
       throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")
     }
     let normalized = decoded

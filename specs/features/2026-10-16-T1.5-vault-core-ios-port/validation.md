@@ -574,7 +574,30 @@ test bundle did not carry `Resources/bip39_english.txt` (the CocoaPods test spec
 **and** write the shared scheme, a from-scratch regeneration followed by a run produced
 **19 tests, 0 failures, TEST SUCCEEDED** on the iPhone 17 / iOS 26.5 simulator. The harness itself is
 therefore validated; on a physical device only the destination changes.
-## Status board
+
+### Code-review round 2 (2026-10-18) — evidence
+
+| Finding | Action | Command / result |
+| --- | --- | --- |
+| MAJOR-3c | both review test files added to `generate.rb` **and** the committed project | `xcodebuild test -project DeviceHost … -scheme VaultCoreCoreTests` → **26 tests, 0 failures, TEST SUCCEEDED** |
+| MAJOR-3a | committed project regenerated: `MACH_O_TYPE` removed, framework back to a dynamic dylib (the static experiment made the bundle unloadable). **Device embedding is still missing**, so the device gate stays blocked | regenerated project inspected; harness green on the simulator only |
+| MINOR-1 | `BUILD_LIBRARY_FOR_EVOLUTION = YES` added to the core podspec | after `xcodebuild … clean`, the build still reports **4** `without enabling library evolution` warnings → **not fixed**, evidence below corrected |
+| MINOR-3 | `deriveChild` throw path wipes `childKey`/`right`; final chain code wiped in place; new `Bip32WipeTests` observes the destroyed buffers (all zero) | part of the 26 green tests |
+| MINOR-4 | floor wording corrected (15.0 → 15.1) in both podspecs, `VaultErrors.swift`, `VaultCoreService.swift`; `dependencies.md` floor text updated | grep clean |
+| MINOR-5 | this section | — |
+| MINOR-6 | `DeviceHost/Package.resolved` committed; `generate.rb` restores it into the regenerated project (keeps the exact-commit pin) | restored automatically after `ruby generate.rb` |
+| NIT-1 | new `Bip39EntropyTests` rebuilds every BIP-39 vector from its `entropyHex` with the bundled wordlist | passes |
+| NIT-6 | `VaultCoreService.importMnemonic` no longer copies-then-wipes; ownership documented (caller owns, bridge wipes) | passes |
+| NIT-7 | `VaultStore.onEvictWiped` and `Bip32Node.onDestroyed` are `#if DEBUG` seams | passes |
+| NIT-8 | `testFourMethodsRoundTripMatchesTheOracle` destroys the second handle via `defer` | passes |
+| NIT-9 | `Bip32WipeTests` covers the final-chain-code wipe and per-node destruction | passes |
+
+Corrected counts for earlier claims: the suite is **26 tests** (not 19); a clean build reports **4**
+`@_implementationOnly` warnings (not 0); `grep -rn 'wipe(' modules/vault-core/ios` reports **42**
+occurrences (not 35/39 — the count includes tests and the two new carriers).
+
+Still open: MAJOR-3a (device Embed & CodeSignOnCopy phase), MINOR-1 (warnings), NIT-1 residual wording,
+NIT-5 verification. Nothing pushed (owner instruction: push only at closure).## Status board
 
 | Task | Status |
 | --- | --- |

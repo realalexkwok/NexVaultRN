@@ -15,7 +15,15 @@ struct Bip32Node {
   mutating func destroy() {
     wipe(&privateKey)
     wipe(&chainCode)
+    #if DEBUG
+    Bip32Node.onDestroyed?(privateKey, chainCode)
+    #endif
   }
+
+  #if DEBUG
+  /// Test seam (NIT-9): observes the buffers after they were wiped. Never set in production.
+  static var onDestroyed: (([UInt8], [UInt8]) -> Void)?
+  #endif
 }
 
 /// BIP-32 (secp256k1) + BIP-44 EVM path parsing + pre-NIST Keccak-256 + EIP-55 checksum.

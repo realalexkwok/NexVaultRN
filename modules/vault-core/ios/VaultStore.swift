@@ -28,7 +28,9 @@ final class VaultStore {
 
   /// Test seam (BLOCKER-1 regression): receives the evicted buffer **after** the wipe so a test can
   /// assert buffer-level zeroization. Never set in production.
+  #if DEBUG
   var onEvictWiped: (([UInt8]) -> Void)?
+  #endif
 
   /// Removes and wipes the stored seed in place; false when the handle was already gone.
   ///
@@ -40,7 +42,9 @@ final class VaultStore {
     queue.sync {
       guard var seed = entries.removeValue(forKey: handle) else { return false }
       wipe(&seed)
+      #if DEBUG
       onEvictWiped?(seed)
+      #endif
       return true
     }
   }

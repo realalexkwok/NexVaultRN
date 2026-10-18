@@ -45,7 +45,7 @@ ios_group = project.main_group.new_group('vault-core-ios', IOS)
 
 # --- framework: the crypto core ---------------------------------------------------------------
 framework = project.new_target(:framework, 'VaultCoreCore', :ios, DEPLOYMENT)
-configure(framework, 'ENABLE_TESTABILITY' => 'YES', 'DEFINES_MODULE' => 'YES', 'MACH_O_TYPE' => 'staticlib',
+configure(framework, 'ENABLE_TESTABILITY' => 'YES', 'DEFINES_MODULE' => 'YES',
                      'PRODUCT_BUNDLE_IDENTIFIER' => 'io.github.realalexkwok.nexvault.core')
 CORE_SOURCES.each { |name| framework.source_build_phase.add_file_reference(ios_group.new_file(name)) }
 resources = ios_group.new_group('Resources', 'Resources')
@@ -78,7 +78,7 @@ tests.build_configurations.each do |config|
   config.build_settings['BUNDLE_LOADER'] = '$(TEST_HOST)'
 end
 test_group = ios_group.new_group('Tests', 'Tests')
-%w[Bip32Tests.swift Bip39Tests.swift EcdsaTests.swift KeccakTests.swift MlockProbeTests.swift
+%w[Bip32Tests.swift Bip32WipeTests.swift Bip39EntropyTests.swift Bip39Tests.swift EcdsaTests.swift KeccakTests.swift MlockProbeTests.swift
    MemoryWalkTests.swift ReviewRegressionTests.swift TestSupport.swift VaultCoreServiceTests.swift VaultStoreTests.swift Vectors.swift].each do |name|
   tests.source_build_phase.add_file_reference(test_group.new_file(name))
 end
@@ -90,6 +90,15 @@ scheme.add_build_target(tests)
 scheme.set_launch_target(app)
 scheme.add_test_target(tests)
 scheme.save_as(PROJECT_PATH, 'VaultCoreCoreTests', true)
+
+# Preserve the SPM pin: Xcode writes Package.resolved into the project, but regenerate deletes the
+# whole project directory. Keep a committed copy and restore it after generation.
+resolved = File.join(HERE, 'Package.resolved')
+if File.exist?(resolved)
+  swiftpm = File.join(PROJECT_PATH, 'project.xcworkspace', 'xcshareddata', 'swiftpm')
+  FileUtils.mkdir_p(swiftpm)
+  FileUtils.cp(resolved, File.join(swiftpm, 'Package.resolved'))
+end
 
 project.save
 puts "generated #{PROJECT_PATH}"

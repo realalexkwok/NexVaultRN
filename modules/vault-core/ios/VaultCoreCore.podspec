@@ -33,6 +33,8 @@ Pod::Spec.new do |s|
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
+    # Silences the ' without library evolution' warning (MINOR-1).
+    'BUILD_LIBRARY_FOR_EVOLUTION' => 'YES',
     # The XCTest suites use @testable import VaultCoreCore.
     'ENABLE_TESTABILITY' => 'YES',
     # React Native's SPM helper builds the product into this directory; the pod target and its test
