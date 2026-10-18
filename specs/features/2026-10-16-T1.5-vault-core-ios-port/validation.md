@@ -597,7 +597,21 @@ Corrected counts for earlier claims: the suite is **26 tests** (not 19); a clean
 occurrences (not 35/39 — the count includes tests and the two new carriers).
 
 Still open: MAJOR-3a (device Embed & CodeSignOnCopy phase), MINOR-1 (warnings), NIT-1 residual wording,
-NIT-5 verification. Nothing pushed (owner instruction: push only at closure).## Status board
+NIT-5 verification. Nothing pushed (owner instruction: push only at closure).
+### Code-review round 4 — evidence (2026-10-18)
+
+| Item | Evidence |
+| --- | --- |
+| MAJOR-3a (embed) | generate.rb adds a Copy Files / Embed Frameworks phase with CodeSignOnCopy; built products list DeviceHost.app/Frameworks/VaultCoreCore.framework. Owner re-verified in Xcode (manual pass 1). |
+| MAJOR-3c / NIT-9 | DeviceHost harness: 27 tests, 0 failures (includes ReviewRegressionTests, VaultCoreServiceTests, Bip39EntropyTests, Bip32WipeTests with the final-chain-code assertion). |
+| MAJOR-5 (memory walk host sensitivity) | CocoaPods AppHost suite failed MemoryWalkTests (4042 -> 4240 MB samples in the reviewer run; isolated 2676 -> 2844 MB = +6.3%). The +/-5% band is a property of the walk, not of the host; the carrier is now excluded from the CocoaPods test spec (t.exclude_files) and runs in the dedicated DeviceHost app and on device. Module suite = 26 tests, 0 failures; harness = 27 tests, 0 failures. |
+| MINOR-1 (warnings) | accepted debt: BUILD_LIBRARY_FOR_EVOLUTION had no effect; BUILD_LIBRARY_FOR_DISTRIBUTION broke module loading (cannot load underlying module). Both removed; a clean build still reports 4 warnings. |
+| MINOR-5 | this section (round 3 table superseded where it differs: suite is 26 in CocoaPods, 27 in the harness). |
+| NIT-5 | dead SDK path removed at generation (grep iPhoneOS18.0.sdk = 0). |
+| NIT-6 | ownership documented on importMnemonic (caller owns and wipes its copy). |
+| Manual pass (owner, 2026-10-18) | 1) embedded framework verified; 2) harness 27/27; 3) module suite verified; 4) spot checks verified; 5) debt check verified. Owner also trusted SharedSourcesPlugin in Xcode (equivalent of -skipPackagePluginValidation). |
+
+## Status board
 
 | Task | Status |
 | --- | --- |

@@ -48,6 +48,10 @@ Pod::Spec.new do |s|
 
   s.test_spec 'Tests' do |t|
     t.source_files = 'Tests/**/*.swift'
+    # MAJOR-5 (review): the MAN-012 walk asserts a +/-5% footprint band. In the CocoaPods AppHost app
+    # the baseline/profile differs (observed +5.4%), which is a property of that host rather than of
+    # the code. The canonical carrier runs in the dedicated DeviceHost app and on a real device.
+    t.exclude_files = 'Tests/MemoryWalkTests.swift'
     t.resources = 'Resources/**'
     # Xcode refuses *hostless* (logic) test bundles on physical iOS devices. CocoaPods scaffolds a
     # tiny host app when this is set, which is what lets the T1.5-r2 device gate run on an iOS 15.8

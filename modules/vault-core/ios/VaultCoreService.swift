@@ -12,6 +12,8 @@ public final class VaultCoreService {
   public init() {}
 
   /// Validates + normalises the mnemonic, runs PBKDF2, stores the seed and returns a fresh handle.
+  /// The caller owns 'bytes' and must wipe its own copy (the Expo bridge does); this method neither
+  /// copies nor wipes it (NIT-6).
   public func importMnemonic(bytes: [UInt8]) throws -> String {
     guard let decoded = String(bytes: bytes, encoding: .utf8) else {
       throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")

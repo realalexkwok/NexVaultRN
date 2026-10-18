@@ -106,6 +106,14 @@ if File.exist?(resolved)
   FileUtils.cp(resolved, File.join(swiftpm, 'Package.resolved'))
 end
 
+# Xcodeproj seeds a Foundation.framework reference under a versioned SDK path
+# (e.g. iPhoneOS18.0.sdk) that does not exist on this Xcode; re-point it at the SDK-relative form.
+project.files.each do |file|
+  next unless file.path.to_s.include?('Developer/SDKs/')
+  file.path = file.path.sub(%r{Platforms/iPhoneOS\.platform/Developer/SDKs/iPhoneOS[0-9.]+\.sdk/}, '')
+  file.source_tree = 'SDKROOT'
+end
+
 project.build_configurations.each { |c| c.build_settings['SDKROOT'] = 'iphoneos' }
 project.save
 puts "generated #{PROJECT_PATH}"
