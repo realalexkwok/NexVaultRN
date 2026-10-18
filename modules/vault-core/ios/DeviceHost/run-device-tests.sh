@@ -10,7 +10,13 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PROJECT="$HERE/VaultCoreDeviceHost.xcodeproj"
 DEVICE="dd3c667bc2c60856086f7cbfcbd23fcd5eebd252"   # 郭浩然的iPad, iPad mini 4, iOS 15.8.8
-TEAM="F7Y3R4ZWAQ"
+# Signing team is NEVER committed (owner 2026-10-18). Provide it per run:
+#   DEVELOPMENT_TEAM=<your-team-id> ./run-device-tests.sh /Applications/Xcode_16.4.app
+TEAM="${DEVELOPMENT_TEAM:-}"
+if [ -z "$TEAM" ]; then
+  echo "error: set DEVELOPMENT_TEAM=<your team id> (e.g. from apps/mobile/ios/Signing.local)" >&2
+  exit 2
+fi
 
 if [ "$#" -ge 1 ]; then
   export DEVELOPER_DIR="$1/Contents/Developer"

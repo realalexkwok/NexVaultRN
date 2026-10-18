@@ -310,7 +310,7 @@ not a container/project defect:
 
 Environment evidence: `~/Library/Developer/Xcode/iOS DeviceSupport/` has `iPad5,1 15.8.8 (19H422)`
 (device recognised); iOS SDK `MinimumDeploymentTarget = 12.0`; `XCTest.framework` and
-`XCUIAutomation.framework` declare `MinimumOSVersion = 13.0`; signing resolved (team `F7Y3R4ZWAQ`,
+`XCUIAutomation.framework` declare `MinimumOSVersion = 13.0`; signing resolved (organisation team,
 `build-for-testing` exits 0) before this wall.
 
 **Conclusion:** Xcode 26.5 (17F42) does not run XCTest on this iOS 15.8.8 device and reports it as

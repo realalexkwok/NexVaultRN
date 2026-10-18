@@ -31,7 +31,10 @@ def configure(target, extra = {})
     config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = DEPLOYMENT
     config.build_settings['SWIFT_VERSION'] = '5.0'
     config.build_settings['CODE_SIGN_STYLE'] = 'Automatic'
-    config.build_settings['DEVELOPMENT_TEAM'] = 'F7Y3R4ZWAQ'
+    # Never hard-code the signing team: it comes from the environment (DEVELOPMENT_TEAM=...) and is
+    # intentionally absent from the repository. Leave it unset so Xcode prompts when opened.
+    team = ENV['DEVELOPMENT_TEAM'].to_s
+    config.build_settings['DEVELOPMENT_TEAM'] = team unless team.empty?
     config.build_settings['GENERATE_INFOPLIST_FILE'] = 'YES'
     config.build_settings['TARGETED_DEVICE_FAMILY'] = '1,2'
     extra.each { |k, v| config.build_settings[k] = v }
