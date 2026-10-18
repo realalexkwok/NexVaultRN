@@ -49,7 +49,8 @@ configure(framework, 'ENABLE_TESTABILITY' => 'YES', 'DEFINES_MODULE' => 'YES',
                      'PRODUCT_BUNDLE_IDENTIFIER' => 'io.github.realalexkwok.nexvault.core')
 CORE_SOURCES.each { |name| framework.source_build_phase.add_file_reference(ios_group.new_file(name)) }
 resources = ios_group.new_group('Resources', 'Resources')
-framework.resources_build_phase.add_file_reference(resources.new_file('bip39_english.txt'))
+wordlist = resources.new_file('bip39_english.txt')
+framework.resources_build_phase.add_file_reference(wordlist)
 
 package = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
 package.repositoryURL = 'https://github.com/21-DOT-DEV/swift-secp256k1'
@@ -81,6 +82,14 @@ test_group = ios_group.new_group('Tests', 'Tests')
    MemoryWalkTests.swift TestSupport.swift VaultStoreTests.swift Vectors.swift].each do |name|
   tests.source_build_phase.add_file_reference(test_group.new_file(name))
 end
+tests.resources_build_phase.add_file_reference(wordlist)
+
+scheme = Xcodeproj::XCScheme.new
+scheme.add_build_target(app)
+scheme.add_build_target(tests)
+scheme.set_launch_target(app)
+scheme.add_test_target(tests)
+scheme.save_as(PROJECT_PATH, 'VaultCoreCoreTests', true)
 
 project.save
 puts "generated #{PROJECT_PATH}"
