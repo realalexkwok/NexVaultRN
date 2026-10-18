@@ -294,6 +294,34 @@ SwiftPM `libsecp256k1` module map actually lands (core target finds it, bridge d
 either the missing search path or attach the `P256K` product to the bridge target with
 `spm_dependency` as well.
 
+
+### Device gate — environment blocker, owner decision to document (2026-10-18)
+
+Four independent configurations were tried on the attached iPad mini 4 (`iPad5,1`, iOS 15.8.8,
+UDID `dd3c667bc2c60856086f7cbfcbd23fcd5eebd252`); **all** produce the identical refusal, so this is
+not a container/project defect:
+
+| Attempt | Result |
+| --- | --- |
+| CocoaPods pod test spec + `requires_app_host` (scaffolded app host) | `Logic Testing Unavailable` |
+| Hand-written scheme that builds the app host (shared + user scheme) | same |
+| Above + `TEST_TARGET_NAME` beside `TEST_HOST` | same |
+| **Pure Xcode project, no CocoaPods** (`DeviceHost/`: framework + UIKit app + hosted tests, SwiftPM `P256K`; `TEST_HOST`/`BUNDLE_LOADER`/product type verified) | same |
+
+Environment evidence: `~/Library/Developer/Xcode/iOS DeviceSupport/` has `iPad5,1 15.8.8 (19H422)`
+(device recognised); iOS SDK `MinimumDeploymentTarget = 12.0`; `XCTest.framework` and
+`XCUIAutomation.framework` declare `MinimumOSVersion = 13.0`; signing resolved (team `F7Y3R4ZWAQ`,
+`build-for-testing` exits 0) before this wall.
+
+**Conclusion:** Xcode 26.5 (17F42) does not run XCTest on this iOS 15.8.8 device and reports it as
+“logic testing”. Not fixable via project settings, container choice or SPM adoption (the
+CocoaPods-free project fails identically). Options: (1) older Xcode 15.x/16.x, (2) iOS 18+ device,
+(3) document the blocker — **owner chose (3) on 2026-10-18**.
+
+Consequences: AC-8 and the B.4-5 manual side stay open; MAN-012/013 remain ☐ 待走查 (their in-test
+carriers are committed and green on the simulator). T1.5 stays **`[~]`** by owner decision — not
+closed. Harness committed for either future route: `modules/vault-core/ios/DeviceHost/`
+(`generate.rb`, the project, `AppDelegate.swift`, `run-device-tests.sh <Xcode.app>`).
 ### Device eligibility attempt (Mac, 2026-10-17 11:28 HKT)
 
 A device was attached and is **online** — `郭浩然的iPad`, UDID `dd3c667bc2c60856086f7cbfcbd23fcd5eebd252`
@@ -474,7 +502,7 @@ Evidence: `evidence/workspace-config-checks-2026-10-17.txt`.
 
 | # | Item | Status 2026-10-16 | Disposal |
 | --- | --- | --- | --- |
-| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open, now for one reason only**: no **eligible** device — the attached `郭浩然的iPad` is an iPad mini 4 on iOS 15.8.8, below the app's iOS-18.0 floor, and Xcode reports it as an ineligible destination (exact error in the device-eligibility section). The device-SDK build blocker was fixed on 2026-10-17 — `xcodebuild -destination 'generic/platform=iOS'` succeeds and compiles `P256K.o`/`libsecp256k1.o` for iphoneos | `[~]` partially closed | Attach a trusted iPhone, run `xcodebuild test` against its UDID, then MAN-012/013; only then does the B.4 manual side exist |
+| T1.5-H1 | **Mac/iPhone gate**: macOS side **done 2026-10-17** (compiles; `VaultCore-Unit-Tests` 19/19 on the pinned iOS 26.5 simulator); **real-device side still open, now for one reason only**: no **eligible** device — the attached `郭浩然的iPad` is an iPad mini 4 on iOS 15.8.8, below the app's iOS-18.0 floor, and Xcode reports it as an ineligible destination (exact error in the device-eligibility section). The device-SDK build blocker was fixed on 2026-10-17 — `xcodebuild -destination 'generic/platform=iOS'` succeeds and compiles `P256K.o`/`libsecp256k1.o` for iphoneos | `[~]` partially closed — **documented blocker (owner chose option 3, 2026-10-18)**: Xcode 26.5 will not run XCTest on iOS 15.8.8; needs older Xcode 15.x/16.x or an iOS 18+ device | Harness ready: `modules/vault-core/ios/DeviceHost/run-device-tests.sh <Xcode.app>`, then MAN-012/013 |
 | T1.5-H2 | JS→native bridge invocation (H8 class) | `[ ]` open | Replan → T4.1 dev-build screen smoke; the iOS device tests exercise the same code the AsyncFunction runs, honestly labelled |
 | T1.5-H3 | At-rest key wrap / Keychain / Secure Enclave | `[ ]` open | Replan → security-ios feature |
 | T1.5-H4 | mlock probe result + `[C]` labelling | `[ ]` open | MAN-013 on the iPhone; roadmap follow-up if the probe shows usable semantics |
