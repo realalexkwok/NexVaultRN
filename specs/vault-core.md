@@ -4,6 +4,7 @@
 > 修订：2026-10-15（T1.3 / H2，owner 批准）——§2.1 `VaultHandle` 由 `number` 改为品牌化 `string`（对齐 T1.2 冻结实现：native `UUID.randomUUID().toString()`）；§2.2/§2.3 双端签名 `handle: Int` → `handle: String`；§2.4 合并 `E_VAULT_CHECKSUM_MISMATCH` 入 `E_VAULT_INVALID_MNEMONIC`；TC-VC-002 同步。证据：specs/features/2026-10-15-T1.3-vault-core-android-bip32/validation.md Task 1。
 > 修订：2026-10-16（T1.4 代码评审轮 / BLOCKER-1 + MINOR-1）——§2.1 signDigest 明确 recid 语义 = 识别恢复点（R 的 y 奇偶；low-s 取负 s 时 recid 必须翻转，与 libsecp256k1 一致）；AC-3 与 TC-VC-004 增加「(r,s,recid) 恢复公钥 == 签名公钥」判据与「向量须覆盖归一化路径」要求。证据：specs/features/2026-10-16-T1.4-vault-core-android-sign-digest/validation.md §Review round。
 > 修订：2026-10-16（T1.3 代码评审轮 / MINOR-2）——§2.4 补登 T1.2 已实装但此前漏列的 `E_VAULT_PBKDF2_UNAVAILABLE`；无签名/行为变更。证据：同 validation.md §Code review round。
+> 修订：2026-10-16（T1.5 硬门槛 gate-3，owner 批准）——§2.3 iOS PBKDF2 路径定案 **CommonCrypto `CCKeyDerivationPBKDF`**（唯一 KDF 方案；CryptoSwift 弃用，CryptoKit 无 PBKDF2 不可用）；plans v1.2 追记统一 T1.5 行与 report §3.5 措辞（doc/ 只读不改）。swift-secp256k1 仓库现为 21-DOT-DEV（Blockstream 原名迁移），R4 钉版提案在 T1.5 规划轮。
 
 ## 1. 目标（Goal 与范围）
 

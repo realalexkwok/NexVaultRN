@@ -1,0 +1,37 @@
+# T1.5 — VaultCore-Unit-Tests console transcript (iOS Simulator)
+# Host: macOS 26.2 (25C56), arm64 (Apple Silicon). Toolchain: Xcode 26.5 (17F42), Apple Swift 6.3.2.
+# Device (pinned): iPhone 17, iOS 26.5 (23F77), UDID 8A63EA78-9400-4324-A81F-58C2A499FAD9
+# Local time 2026-10-17 03:26 HKT (2026-10-16 19:26 UTC).
+# Command:
+#   xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+#     -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#     -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+#     -resultBundlePath /tmp/VaultCore-Unit-Tests.xcresult
+# (cwd apps/mobile; full raw log /tmp/vc-test-1.log, 480 KB, reproducible with the command above)
+
+## Per-suite results
+Test Suite 'All tests' started at 2026-10-17 03:26:58.853.
+Test Suite 'VaultCore-Unit-Tests.xctest' started at 2026-10-17 03:26:58.857.
+Test Suite 'Bip32Tests' started at 2026-10-17 03:26:58.857.
+Test Suite 'Bip32Tests' passed at 2026-10-17 03:26:58.904.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.046 (0.047) seconds
+Test Suite 'Bip39Tests' started at 2026-10-17 03:26:58.905.
+Test Suite 'Bip39Tests' passed at 2026-10-17 03:26:58.928.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.022 (0.023) seconds
+Test Suite 'EcdsaTests' started at 2026-10-17 03:26:58.928.
+Test Suite 'EcdsaTests' passed at 2026-10-17 03:26:59.040.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.110 (0.112) seconds
+Test Suite 'KeccakTests' started at 2026-10-17 03:26:59.040.
+Test Suite 'KeccakTests' passed at 2026-10-17 03:26:59.044.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'VaultStoreTests' started at 2026-10-17 03:26:59.044.
+Test Suite 'VaultStoreTests' passed at 2026-10-17 03:26:59.049.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'VaultCore-Unit-Tests.xctest' passed at 2026-10-17 03:26:59.049.
+	 Executed 17 tests, with 0 failures (0 unexpected) in 0.185 (0.192) seconds
+Test Suite 'All tests' passed at 2026-10-17 03:26:59.049.
+	 Executed 17 tests, with 0 failures (0 unexpected) in 0.185 (0.196) seconds
+
+## Verdict lines
+Test session results, code coverage, and logs:
+** TEST SUCCEEDED **

@@ -1,0 +1,26 @@
+# T1.5 — MAN-013 carrier (iOS side): mlock/munlock one-line probe
+#
+# Host: macOS 26.2 (25C56), arm64. Toolchain: Xcode 26.5 (17F42), Apple Swift 6.3.2.
+# Device: iPhone 17, iOS 26.5 (23F77), UDID 8A63EA78-9400-4324-A81F-58C2A499FAD9 = SIMULATOR.
+#   *** NON-AUTHORITATIVE for MAN-013 ***: the MAN-013 row pins a physical iPhone (B.4-5); this run
+#   only proves the carrier executes and self-records. The macOS host sandbox is not the iOS sandbox.
+# Local time 2026-10-17 03:3x HKT (2026-10-16 19:3x UTC).
+#
+# Command (cwd apps/mobile):
+#   xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+#     -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#     -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+#     -resultBundlePath /tmp/VaultCore-Unit-Tests-3.xcresult
+#
+# Source: xcresult attachment "MAN-013 mlock probe" (MlockProbeTests), exported with
+#   xcrun xcresulttool export attachments --path /tmp/VaultCore-Unit-Tests-3.xcresult --output-path /tmp/xcatt3
+#
+MAN-013 mlock probe (simulator, non-authoritative)
+page size: 16384 B; page-aligned: true
+mlock   -> 0 (errno 0)
+munlock -> 0 (errno 0)
+
+Interpretation: on the simulator the page locks and unlocks cleanly. MAN-013 stays 待走查: the row
+requires the *device* result (the iOS sandbox may answer EPERM/ENOMEM, which the row also accepts)
+before the [C] labelling review can cite it. No functional dependency: nothing in vault-core calls
+mlock.

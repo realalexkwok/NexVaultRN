@@ -202,4 +202,5 @@ NDK C++ 共享核心（libsecp256k1 JSI 直连）；iOS Secure Enclave 通用密
 
 ## 修订记录
 
+- 2026-10-16（v1.2）：**T1.5 iOS KDF 定案为 CommonCrypto `CCKeyDerivationPBKDF`**（系统框架，零第三方依赖；owner 批准，T1.5 硬门槛 gate-3 裁决）——原 T1.5 行的 CryptoSwift 措辞作废（CryptoSwift 弃用；CryptoKit 无 PBKDF2，不可用）；`doc/research-report.md` §3.5 内嵌计划表的 CryptoSwift 措辞为只读存档，冲突以本追记 + `specs/vault-core.md` §2.3 为准。swift-secp256k1 仓库现为 **21-DOT-DEV**（Blockstream 原名已迁移），R4 钉版提案在 T1.5 规划轮。
 - 2026-10-14（v1.1）：Day 3 补充任务 **T5.4 篡改版 APK 对照演示视频录制**（对自己构建的 APK 做安全验证演示）；同步更新 T6.1 依赖（T5.3→T5.4）、§2 关键路径说明、§3 依赖关系图、Day3 验收门槛 G3（纳入「篡改对照演示视频产出」）、§5 风险预案 h（条件编译桩降级路径）。

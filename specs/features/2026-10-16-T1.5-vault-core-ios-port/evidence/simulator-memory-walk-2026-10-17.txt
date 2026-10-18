@@ -1,0 +1,36 @@
+# T1.5 — MAN-012 automated carrier (iOS side): MemoryWalkTests footprint curve
+#
+# Host: macOS 26.2 (25C56), arm64. Toolchain: Xcode 26.5 (17F42), Apple Swift 6.3.2.
+# Device: iPhone 17, iOS 26.5 (23F77), UDID 8A63EA78-9400-4324-A81F-58C2A499FAD9
+#   -> SIMULATOR = auxiliary evidence only (B.4-5); the MAN-012 real-device walk is still open.
+# Local time 2026-10-17 03:32 HKT (2026-10-16 19:32 UTC).
+#
+# Command (cwd apps/mobile):
+#   xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+#     -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#     -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+#     -resultBundlePath /tmp/VaultCore-Unit-Tests-2.xcresult
+#
+# Test: MemoryWalkTests/testThousandRoundsKeepFootprintFlatAndDestroyEveryHandle() — PASSED (7.26 s)
+# Source: xcresult attachment "MAN-012 footprint curve"
+#   (xcrun xcresulttool export attachments --path /tmp/VaultCore-Unit-Tests-2.xcresult --output-path /tmp/xcatt)
+# Suite total for the same run: 18 tests, 0 failures (see simulator-test-2026-10-17-run2.txt).
+#
+phys_footprint samples (bytes, one sample every 100 rounds + a final sample):
+29890112,29890112,29890112,29890112,30905920,30905920,30905920,30905920,30840384,30840384,30840384
+
+baseline (post-warm-up, round 0) = 29890112 B = 29.89 MB
+peak     (round 500)            = 30905920 B = 30.91 MB  -> +3.40%  (inside the ±5% band)
+final    (after 1000 rounds)    = 30840384 B = 30.84 MB  -> +3.18%  (inside the ±5% band)
+
+Curve shape: flat at 29.89 MB for rounds 0-400, one 2.01 MB step at round 500, a 65 KB drop at
+round 800 — non-monotonic, no unbounded growth, no OOM, no crash.
+
+Asserted inside the test (so the walk cannot pass vacuously):
+- all 1000 rounds produced the pinned TC-VC-027 address 0x9858EfFD232B4033E47d90003D41EC34EcaEda94 and
+  the pinned canonical signature 36eba619...f459501 (mismatch counter == 0);
+- VaultStore.count == 0 after the walk (every handle destroyed, destroy runs in a defer);
+- an unknown handle returns nil from copyOf and false from evict (idempotent destroy).
+
+NOT covered here (stays on the MAN-012 real-device row): Instruments residency curve on a physical
+iPhone, and the AsyncFunction/bridge invocation path (T1.5-H2 -> T4.1).

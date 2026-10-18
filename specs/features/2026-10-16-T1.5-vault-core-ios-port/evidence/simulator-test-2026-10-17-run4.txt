@@ -1,0 +1,41 @@
+# T1.5 — VaultCore-Unit-Tests console transcript, run 4 (regression check after the plugin-import fix)
+# Host: macOS 26.2 (25C56) arm64; Xcode 26.5 (17F42); Apple Swift 6.3.2.
+# Device (pinned): iPhone 17, iOS 26.5 (23F77), UDID 8A63EA78-9400-4324-A81F-58C2A499FAD9
+# Local time 2026-10-17 03:4x HKT (2026-10-16 19:4x UTC).
+# Command:
+#   xcodebuild test -workspace ios/NexVault.xcworkspace -scheme VaultCore-Unit-Tests \
+#     -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' \
+#     -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO \
+#     -resultBundlePath /tmp/VaultCore-Unit-Tests-4.xcresult
+# (cwd apps/mobile; raw log /tmp/vc-test-4.log)
+
+## Per-suite results
+Test Suite 'All tests' started at 2026-10-17 03:37:09.734.
+Test Suite 'VaultCore-Unit-Tests.xctest' started at 2026-10-17 03:37:09.738.
+Test Suite 'Bip32Tests' started at 2026-10-17 03:37:09.738.
+Test Suite 'Bip32Tests' passed at 2026-10-17 03:37:09.783.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.043 (0.045) seconds
+Test Suite 'Bip39Tests' started at 2026-10-17 03:37:09.783.
+Test Suite 'Bip39Tests' passed at 2026-10-17 03:37:09.805.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.021 (0.022) seconds
+Test Suite 'EcdsaTests' started at 2026-10-17 03:37:09.805.
+Test Suite 'EcdsaTests' passed at 2026-10-17 03:37:09.918.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.111 (0.112) seconds
+Test Suite 'KeccakTests' started at 2026-10-17 03:37:09.918.
+Test Suite 'KeccakTests' passed at 2026-10-17 03:37:09.922.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'MemoryWalkTests' started at 2026-10-17 03:37:09.922.
+Test Suite 'MemoryWalkTests' passed at 2026-10-17 03:37:17.227.
+Test Suite 'MlockProbeTests' started at 2026-10-17 03:37:17.227.
+Test Suite 'MlockProbeTests' passed at 2026-10-17 03:37:17.229.
+Test Suite 'VaultStoreTests' started at 2026-10-17 03:37:17.229.
+Test Suite 'VaultStoreTests' passed at 2026-10-17 03:37:17.233.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'VaultCore-Unit-Tests.xctest' passed at 2026-10-17 03:37:17.245.
+	 Executed 19 tests, with 0 failures (0 unexpected) in 7.488 (7.507) seconds
+Test Suite 'All tests' passed at 2026-10-17 03:37:17.245.
+	 Executed 19 tests, with 0 failures (0 unexpected) in 7.488 (7.511) seconds
+
+## Verdict lines
+Test session results, code coverage, and logs:
+** TEST SUCCEEDED **
