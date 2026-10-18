@@ -521,6 +521,39 @@ with origin, 0/0).
 **Not** executed: merging into `main`, the AGENTS.md Part A board row, and the T1.5 closure call —
 all pending the owner's explicit instruction after an independent review (Q6).
 
+
+## Code review handoff (2026-10-18)
+
+The branch is **review-ready**: working tree clean, `feature/T1.5-vault-core-ios-port` in sync with
+`origin`, review range **`29892de..HEAD`** (this session on top of the prior Linux session).
+
+Read in this order:
+
+1. `modules/vault-core/ios/VaultCoreCore.podspec` (new) and `VaultCore.podspec` (rewritten) — the
+   core/bridge split, floors (iOS 15.1 core / 16.4 bridge), `spm_dependency` on `P256K` 0.23.2.
+2. `VaultCoreService.swift` (new public facade), `VaultErrors.swift` (Expo-free coded error),
+   `VaultCoreModule.swift` (bridge + error mapping) — check the four frozen methods and that no
+   `P256K` type leaks into the public facade.
+3. `Ecdsa.swift` / `Bip32.swift` — only `@_implementationOnly import P256K` was added; `Ecdsa.swift`
+   also carries the earlier `HashDigest(...)` call-site fix.
+4. `Tests/MemoryWalkTests.swift` and `Tests/MlockProbeTests.swift` (new MAN carriers) — **no existing
+   vector, oracle value or assertion was modified**; `Vectors.swift` sha256
+   `63605160aec6b36077bb86a3af712057c8ff1b1395e3f90a9068a790919144e7`.
+5. `apps/mobile/plugins/withVaultCoreTests.js`, `apps/mobile/app.json`,
+   `modules/vault-core/expo-module.config.json` — CNG wiring; the `apple.podspecPath` pin is what
+   stops Expo from raising the core pod back to 16.4.
+6. `modules/vault-core/ios/DeviceHost/` — **development-only harness** (never linked into the app,
+   no runtime dependency); it exists to run the XCTest bundle on a device without CocoaPods.
+
+Invariants for the reviewer to police: frozen `E_VAULT_*` codes identical to Android; R1 (no key
+material in JS), R5 (no key material in logs — grep exit 1) and R6 labels unchanged; the `[C]`
+zeroization caveats unchanged; the P256K pin (0.23.2) and its vectors untouched.
+
+Known open items — these are recorded decisions, not defects to discover: **T1.5-H6** (owner
+ratification of the prebuilt-pod → SwiftPM-source route), **T1.5-H8** (Release/EAS half:
+`PRODUCTION=1 pod install`), and the **device gate** blocked by Xcode 26.5 vs the iOS 15.8.8 iPad
+(documented; `DeviceHost/run-device-tests.sh` ready). T1.5 remains `[~]` — closure is the owner's
+call after review.
 ## Status board
 
 | Task | Status |
