@@ -32,8 +32,24 @@ function VaultMark() {
           borderBottomColor: tokens.color.primary,
         }}
       />
-      {/* body: 30..90 */}
-      <View style={{ position: 'absolute', top: 30, width: 120, height: 60, backgroundColor: tokens.color.primary }} />
+      {/* body: the path tapers 120 → 102 between 25%h and 75%h; approximated with ten 6dp bands
+          (≤2px step per band) because RN has no path/skew primitive. */}
+      {Array.from({ length: 10 }, (_, i) => ({
+        top: 30 + i * 6,
+        width: Math.round(120 - (i + 0.5) * 1.8),
+      })).map((band) => (
+        <View
+          key={band.top}
+          style={{
+            position: 'absolute',
+            top: band.top,
+            left: (120 - band.width) / 2,
+            width: band.width,
+            height: 6,
+            backgroundColor: tokens.color.primary,
+          }}
+        />
+      ))}
       {/* bottom facet: shoulders (9/111, 90) → apex (60,120) */}
       <View
         style={{

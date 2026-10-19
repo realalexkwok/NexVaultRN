@@ -15,7 +15,9 @@ export default function TabsLayout() {
       // Material NavigationBarItem in the original sets alwaysShowLabel = true; NativeTabs defaults
       // to 'auto' (5 items → selected label only, review R2-1 2026-10-20), so force 'labeled'.
       labelVisibilityMode="labeled"
-      labelStyle={{ color: tokens.color.onSurfaceVariant, fontSize: tokens.type.labelSmall.size }}
+      // labelSmall = 10/14 Medium; NativeTabsLabelStyle exposes fontFamily/fontSize/fontStyle/
+      // fontWeight/color only (types.d.ts:222) — the 0.5sp tracking is not settable and is recorded.
+      labelStyle={{ color: tokens.color.onSurfaceVariant, fontSize: tokens.type.labelSmall.size, fontWeight: '500' }}
       backgroundColor={tokens.color.surface}
       disableTransparentOnScrollEdge
     >

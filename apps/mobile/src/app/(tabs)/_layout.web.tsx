@@ -20,9 +20,13 @@ const TABS = [
 
 export default function TabsLayoutWeb() {
   const pathname = usePathname();
+  const activeName = TABS.find((tab) => tab.href === pathname)?.name ?? 'home';
   return (
     <Tabs>
-      <View style={{ flex: 1 }} {...({ role: 'tabpanel' } as Record<string, unknown>)}>
+      <View
+        style={{ flex: 1 }}
+        {...({ role: 'tabpanel', id: 'nv-tabpanel', 'aria-labelledby': `nv-tab-${activeName}` } as Record<string, unknown>)}
+      >
         <TabSlot />
       </View>
       <TabList
@@ -46,7 +50,7 @@ export default function TabsLayoutWeb() {
               accessibilityState={{ selected: active }}
               // RN Web forwards aria-* / role to the rendered DOM anchor (TabTrigger passes unknown props
               // through; static SSR omits accessibilityState, so the ARIA attributes are set explicitly).
-              {...({ role: 'tab', 'aria-selected': active } as Record<string, unknown>)}
+              {...({ role: 'tab', id: `nv-tab-${tab.name}`, 'aria-selected': active, 'aria-controls': 'nv-tabpanel' } as Record<string, unknown>)}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.spacing.xxs }}
             >
               <View
