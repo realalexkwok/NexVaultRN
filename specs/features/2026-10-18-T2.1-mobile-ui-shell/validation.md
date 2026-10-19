@@ -69,7 +69,7 @@
 | web export | `npx expo export -p web --output-dir /tmp/t21-web` | **0** | `Web Bundled` 852 modules；`Static routes (6): /home /send / (index) /receive /_sitemap /+not-found`；日志存 `evidence/web-export.log` |
 | R7 grep | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/` | **1（零命中）** | 导出 JS 无签名/导入/模块路径（R7 干净） |
 | tsc | `npx --no-install tsc --noEmit`（typed routes 由 `expo start` 生成 `.expo/types/router.d.ts` 后） | **0** | 严格模式零错误；typed routes 生效（四路由字面量在生成物中） |
-| R1 grep | **宪法原文命令（AGENTS.md R1）**：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | **1（零命中）**（首轮 1 命中为注释措辞，已改；评审修复轮重跑，exit 1） | 密钥语义标识符干净（NIT-2：早前记录的命令漏 `secretKey` 且范围窄于宪法，已改正） |
+| R1 grep | **宪法原文命令（AGENTS.md R1），工作目录 = 仓库根**：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'; echo "exit: ${PIPESTATUS[0]}"` | **exit 1，零命中，且无 `No such file or directory`**（首轮 1 命中为注释措辞，已改；2026-10-19 评审修复轮与第二轮复跑均从仓库根执行——**MINOR-A**：在 `apps/mobile` 内执行同一命令会打印 `apps/mobile: No such file or directory` 且 grep 以 exit 2 失败——旧记录的 `exit 1` 实为管道误读，属假通过；已在 §复现命令 拆分为"应用侧（apps/mobile）"与"仓库根侧"两段） | 密钥语义标识符干净（NIT-2：早前记录的命令漏 `secretKey` 且范围窄于宪法，已改正） |
 | expo-doctor | `npx --yes expo-doctor@latest` | 0 | **21/21 passed** |
 
 ### Task 4 状态
@@ -132,7 +132,7 @@
 | AC-3 Android 路由 smoke | `[x]` | 2026-10-18：五路由 deep-link + UI dump + 截图（`evidence/ui-*.xml`）；2026-10-19 复验：TLS 通道重连、`adb reverse tcp:8082` + dev-server deep link 重新拉起，onboarding 页 UI dump 正常（红屏仅因传输切换后未重连，已恢复） |
 | AC-4 Web 路由 smoke | `[x]` | 2026-10-18：curl `/index.html /home.html /receive.html /send.html` → 全部 200 + 标记（服务器 job 常驻 8931） |
 | AC-5 依赖漂移 | `[x]` | `git diff apps/mobile/package.json`：仅批准行（expo-router + peer 集、nativewind/tailwindcss/css-interop、reanimated/worklets、flash-list、babel-preset-expo、expo 补丁对齐 + `expo.install.exclude`） |
-| AC-6 R1 + Not configured | `[x]` | 2026-10-19 复跑宪法原文命令（含 `secretKey`，范围 `apps/mobile`）→ exit 1（零命中）；四页 UI dump 均含 "Not configured" |
+| AC-6 R1 + Not configured | `[x]` | 2026-10-19 复跑宪法原文命令（含 `secretKey`，范围 `apps/mobile`，**从仓库根执行**）→ exit 1（零命中、无 "No such file or directory"）；四页 UI dump 均含 "Not configured" |
 | AC-7 tokens = ui-wallet §2.3 | `[x]` | `src/theme/tokens.ts` 逐值比对（11 色 / 3 半径 / 2 间距 / 1 字体）；tailwind.config.js 全部从 tokens 映射 |
 
 ## Handoff 清单（下一 roadmap 条目规划轮逐条裁定，B.7-1/B.7-2）
@@ -184,14 +184,19 @@
 
 ### 复现命令
 
+    # 1) 应用侧（工作目录 apps/mobile）
     pnpm install --frozen-lockfile
     cd apps/mobile
     npx --no-install tsc --noEmit
     npx expo export -p web --output-dir /tmp/t21-web
-    grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/   # 期望无输出（exit 1）
-    grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile \
-      --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'   # 期望无输出（exit 1）
+    grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/; echo "R7 exit: $?"   # 期望 exit 1（无输出）
     npx --yes expo-doctor@latest                                                    # 21/21
+
+    # 2) 仓库根侧（工作目录 = 仓库根；**R1 必须在此执行**，MINOR-A）
+    cd /home/superguo/Projects/NexVaultRN
+    grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile \
+      --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'
+    echo "R1 exit: ${PIPESTATUS[0]}"   # 期望 exit 1，且不得出现 'apps/mobile: No such file or directory'
 
 ### 已知开放项（记录在案的决策，**不是缺陷**）
 
@@ -213,6 +218,21 @@
 | **NIT-5** 公告板记录与验证文档不一致 | 采纳 | 本文件 §收尾材料 改为按分支实际状态描述：本评审分支（自 main `26ad458`）cell 仍为 `… T2.2`；`T2.1a → T2.2` 的治理提交在 `feature/T2.1a-mobile-ui-parity`（`c27c96d`），随 T2.1a 合入 | 本文件 §收尾材料；`feature/T2.1a-mobile-ui-parity` |
 
 **评审修复轮复跑（2026-10-19）**：`expo export -p web` exit 0（6 静态路由）；`tsc --noEmit` exit 0；R7 grep exit 1（干净）；R1 宪法原文命令 exit 1（干净）。
+## Review round 2 (2026-10-19, 第二轮复核发现处置)
+
+| Finding | 判定 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-A** R1 命令在应用目录内假通过 | 采纳 | §复现命令 拆为两段："1) 应用侧（apps/mobile）"与"2) 仓库根侧（R1 必须在此执行）"；Task 4 / AC-6 行标注工作目录 = 仓库根；并记录反例形态（从 `apps/mobile` 执行 → `grep: apps/mobile: No such file or directory`，exit **2**；旧记录的 `exit 1` 属管道误读） | 本节复跑证据 |
+| **NIT-A** B.6-1 的"未来命令"非法 | 采纳 | 改为 `pnpm -r --if-present run typecheck`（各包提供 `typecheck` script；`--if-present` 是 `run` 的旗标，不是 `exec` 的）；实测旧命令：`[ERROR] Unknown option: 'if-present'`，exit 1 | `AGENTS.md` §B.6-1；本节复跑 |
+| **NIT-B** R4 行 peer 引文过期 | 采纳 | 按**实际安装**的 expo-router **57.0.28** 更正：expo-linking `^57.0.13`、expo-constants `^57.0.22`（`specs/tech-stack.md` §2 两行 + `doc/dependencies.md` §6d 两行） | `node_modules/expo-router/package.json`（version 57.0.28）；两文件 |
+| **NIT-C** | **未收到正文**——粘贴内容在 NIT-B 之后截断为 `iew), but §Review-fix round`，无法据以修复 | 请 owner 补发 NIT-C 正文后再处置 | — |
+
+**复跑证据（2026-10-19）**：
+
+- 仓库根 R1：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'` → 零输出，**exit 1**（正确形态）
+- `apps/mobile` 内跑同一命令 → `grep: apps/mobile: No such file or directory`，**exit 2**（反例，不得作为干净证据）
+- `pnpm -r --if-present exec tsc --noEmit` → `[ERROR] Unknown option: 'if-present'`，**exit 1**（NIT-A 实证）
+
 
 
 

@@ -128,8 +128,8 @@
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
-| expo-linking | ~57.0.13（SDK 解析） | 深层链接（scheme `nexvault`；路由 deep-link smoke 依赖） | apps/mobile | 高（Expo 官方） | 无 | expo-router 57 必需 peer（`^57.0.12`）。信任依据：第一方制品随 SDK 发布；lockfile 精确。[^2^] |
-| expo-constants | ~57.0.22（SDK 解析） | 应用常量/配置注入 | apps/mobile | 高（Expo 官方） | 无 | expo-router 57 必需 peer（`^57.0.21`）。[^2^] |
+| expo-linking | ~57.0.13（SDK 解析） | 深层链接（scheme `nexvault`；路由 deep-link smoke 依赖） | apps/mobile | 高（Expo 官方） | 无 | expo-router **57.0.28** 必需 peer（`^57.0.13`）。信任依据：第一方制品随 SDK 发布；lockfile 精确。[^2^] |
+| expo-constants | ~57.0.22（SDK 解析） | 应用常量/配置注入 | apps/mobile | 高（Expo 官方） | 无 | expo-router **57.0.28** 必需 peer（`^57.0.22`）。[^2^] |
 | expo-status-bar | ~57.0.1（SDK 解析） | 状态栏样式（暗色主题 light 图标） | apps/mobile | 高（Expo 官方） | 无 | expo-router 手动安装文档钉版。[^2^] |
 | react-native-safe-area-context | ~5.7.0（SDK 解析） | 安全区（SafeAreaView） | apps/mobile | 高（官方维护、Expo 生态标准） | 无 | expo-router 57 peer（`>=5.4.0`）。[^2^] |
 | react-native-screens | ~4.26.2（SDK 解析） | 原生屏幕容器（Stack） | apps/mobile | 高（Software Mansion） | 无 | expo-router 57 peer（`^4.26.0`）。[^2^] |

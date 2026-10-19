@@ -186,7 +186,7 @@ nexvault-rn/
 
 ### B.6 质量门禁（binding）
 
-1. **TypeScript strict 模式**：根与全部 workspace 包 `tsconfig.json` 必须 `"strict": true`。**CI 门禁命令（2026-10-19 修订，T2.1 评审 MINOR-1）**：当前唯一 TS 工程为 `apps/mobile`，门禁为 `pnpm --filter mobile exec tsc --noEmit` 且要求零错误；**注意** `pnpm -r exec tsc --noEmit` 在本 workspace（无根 `package.json`、`packages/*` 为空）下是 no-op（exit 0、零工程匹配），**不得**作为 CI 门禁；`packages/*` 出现 TS 工程后改为 `pnpm -r --if-present exec tsc --noEmit` 并保留 app 侧覆盖。禁止以 `// @ts-ignore` 压制（`@ts-expect-error` 须附注释理由）。
+1. **TypeScript strict 模式**：根与全部 workspace 包 `tsconfig.json` 必须 `"strict": true`。**CI 门禁命令（2026-10-19 修订，T2.1 评审 MINOR-1）**：当前唯一 TS 工程为 `apps/mobile`，门禁为 `pnpm --filter mobile exec tsc --noEmit` 且要求零错误；**注意** `pnpm -r exec tsc --noEmit` 在本 workspace（无根 `package.json`、`packages/*` 为空）下是 no-op（exit 0、零工程匹配），**不得**作为 CI 门禁；`packages/*` 出现 TS 工程后：各包在 `package.json` 提供 `typecheck` script，门禁改为 `pnpm -r --if-present run typecheck`（**NIT-A 更正**：`--if-present` 是 `run` 的旗标，pnpm 11.28.5 下 `exec --if-present` 会报 `Unknown option`），并保留 app 侧覆盖。禁止以 `// @ts-ignore` 压制（`@ts-expect-error` 须附注释理由）。
 2. **ESLint 严格规则集**：`eslint-config-expo` + 显式开启 `no-console`（warn 级，R5 配套）、`no-restricted-imports`（禁 `@react-navigation/*` 直接导入，SDK 56 起已解耦）[^8^]；lint 零 error 方可进入 validation。
 3. **Jest 单测**：`jest-expo` 跑 `packages/vault-core` 与关键 hooks/util；密码学路径必须含 BIP-39/BIP-32 官方测试向量对拍（向量对拍仅允许在测试代码中引用 `@noble/curves` devDependency）。
 4. **真机走查**：每个 feature 的手工侧按 B.4 执行；安全相关 AC 模拟器不算数。

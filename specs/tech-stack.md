@@ -18,8 +18,8 @@
 | react-native / react | 0.86（0.86.3）/ 19.2.3 | apps/mobile | 随 SDK 钉版，不单独升级 |
 | react-native-web | ~0.21.0 | apps/mobile | Web 端渲染层 |
 | expo-router | ~57（57.0.26） | apps/mobile | 版本与 SDK 对齐；禁 `@react-navigation/*` 直接导入 |
-| expo-linking | ~57.0.13 | apps/mobile | expo-router 57 必需 peer（`^57.0.12`）；深层链接；**2026-10-19 T2.1 评审 MAJOR-1 R4 补记**（T2.1 Task 1 首装，SDK 解析、lockfile 精确） |
-| expo-constants | ~57.0.22 | apps/mobile | expo-router 57 必需 peer（`^57.0.21`）；同上补记 |
+| expo-linking | ~57.0.13 | apps/mobile | expo-router **57.0.28** 必需 peer（`^57.0.13`）；深层链接；**2026-10-19 T2.1 评审 MAJOR-1 R4 补记**（T2.1 Task 1 首装，SDK 解析、lockfile 精确）；NIT-B：引文按实际安装版本核对 |
+| expo-constants | ~57.0.22 | apps/mobile | expo-router **57.0.28** 必需 peer（`^57.0.22`）；同上补记；NIT-B：引文按实际安装版本核对 |
 | expo-status-bar | ~57.0.1 | apps/mobile | expo-router 手动安装文档钉版；状态栏样式；同上补记 |
 | react-native-safe-area-context | ~5.7.0 | apps/mobile | expo-router 57 peer（`>=5.4.0`）；安全区；同上补记 |
 | react-native-screens | ~4.26.2 | apps/mobile | expo-router 57 peer（`^4.26.0`）；原生屏幕容器；同上补记 |
