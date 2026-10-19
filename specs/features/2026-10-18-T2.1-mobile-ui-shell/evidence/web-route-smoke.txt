@@ -1,0 +1,11 @@
+# T2.1 web route smoke (curl transcript) — 2026-10-19, review-fix round (NIT-3)
+# artifact: /tmp/t21-web (exported by: npx expo export -p web --output-dir /tmp/t21-web)
+# server: python3 -m http.server 8931 -d /tmp/t21-web
+
+GET http://127.0.0.1:8931/index.html -> HTTP 200 | 'Not configured' hits: 1 | <title data-rh="true">NexVault</title>
+GET http://127.0.0.1:8931/home.html -> HTTP 200 | 'Not configured' hits: 1 | <title data-rh="true">NexVault</title>
+GET http://127.0.0.1:8931/receive.html -> HTTP 200 | 'Not configured' hits: 1 | <title data-rh="true">NexVault</title>
+GET http://127.0.0.1:8931/send.html -> HTTP 200 | 'Not configured' hits: 1 | <title data-rh="true">NexVault</title>
+GET http://127.0.0.1:8931/+not-found.html -> HTTP 200 | 'Not configured' hits: 0 | <title data-rh="true">NexVault</title>
+
+# html/body/#root background rule present in the export CSS: html,body,#root{background-color:#1b1815}

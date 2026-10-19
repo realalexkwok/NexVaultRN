@@ -14,7 +14,7 @@ const PLACEHOLDER_ROWS = [
 
 export default function HomeScreen() {
   return (
-    <Screen title="Home">
+    <Screen title="Home" scroll={false}>
       <View className="bg-surface rounded-card border border-border p-cardPad mb-cardPad">
         <Text className="text-textDim">Balance</Text>
         <Text className="text-text text-xl font-bold mt-cardPad">Not configured</Text>
