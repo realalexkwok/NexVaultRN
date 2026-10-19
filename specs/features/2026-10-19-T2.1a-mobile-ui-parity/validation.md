@@ -140,6 +140,26 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 ### 7.5 待 owner
 MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告板行 + `--no-ff` 合并 + 删分支 + push main。
 
+### 7.6 红屏事件与独立 release 构建（2026-10-19 21:14–21:45）
+
+- 用户报告红屏 `Unable to load script`：**dev build 依赖 Metro**（`adb reverse` + 8082）；Metro/端口断开即红屏——普通用户体验不可接受（T2.1 的 dev-build 已知限制）。本期把「可演示产物」升级为 **release APK（内置 JS bundle，零 Metro 依赖）**。
+- 构建：`cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a` → **BUILD SUCCESSFUL in 2m 26s**（532 tasks；先跑过 4 ABI 全量构建约 25 min 后中止，arm64-only 提速）。
+- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。
+- **独立运行实证：先停 Metro（job killed）** → `adb install -r app-release.apk` → `monkey -p io.github.realalexkwok.nexvault -c android.intent.category.LAUNCHER 1` → onboarding 渲染（无红屏、无 Metro）；五 tab 逐一点按 + 文本核对（home/history/dapp/nft/settings 全部命中）+ receive/send deep link。
+- 截图（release 产物）：`evidence/shell-release-{index,home,history,dapp,nft,settings,receive,send}.png`。
+- 注：NativeTabs 对短 `input tap` 不敏感（dev/release 均如此）→ 脚本用 `input swipe x y x y 120`（120ms 按压）切换 tab，已记入复现命令。
+
+### 7.7 复现命令（release 验收）
+
+```bash
+cd /home/superguo/Projects/NexVaultRN/apps/mobile
+JAVA_HOME=/home/superguo/tools/jdk-17 ./android/gradlew -p android :app:assembleRelease -PreactNativeArchitectures=arm64-v8a
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb shell monkey -p io.github.realalexkwok.nexvault -c android.intent.category.LAUNCHER 1
+# tab 切换（NativeTabs 需 120ms 按压）
+adb shell input swipe 320 2270 320 2270 120
+```
+
 ## 复现命令（app 侧，`apps/mobile`）
 
 ```bash
