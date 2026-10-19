@@ -10,6 +10,8 @@ export default function TabsLayout() {
   return (
     <NativeTabs
       tintColor={tokens.color.primary}
+      iconColor={{ default: tokens.color.onSurfaceVariant, selected: tokens.color.primary }}
+      indicatorColor={tokens.color.primaryContainer}
       labelStyle={{ color: tokens.color.onSurfaceVariant }}
       backgroundColor={tokens.color.surface}
       disableTransparentOnScrollEdge
@@ -19,7 +21,7 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
-        <NativeTabs.Trigger.Icon sf="clock" md="receipt_long" />
+        <NativeTabs.Trigger.Icon sf="receipt" md="receipt" />
         <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="dapp">

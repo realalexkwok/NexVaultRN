@@ -17,16 +17,19 @@ export function Screen({
   scroll = true,
   showBack = false,
   opaqueBar = false,
+  gutter = 'md',
 }: {
   title?: string;
   children: ReactNode;
   scroll?: boolean;
   showBack?: boolean;
   opaqueBar?: boolean;
+  /** Original screens use spacingLg (24) on onboarding/receive and spacingMd (16) elsewhere. */
+  gutter?: 'md' | 'lg';
 }) {
   const contentStyle = {
     flexGrow: 1,
-    paddingHorizontal: tokens.spacing.gutterMd,
+    paddingHorizontal: gutter === 'lg' ? tokens.spacing.gutterLg : tokens.spacing.gutterMd,
     paddingBottom: tokens.spacing.lg,
   };
   return (

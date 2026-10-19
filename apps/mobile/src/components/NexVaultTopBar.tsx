@@ -25,14 +25,17 @@ export function NexVaultTopBar({
       className={`w-full ${opaque ? 'bg-card-surface' : 'bg-transparent'} ${className}`}
       style={{ paddingTop: insets.top }}
     >
-      <View className="h-14 w-full flex-row items-center justify-center px-md">
+      {/* M3 CenterAlignedTopAppBar content row = 64dp (TopAppBarDefaults); the Kotlin bar itself
+          measures status inset + this row (NexVaultTopBar.kt deliberately does not force height). */}
+      <View className="w-full flex-row items-center justify-center px-md" style={{ height: tokens.spacing.s64 }}>
         {showBack ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
             onPress={onBack}
             hitSlop={tokens.spacing.sm}
-            className="absolute left-md h-10 w-10 items-center justify-center"
+            className="absolute left-md items-center justify-center"
+            style={{ width: tokens.size.tokenIcon, height: tokens.size.tokenIcon }}
           >
             <Text className="text-headline-small font-inter-regular text-text-high">{'\u2190'}</Text>
           </Pressable>

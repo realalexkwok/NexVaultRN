@@ -39,11 +39,22 @@ export default function HomeScreen() {
         <Text className="text-body-small font-inter-regular text-text-medium">Not configured</Text>
       </View>
       <View className="mt-sm flex-row justify-evenly">
-        {INTERVALS.map((label) => (
-          <View key={label} className="rounded-chip border border-outline-variant px-md py-xs">
-            <Text className="text-label-large font-inter-medium text-text-medium">{label}</Text>
-          </View>
-        ))}
+        {INTERVALS.map((label) => {
+          // FilterChip(selected = days == selectedDays); default range is 7D (HomeUiState)
+          const selected = label === '7D';
+          return (
+            <View
+              key={label}
+              className={`rounded-chip border px-md py-s6 ${selected ? 'border-secondary-container bg-secondary-container' : 'border-outline-variant'}`}
+            >
+              <Text
+                className={`text-label-large font-inter-medium ${selected ? 'text-on-secondary-container' : 'text-text-medium'}`}
+              >
+                {label}
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
       {/* QuickActionsRow — FilledTonalIconButton equivalents (secondaryContainer circle + label) */}
@@ -56,11 +67,11 @@ export default function HomeScreen() {
               disabled={action.onPress === undefined}
               onPress={action.onPress}
               hitSlop={tokens.spacing.sm}
-              className="h-12 w-12 items-center justify-center rounded-full bg-secondary-container"
+              className="h-action w-action items-center justify-center rounded-full bg-secondary-container"
             >
               <Text className="text-headline-small font-inter-semibold text-on-secondary-container">{action.glyph}</Text>
             </Pressable>
-            <Text className="text-body-small font-inter-regular text-text-high">{action.label}</Text>
+            <Text className="text-label-small font-inter-medium text-on-surface-variant">{action.label}</Text>
           </View>
         ))}
       </View>

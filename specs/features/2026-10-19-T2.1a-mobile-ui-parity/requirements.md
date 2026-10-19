@@ -56,7 +56,7 @@
 | AC-1 | `pnpm --filter mobile exec tsc --noEmit` exit 0 | B.6-1 | 命令 + 退出码 |
 | AC-2 | `npx expo export --platform web -o /tmp/t21a-web` exit 0（≈9 静态路由）；产物 JS grep 无 `signDigest|importMnemonic|vault-core` | R7 / TC-UI-001 子集 | 命令 + 退出码 + 产物路径 + grep 观察结果 |
 | AC-3 | R1 grep（apps/mobile）与 R5 console 启发式 grep 零命中 | R1/R5 门禁 | grep 观察结果 |
-| AC-4 | 依赖漂移 = 仅 expo-font 行（`git diff apps/mobile/package.json pnpm-lock.yaml`） | R4 门禁 | diff 输出 |
+| AC-4 | 依赖漂移 = 仅两行 owner 批准（`expo-font ~57.0.4` + 构建期 `@babel/plugin-transform-react-jsx 7.29.7`）（`git diff apps/mobile/package.json pnpm-lock.yaml`） | R4 门禁 | diff 输出 |
 | AC-5 | Android 路由 smoke：tabs ×5 + receive + send + not-found deep-link 0 crash | TC-UI-001 子集 / MAN-016 前奏 | adb 命令 + UI dump + 截图路径 |
 | AC-6 | Web 路由 smoke：静态导出 curl 全路由 200 | TC-UI-009 子集 | curl 转录 |
 | AC-7 | tokens.ts == ui-wallet §2.3 快照；zero-hardcode 漂移审计（hex/rgba 字面量、魔法间距、临场字号、重复组件）file:line 全清零或登记 | TC-UI-007 | 逐值比对 + 审计报告 |

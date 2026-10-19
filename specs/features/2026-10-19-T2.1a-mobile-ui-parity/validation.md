@@ -1,6 +1,6 @@
 # T2.1a — mobile UI visual parity — validation
 
-> Status: 实现完成（Task 2–6，静态门禁全绿，2026-10-19）；设备门禁（Android 路由 smoke + MAN-016）待 Pixel 6a 重连后执行。
+> Status: 实现完成（Task 2–7，设备 smoke + release 验收完成，2026-10-19）；MAN-016 owner 裁决待定；评审修复轮见 §7.10。
 > 三档制（B.4）：本文件所有 `[x]` 均须命令原文 + 观察结果 + 构件绝对路径；双侧齐备。
 
 ## 规划轮（2026-10-19，owner 裁定）
@@ -131,8 +131,8 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 
 | # | 偏差 | 说明 |
 |---|---|---|
-| D-a | M3 active indicator 颜色 | NativeTabs 未暴露 indicator 颜色（文档仅 `tintColor`/`backgroundColor`/`labelStyle`），系统主题给琥珀调；原 app 为 primaryContainer #1E3A8A |
-| D-b | Home 头部 | 保留 wordmark + 链选择器胶囊行；原 app Home 首屏直接是余额卡（无 wordmark） |
+| D-a | M3 active indicator 颜色 | **已修复（§7.10 M2）**：57.0.28 的 `NativeTabsProps.indicatorColor`/`iconColor` 存在（types.d.ts:354/242），已接 primaryContainer / onSurfaceVariant；§7.4 原「未暴露」判断作废 |
+| D-b | Home 头部 | **已修复（§7.8）**：wordmark 删除；链选择器下拉行保留（原 app 未选链时整行隐藏 — 记为差异） |
 | D-c | 选中态 filled 图标 | 单 md/sf 图标 + primary tint（filled 变体名待验证/后续） |
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
@@ -144,7 +144,7 @@ MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告
 
 - 用户报告红屏 `Unable to load script`：**dev build 依赖 Metro**（`adb reverse` + 8082）；Metro/端口断开即红屏——普通用户体验不可接受（T2.1 的 dev-build 已知限制）。本期把「可演示产物」升级为 **release APK（内置 JS bundle，零 Metro 依赖）**。
 - 构建：`cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a` → **BUILD SUCCESSFUL in 2m 26s**（532 tasks；先跑过 4 ABI 全量构建约 25 min 后中止，arm64-only 提速）。
-- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。
+- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。**注（2026-10-19 评审 n3）**：该 21:43 构建已被 22:26 重建覆盖 —— 现行 APK 44,892,134 B / bundle 3,067,008 B，见 §7.10 n3。
 - **独立运行实证：先停 Metro（job killed）** → `adb install -r app-release.apk` → `monkey -p io.github.realalexkwok.nexvault -c android.intent.category.LAUNCHER 1` → onboarding 渲染（无红屏、无 Metro）；五 tab 逐一点按 + 文本核对（home/history/dapp/nft/settings 全部命中）+ receive/send deep link。
 - 截图（release 产物）：`evidence/shell-release-{index,home,history,dapp,nft,settings,receive,send}.png`。
 - 注：NativeTabs 对短 `input tap` 不敏感（dev/release 均如此）→ 脚本用 `input swipe x y x y 120`（120ms 按压）切换 tab，已记入复现命令。
@@ -173,6 +173,27 @@ adb shell monkey -p io.github.realalexkwok.nexvault -c android.intent.category.L
 # tab 切换（NativeTabs 需 120ms 按压）
 adb shell input swipe 320 2270 320 2270 120
 ```
+
+### 7.10 评审修复轮（2026-10-19 22:43–23:55）
+
+| 发现 | 处置 | 证据/状态 |
+|---|---|---|
+| **M1** 首屏文本截断 | 根因：Inter 异步加载后 RN 未重测文本（fallback 测宽、Inter 绘字更宽 → 裁掉尾字）。修复：① `app.json` 加 **expo-font config plugin**，Android 用 xml 字体族名 `inter-regular`…（与 className 一致）、iOS 内嵌 4 个 TTF —— 首帧即用 Inter 测量；② 保留 `useFonts`（web 路径）+ 字体加载完成后的 keyed remount 兜底 | 构建 `/tmp/t21a-rel8.log` **BUILD SUCCESSFUL 5m44s**；APK 45,696,498 B；**装机复核待手机唤醒**（安装期间 Pixel 6a 睡眠、adb shell 超时） |
+| **M2** NativeTabs 颜色 | `NativeTabsProps.indicatorColor/iconColor` 确实存在（types.d.ts:354/242）→ 接入 `indicatorColor=primaryContainer`、`iconColor={default:onSurfaceVariant,selected:primary}`；§7.4 D-a 旧结论作废 | 23:16 截图 `shell-release-home.png`：指示胶囊已为 cobalt ✓ |
+| **M3** Home 动作 42dp | `h-12 w-12`（rem=14 → 42dp）→ `h-action w-action`（56dp）；标签 body-small/textHigh → labelSmall/onSurfaceVariant | 同上截图：圆 56dp、标签灰 ✓ |
+| **m1** gutter 硬编码 | `Screen` 增 `gutter?: 'md' | 'lg'`；onboarding/receive 用 24 | 代码 |
+| **m2** onboarding 非转录 | 重写 `index.tsx` 按 WelcomeScreen.kt：120dp 盾牌+锁、displaySmall、tagline "Your keys. Your crypto."、底部双按钮（间距 16、底部 48）、gutter 24。**参考侧 Welcome 截图不可得**（原 app 已初始化钱包，仅 Unlock 可见；未清空参考数据）→ 该行 MAN-016 以代码对照（WelcomeScreen.kt:77-125）承载 | 23:16 dump：NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview ✓（新构建装机后补截图） |
+| **m3** chip 无选中态 | 7D 默认选中（secondaryContainer #005045 + onSecondaryContainer）；chip 高 32dp（py-s6） | 23:16 截图 ✓ |
+| **m4** web tab 无选中态 | web 布局用 `usePathname()`：选中 primary 图标/文字 + primaryContainer 指示胶囊；`accessibilityState={{selected}}` → web 输出 aria-selected | 修复后重新导出复核 |
+| **m5** not-found 缺设备证据 | `nexvault://definitely-not-a-route` → "Not found / This route does not exist. / Go to Home"；截图 `evidence/shell-release-notfound.png` | 23:16 设备 dump ✓ |
+| **m6** 5-tab 不可达 | Welcome 底部加 "Shell preview →"（demo affordance，T4.1 随真实 onboarding 移除；已记录为偏差） | 23:16 dump ✓ |
+| **n1** TopBar 49dp | `h-14`（rem=14 → 49dp）→ 显式 64dp（M3 CenterAlignedTopAppBar 内容行）；注释更正；back 按钮 40dp 用 token | 代码 |
+| **n2** bottomNav 64 无出处 | 新增 `tokens.size.navBar = 80`（M3 默认，设备实测）；web bar 用 80；ui-wallet §2.1 已更正 | 代码 + spec |
+| **n3** 记录不一致 | 头部状态 / D-a / D-b / §7.6 尺寸（被 22:26 重建覆盖）/ AC-4（两行批准依赖）逐条更正 | 本文件 |
+| **n4** inverse 色缺失 | tokens.ts + ui-wallet §2.3 补 inverseSurface/inverseOnSurface/inversePrimary/surfaceTint | 代码 + spec |
+| **n5** 图标名漂移 | History `md="receipt" / sf="receipt"`（原 Icons.Filled.Receipt） | 代码 |
+
+> 待办：手机唤醒后重装 45,696,498 B APK，补 (a) 3× 冷启动首屏截图（M1 复核）、(b) 五 tab + not-found 截图、(c) web 重新导出后的 tab 选中态截图。
 
 ## 复现命令（app 侧，`apps/mobile`）
 

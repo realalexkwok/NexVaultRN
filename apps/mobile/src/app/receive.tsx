@@ -7,7 +7,7 @@ import { Screen } from '@/components/Screen';
 // params (spec: ui-wallet §2.1). Until wired: honest "Not configured" (R5).
 export default function ReceiveScreen() {
   return (
-    <Screen title="Receive" showBack>
+    <Screen title="Receive" showBack gutter="lg">
       <NexVaultCard className="items-center">
         <Text className="text-body-medium font-inter-regular text-text-medium">Receive address</Text>
         <Text className="mt-sm text-headline-small font-inter-semibold text-text-high">Not configured</Text>

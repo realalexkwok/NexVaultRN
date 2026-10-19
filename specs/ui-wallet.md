@@ -26,7 +26,8 @@ app/
   (tabs)/
     _layout.tsx            # NativeTabs（2026-10-19 T2.1a 实装：Home/History/DApp/NFT/Settings；
                            # 容器 surface、选中 primary、未选中 onSurfaceVariant、indicator primaryContainer、
-                           # label labelSmall、高 64 —— 原仓库 MainScreen.kt/MainTab.kt 证据）
+                           # label labelSmall、高 80（M3 NavigationBar 默认；NexVaultDimens.bottomNavHeight=64
+                           # 在 MainScreen.kt 未被使用 —— 2026-10-19 评审更正）—— 原仓库 MainScreen.kt/MainTab.kt 证据）
     home.tsx               # 资产总览（T2.1a 视觉对齐：无 TopBar、链选择器行领起；数据接入 T2.2/T4.x）
     history.tsx            # 交易历史 FlashList v2（T2.1a："Not configured" 占位，R5）
     dapp.tsx               # DApp 浏览器（T2.1a："Not configured" 占位；WalletConnect v2 后置）
@@ -158,6 +159,8 @@ export const tokens = {
 纪律：原生端 NativeWind v4 className；Web 端同一 className 直通 RN Web 的 Tailwind CSS [^5^]；禁止引入 NativeWind v5 RC（钉住带 CVE-2026-97724 的 worklets 0.10.1 [^6^]）。
 
 **2026-10-19 修订（T2.1a 规划轮，owner D2）**：令牌块整体替换为原仓库设计系统（见上；证据注释 `// Color.kt:DarkPrimary @3c7487f` 格式，转录错误按 T1.3 向量转录发现同级处置）；暖色块（`#1B1815`/`#C79A6B` 等）作废；地址等宽 + 首尾高亮纪律随地址组件（T4.x）落地，原 `addressMono` 键不再保留（原仓库无 mono 字体）。
+
+**2026-10-19 评审补全（Color.kt dark scheme 完整性）**：inverseSurface `#E6E1E5` · inverseOnSurface `#313033` · inversePrimary `#0A2472` · surfaceTint = primary `#2D5AF0`（当前无屏幕使用，仅补全方案色板）。
 
 ### 2.4 动画与列表接口纪律
 

@@ -14,7 +14,7 @@ import { tokens } from '@/theme/tokens';
 // tree on font load leaves the splash up forever if the asset never settles, so text falls back
 // to the system face until Inter resolves (device check 2026-10-19).
 export default function RootLayout() {
-  useFonts({
+  const [fontsLoaded] = useFonts({
     'inter-regular': require('../../assets/fonts/inter_regular.ttf'),
     'inter-medium': require('../../assets/fonts/inter_medium.ttf'),
     'inter-semibold': require('../../assets/fonts/inter_semibold.ttf'),
@@ -27,7 +27,10 @@ export default function RootLayout() {
         <meta name="theme-color" content={tokens.color.bg} />
       </Head>
       <StatusBar style="light" />
+      {/* Keyed remount once Inter resolves: the first frame is measured with the fallback face and
+          RN does not re-measure text after a font swap → clipped last words (review M1, 2026-10-19). */}
       <Stack
+        key={fontsLoaded ? 'fonts-ready' : 'fonts-pending'}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: tokens.color.bg },
