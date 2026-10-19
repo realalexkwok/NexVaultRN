@@ -1,25 +1,20 @@
-import { Link } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Text } from 'react-native';
 
+import { NexVaultCard } from '@/components/NexVaultCard';
 import { Screen } from '@/components/Screen';
 
-// Receive shell: address is derived on-device from vault-core (T4.1), never from route params
-// (spec: ui-wallet §2.1). Until wired: honest "Not configured" (R5).
+// Receive shell: the address is derived on-device from vault-core (T4.1), never from route
+// params (spec: ui-wallet §2.1). Until wired: honest "Not configured" (R5).
 export default function ReceiveScreen() {
   return (
-    <Screen title="Receive">
-      <View className="bg-surface rounded-card border border-border p-cardPad items-center">
-        <Text className="text-textDim">Receive address</Text>
-        <Text className="text-text text-xl font-bold mt-cardPad mb-cardPad">Not configured</Text>
-        <Text className="text-textDim text-center">
+    <Screen title="Receive" showBack>
+      <NexVaultCard className="items-center">
+        <Text className="text-body-medium font-inter-regular text-text-medium">Receive address</Text>
+        <Text className="mt-sm text-headline-small font-inter-semibold text-text-high">Not configured</Text>
+        <Text className="mt-sm text-center text-body-small font-inter-regular text-text-medium">
           On-device address derivation is not wired yet.
         </Text>
-      </View>
-      <Link href="/home" asChild>
-        <Pressable className="bg-surface rounded-button border border-border py-3 items-center mt-cardPad">
-          <Text className="text-primary font-semibold">Back to Home</Text>
-        </Pressable>
-      </Link>
+      </NexVaultCard>
     </Screen>
   );
 }
