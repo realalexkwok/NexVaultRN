@@ -94,7 +94,7 @@
 | 项 | 状态 |
 |---|---|
 | 自动侧（deep-link + UI dump + 截图 + logcat） | `[x]` verified 2026-10-18（Pixel 6a / Android 17，fingerprint `google/bluejay/bluejay:17/CP2A.260705.006/15641320`） |
-| 人工侧（owner 点走，MAN-014） | `[~]` 待走查——Metro 8082 保持常驻供走查（expo dev server job 未杀） |
+| 人工侧（owner 点走，MAN-014） | `[x]` verified 2026-10-19——**owner 点走通过**（Pixel 6a / Android 17；自动侧截图 + UI dump 见 `evidence/`） |
 
 ## Task 6 — Web 路由 smoke（2026-10-18）
 
@@ -109,7 +109,7 @@
 | 项 | 状态 |
 |---|---|
 | 自动侧（导出 + curl 四路由 200 + 标记） | `[x]` verified 2026-10-18 |
-| 人工侧（owner 浏览器走查，MAN-015） | `[~]` 待走查（`npx expo start --web` 或 127.0.0.1:8931） |
+| 人工侧（owner 浏览器走查，MAN-015） | `[x]` verified 2026-10-19——**owner 浏览器走查通过**（桌面浏览器；自动侧 curl 四路由 200 见 Task 6） |
 ## T2.1 总览（截至 2026-10-18 实现完成）
 
 | 项 | 状态 |
@@ -119,9 +119,9 @@
 | Task 2 路由接线 + 四页空壳 | `[x]` verified（typed routes 生成物 + tsc + 真机渲染） |
 | Task 3 NativeWind v4 + 令牌 + FlashList | `[x]` verified（tokens 逐值 = ui-wallet §2.3；tailwind 映射单一来源） |
 | Task 4 自动门禁（export/tsc/R7/R1/doctor） | `[x]` verified |
-| Task 5 Android smoke 自动侧 | `[x]` verified（真机五路由渲染 + 0 crash）；人工侧 MAN-014 `[~]` |
-| Task 6 Web smoke 自动侧 | `[x]` verified（curl 四路由 200 + 标记）；人工侧 MAN-015 `[~]` |
-| Task 7 收尾（Handoff + 公告板 + git） | `[~]` 待 owner：MAN-014/015 走查结论 + 闭项指令（本轮按要求停在实现完成处） |
+| Task 5 Android smoke | `[x]` verified（自动侧：真机五路由渲染 + 0 crash；人工侧：MAN-014 owner 点走通过 2026-10-19） |
+| Task 6 Web smoke | `[x]` verified（自动侧：curl 四路由 200 + 标记；人工侧：MAN-015 owner 浏览器走查通过 2026-10-19） |
+| Task 7 收尾（Handoff + 公告板 + git） | `[x]` verified 2026-10-19（owner 闭项指令：公告板行 + merge --no-ff 入 main + 分支删除 + push） |
 
 ## AC 对照（收尾核对，2026-10-19 复跑版）
 
@@ -129,8 +129,8 @@
 |---|---|---|
 | AC-1 tsc exit 0 | `[x]` | 2026-10-19 复跑：`npx --no-install tsc --noEmit` → exit 0（含 typed routes `.expo/types/router.d.ts`） |
 | AC-2 web export + R7 grep | `[x]` | 复跑：`expo export -p web` exit 0（6 静态路由）；`grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/` exit 1（零命中） |
-| AC-3 Android 路由 smoke | 自动侧 `[x]` / 人工侧 `[~]` | 2026-10-18：五路由 deep-link + UI dump + 截图（`evidence/ui-*.xml`）；2026-10-19 复验：TLS 通道重连、`adb reverse tcp:8082` + dev-server deep link 重新拉起，onboarding 页 UI dump 正常（红屏仅因传输切换后未重连，已恢复） |
-| AC-4 Web 路由 smoke | 自动侧 `[x]` / 人工侧 `[~]` | 2026-10-18：curl `/index.html /home.html /receive.html /send.html` → 全部 200 + 标记（服务器 job 常驻 8931） |
+| AC-3 Android 路由 smoke | `[x]` | 2026-10-18：五路由 deep-link + UI dump + 截图（`evidence/ui-*.xml`）；2026-10-19 复验：TLS 通道重连、`adb reverse tcp:8082` + dev-server deep link 重新拉起，onboarding 页 UI dump 正常（红屏仅因传输切换后未重连，已恢复） |
+| AC-4 Web 路由 smoke | `[x]` | 2026-10-18：curl `/index.html /home.html /receive.html /send.html` → 全部 200 + 标记（服务器 job 常驻 8931） |
 | AC-5 依赖漂移 | `[x]` | `git diff apps/mobile/package.json`：仅批准行（expo-router + peer 集、nativewind/tailwindcss/css-interop、reanimated/worklets、flash-list、babel-preset-expo、expo 补丁对齐 + `expo.install.exclude`） |
 | AC-6 R1 + Not configured | `[x]` | 2026-10-19 复跑 `grep -rnEi 'mnemonic|privateKey|seedPhrase|xprv' src` → exit 1（零命中）；四页 UI dump 均含 "Not configured" |
 | AC-7 tokens = ui-wallet §2.3 | `[x]` | `src/theme/tokens.ts` 逐值比对（11 色 / 3 半径 / 2 间距 / 1 字体）；tailwind.config.js 全部从 tokens 映射 |
@@ -139,8 +139,8 @@
 
 | # | 事项 | 状态 | 建议处置 |
 |---|---|---|---|
-| T2.1-H1 | 人工走查：Android 路由点走（MAN-014） | `[ ]` open | owner 走查后回填机型/OS/结论，闭 AC-3 人工侧 |
-| T2.1-H2 | 人工走查：Web 浏览器路由走查（MAN-015） | `[ ]` open | owner 走查后回填，闭 AC-4 人工侧 |
+| T2.1-H1 | 人工走查：Android 路由点走（MAN-014） | **`[x]` closed 2026-10-19**（owner 通过；Pixel 6a / Android 17） | — |
+| T2.1-H2 | 人工走查：Web 浏览器路由走查（MAN-015） | **`[x]` closed 2026-10-19**（owner 通过；桌面浏览器） | — |
 | T2.1-H3 | 真实数据接入（FlashList 真实列表、Zustand store、TanStack Query Provider 挂载） | `[ ]` open | replan → T2.2 |
 | T2.1-H4 | 自定入口 polyfill 槽（`index.ts`：`react-native-get-random-values` 首行 + TextEncoder polyfill，ui-wallet §2.1 契约） | `[ ]` open | replan → T2.2（当前入口 = `expo-router/entry`，无 polyfill） |
 | T2.1-H5 | 首页/历史/设置 tabs 导航（NativeTabs）与其余路由表页（unlock/receive-confirm/address-book 等） | `[ ]` open | replan → 后续 UI 条目（T4.x 流程条目） |
@@ -149,14 +149,14 @@
 | T2.1-H8 | `expo-env.d.ts` 被 SDK 57 CLI 自动加入 `.gitignore`（不入库）→ `*.css` 模块声明改由 `nativewind-env.d.ts` 自持 | 已规避（`[x]` 记录） | 备注：CI 裸检出下 tsc 已实证通过（2026-10-19 复跑） |
 | T2.1-H9 | expo-router 解析为 57.0.28（tech-stack 括注 57.0.26，同为 ~57 线）；expo 基座 57.0.28→57.0.30 补丁对齐 | 已记录（`[x]` 备注） | 不需修宪（~57 范围内）；下次 R4 修订时同步括注 |
 
-## 收尾材料（草案，待 owner 闭项指令后执行）
+## 收尾材料（2026-10-19 owner 批准执行）
 
-**Part A 关闭行（草案）**：
+**Part A 关闭行（已写入 AGENTS.md）**：
 > - 2026-10-19：**T2.1 关闭（owner 裁定）**——Expo Router 57 Stack 四页壳（onboarding/home/receive/send + not-found，typed routes、暗色令牌、FlashList v2 占位）；NativeWind 4.2.7 + tailwindcss 3.4.17 + css-interop 0.2.7（R4 修宪 D3/D6）+ Reanimated 4.7.1/worklets 0.13.0/FlashList 2.3.3 精确钉版；门禁 tsc exit 0、web export exit 0（6 静态路由）、R7/R1 grep 零命中、expo-doctor 21/21；Android 真机（Pixel 6a / Android 17）五路由 deep-link 渲染 0 crash（UI dump + 截图）、Web curl 四路由 200；MAN-014/015 走查通过（owner）。证据：`/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/validation.md`
 
-**Part A 工程阶段 cell 更新（草案）**：`… 下一步 **T2.2（viem + polyfill + Zustand/Query 挂载 + 余额只读）**`
+**Part A 工程阶段 cell 更新（已写入）**：`… 下一步 **T2.2（viem + polyfill + Zustand/Query 挂载 + 余额只读）**`
 
-**git（草案）**：`git merge --no-ff -F /tmp/msg.txt` → main；删除 `feature/T2.1-mobile-ui-shell`；push 按 owner 指令（仅 feature/main 范围以 owner 确认为准）。
+**git（已执行 2026-10-19）**：`git merge --no-ff` → main（提交见 main 历史）；本地分支删除；`git push origin main`。
 
 
 
