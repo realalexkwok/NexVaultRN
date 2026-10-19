@@ -160,7 +160,7 @@ MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告
 - 现象：Gradle `:app:createBundleReleaseJsAndAssets` 在 pnpm isolated 布局下冷缓存报 `Cannot find module '@babel/plugin-transform-react-jsx'`（手动 `expo export:embed` 因缓存热而通过）。
 - 排除：`-x :app:createBundleReleaseJsAndAssets` 不可行（RN gradle provider 依赖该 task 输出 → `packageReleaseResources` 失败）；root `public-hoist-pattern` 在本 pnpm 版本未生成根链接（`--force` 后仍无），已回退 `.npmrc`。
 - 采用：把 **lockfile 已有传递依赖** `@babel/plugin-transform-react-jsx@7.29.7` 提升为 `apps/mobile` devDependency（构建期专用；T2.1-D6 css-interop 同型先例）→ 重建 **BUILD SUCCESSFUL in 6m**（532 tasks），APK `44,892,134 B`，装机后 Home 渲染正常。
-- **R4 待批准**：tech-stack §2 行 + dependencies.md §6d 行（版本 7.29.7 精确；"babel-preset-expo 已有传递依赖，pnpm isolated 下 Gradle release 打包按 app 根解析 Babel 插件，提升为直接行仅新增 importer 条目；构建期专用"）。批准后补记；拒绝则回退该 devDependency 并登记为环境限制（release 包改由手动 embed 产物提供 — 已验证不可靠）。
+- **R4 已批准**（owner 2026-10-19 "Sounds good"）：tech-stack §2 行 + dependencies.md §6d 行已补记（版本 7.29.7 精确；构建期专用；仅新增 importer 条目、零新包下载）。
 - 命令：`pnpm add -D @babel/plugin-transform-react-jsx@7.29.7 --filter mobile` → package.json +1 行 / lockfile importer +3 行（零新包下载）。
 
 ### 7.7 复现命令（release 验收）

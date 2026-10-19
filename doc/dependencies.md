@@ -135,6 +135,7 @@
 | react-native-safe-area-context | ~5.7.0（SDK 解析） | 安全区（SafeAreaView） | apps/mobile | 高（官方维护、Expo 生态标准） | 无 | expo-router 57 peer（`>=5.4.0`）。[^2^] |
 | react-native-screens | ~4.26.2（SDK 解析） | 原生屏幕容器（Stack） | apps/mobile | 高（Software Mansion） | 无 | expo-router 57 peer（`^4.26.0`）。[^2^] |
 | babel-preset-expo | ~57.0.15（devDependency，SDK 解析） | Babel 预设（NativeWind v4 babel preset 前置） | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元（与 expo 57.0.30 同线）；仅在构建期使用。[^2^] |
+| @babel/plugin-transform-react-jsx | 7.29.7（精确；构建期） | Babel JSX 转换；Gradle release 打包（`export:embed`）在 pnpm isolated 下按 app 根解析插件，缺此直接行会报 `Cannot find module` | apps/mobile（devDependency） | 高（Babel 官方） | 无 | 与 babel-preset-expo@57.0.15 的传递依赖同版；提升为直接行仅新增 importer 条目、零新包下载；构建期专用，不进运行时 bundle；**2026-10-19 T2.1a R4 修宪（owner 批准）**。[^2^] |
 | expo-font | ~57.0.4（SDK 解析） | 字体加载（useFonts）：Inter 4 权重 TTF（regular/medium/semibold/bold）——原仓库 core/core-ui/src/main/res/font 复制 + res/raw/inter_ofl_license.txt 随包（OFL）；T2.1a 视觉对齐 | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元：expo 基座依赖 ^57.0.4 已在 lockfile（L597），提升为直接行仅新增 importer 条目、依赖图不变；**2026-10-19 T2.1a 规划轮 R4 修宪（owner 批准，D1）**。[^2^] |
 ## 7. 工程化（root / CI）
 

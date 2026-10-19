@@ -25,6 +25,7 @@
 | react-native-safe-area-context | ~5.7.0 | apps/mobile | expo-router 57 peer（`>=5.4.0`）；安全区；同上补记 |
 | react-native-screens | ~4.26.2 | apps/mobile | expo-router 57 peer（`^4.26.0`）；原生屏幕容器；同上补记 |
 | babel-preset-expo | ~57.0.15（devDependency） | apps/mobile | SDK 57 绑定单元；NativeWind v4 babel preset 前置；同上补记 |
+| @babel/plugin-transform-react-jsx | 7.29.7（精确） | apps/mobile（devDependency） | babel-preset-expo 已含同版传递依赖；pnpm isolated 布局下 Gradle release 打包（`export:embed`）按 app 根解析 Babel 插件 → 首轮 release 构建报 `Cannot find module`；提升为直接行仅新增 importer 条目、零新包下载；**构建期专用**；**2026-10-19 T2.1a R4 修宪（owner 批准）** |
 | @tanstack/react-query | 5.104（5.104.2） | apps/mobile | 仅缓存非敏感数据（R5） |
 | zustand | 5.0（5.0.15） | apps/mobile | 密钥语义状态永不进 store（R1） |
 | nativewind | v4（4.2.7） | apps/mobile | **锁 v4**；v5 RC 钉带 CVE 的 worklets，排除；必需 peer `tailwindcss`（v4 稳定线 = Tailwind v3，companion 行见下，**2026-10-18 T2.1 R4 修宪，owner 批准**） |
