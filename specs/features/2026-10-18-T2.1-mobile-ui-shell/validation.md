@@ -154,9 +154,51 @@
 **Part A 关闭行（已写入 AGENTS.md）**：
 > - 2026-10-19：**T2.1 关闭（owner 裁定）**——Expo Router 57 Stack 四页壳（onboarding/home/receive/send + not-found，typed routes、暗色令牌、FlashList v2 占位）；NativeWind 4.2.7 + tailwindcss 3.4.17 + css-interop 0.2.7（R4 修宪 D3/D6）+ Reanimated 4.7.1/worklets 0.13.0/FlashList 2.3.3 精确钉版；门禁 tsc exit 0、web export exit 0（6 静态路由）、R7/R1 grep 零命中、expo-doctor 21/21；Android 真机（Pixel 6a / Android 17）五路由 deep-link 渲染 0 crash（UI dump + 截图）、Web curl 四路由 200；MAN-014/015 走查通过（owner）。证据：`/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/validation.md`
 
-**Part A 工程阶段 cell 更新（已写入）**：`… 下一步 **T2.2（viem + polyfill + Zustand/Query 挂载 + 余额只读）**`
+**Part A 工程阶段 cell 更新（已写入）**：`… 下一步 **T2.1a（视觉对齐原仓库）→ T2.2（viem + polyfill + Zustand/Query + 余额只读）**`
 
 **git（已执行 2026-10-19）**：`git merge --no-ff` → main（提交见 main 历史）；本地分支删除；`git push origin main`。
+## Code review handoff (2026-10-19)
+
+> 评审范围：**`407d5ae..HEAD`**（分支 **`feature/T2.1-mobile-ui-shell`**）。
+> 提交：`9b78205`（实现 + 证据 + 规格/依赖文档）、`5277f9b`（AC 对照 + Handoff 草案）、`d9aa3f2`（闭项文档）、`26ad458`（merge --no-ff），以及本分支最新提交（**本节 §Code review handoff**；T2.1a 的 roadmap 修宪在独立分支 `feature/T2.1a-mobile-ui-parity`，与本评审无关）。
+
+### 阅读顺序
+
+1. `apps/mobile/package.json` / `app.json` / `tsconfig.json`——钉版、`expo.install.exclude`、typed routes、`web.output: "static"`。
+2. `apps/mobile/babel.config.js` / `metro.config.js` / `tailwind.config.js` / `global.css` / `nativewind-env.d.ts`——NativeWind v4 形态（对照 v4.2.7 官方安装页，2026-10-18 实取）。
+3. `apps/mobile/src/theme/tokens.ts`——逐值对照 `specs/ui-wallet.md` §2.3。
+4. `apps/mobile/src/app/_layout.tsx` + `index.tsx` / `home.tsx` / `receive.tsx` / `send.tsx` / `+not-found.tsx` + `src/components/Screen.tsx`。
+5. 本文件 Task 0–7 + `evidence/`（`android-dev-build.log`、`ui-*.xml` ×5、`android-route-*.png` ×5、`web-export.log`）。
+6. 规格/依赖 diff：`specs/tech-stack.md`（tailwindcss / css-interop 行 + swift-secp256k1 追认措辞）、`doc/dependencies.md`（同级）、`specs/dev-environment.md` §1（JDK）、`specs/pending-manual-test-cases.md`（MAN-014/015）、T1.5 `validation.md` 的 H6 行。
+
+### 评审须盯住的红线与不变量
+
+- **R4**：直接依赖仅批准行——expo-router ~57（解析 **57.0.28**，在 tech-stack"~57（57.0.26）"线内）、SDK-57 peer 集、nativewind **4.2.7**、tailwindcss **3.4.17**（**D3 修宪**）、react-native-css-interop **0.2.7**（**D6 修宪**，依赖图未变）、reanimated **4.7.1**、worklets **0.13.0**、flash-list **2.3.3**、babel-preset-expo 57.0.15（SDK 绑定单元）；expo `~57.0.30` 为 SDK 57 补丁对齐。`expo.install.exclude` 的三项是**故意偏离 SDK 默认集**（CVE-2026-97724 下限），不是漏配。
+- **R1**：`apps/mobile/src` 无 key-material 标识符、无 vault-core import（`grep` exit 1 见 Task 4）；onboarding 零助记词 UI。
+- **R5**：所有占位为 "Not configured"，无假数据；无敏感日志。
+- **R7**：导出 web JS 无 `signDigest|importMnemonic|vault-core`（Task 4 证据）。
+- **B.6-1**：`tsc --noEmit` exit 0（strict；typed routes 类型 `.expo/types/router.d.ts` 由 `expo start` 生成，不入库）。
+- **CNG**：`apps/mobile/android/` 未手改（gitignored），配置仅经 app.json/plugins。
+- **禁项**：无 `@react-navigation/*` 直接导入；零动画代码（reanimated 仅接入）。
+- **证据完整性**：`evidence/*.log` 用 `git add -f` 入库（根 `.gitignore` 有 `*.log`，T1.3 先例）；截图/UI dump 为真机（Pixel 6a / Android 17）实采；`nativewind-env.d.ts` 自带 `declare module '*.css'` 是因为 SDK 57 CLI 会把 `expo-env.d.ts` 自动加进 `.gitignore`（不入库），tsc 已在无该文件时复验 exit 0。
+
+### 复现命令
+
+    pnpm install --frozen-lockfile
+    cd apps/mobile
+    npx --no-install tsc --noEmit
+    npx expo export -p web --output-dir /tmp/t21-web
+    grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/   # 期望无输出（exit 1）
+    grep -rnEi 'mnemonic|privateKey|seedPhrase|xprv' src                            # 期望无输出（exit 1）
+    npx --yes expo-doctor@latest                                                    # 21/21
+
+### 已知开放项（记录在案的决策，**不是缺陷**）
+
+- **视觉差异**：当前壳层按 ui-wallet §2.3 自研暖色令牌实现，与原 Kotlin 工程差异显著 → **已由 2026-10-19 roadmap 修宪插入 T2.1a（视觉对齐，route A/scope A）**；评审请勿把"长得不像原仓库"记为 T2.1 缺陷。
+- T2.1-H3（真实数据 → T2.2）、H4（polyfill 自定入口 → T2.2）、H5（tabs/其余路由 → 后续 UI 条目）、H6（iOS 路由 smoke → T1.5-H1/T4.1）、H7（eslint/jest → T1.1 H6）、H8（expo-env.d.ts 与 `*.css` 声明，已规避）、H9（expo-router 57.0.28 vs 括注 57.0.26，备注）。
+- 真机 smoke 为 **debug dev build + Metro 8082**（原生模块要求 dev build；Expo Go 不适用）；Release/EAS 构建不在 T2.1 范围（T1.5-H8 → T5.3）。
+- 本条目**无自动化测试**（jest/eslint 属 T1.1 H6 债，未在本期引入）——门禁为 tsc/export/grep/doctor/真机 smoke。
+
 
 
 
