@@ -8,6 +8,7 @@
 | 工具 | 版本要求 | 说明 |
 |---|---|---|
 | Node.js | **≥22.13**（LTS） | CI 与本地一致；`node -v` 断言入 CI |
+| JDK（本地 Android 构建） | **JAVA_HOME=`/home/superguo/tools/jdk-17`（javac 17.0.20.1）** | 本机 `/usr/lib/jvm/java-17-openjdk-amd64` 为 **JRE-only**（无 javac）且被 Gradle 9 默认工具链选中——首个含 Java 源码的原生依赖（expo-router → `@react-native-masked-view/masked-view`）即触发 `does not provide the required capabilities: [JAVA_COMPILER]`；T2.1 起本地 `expo run:android` 必须显式 `JAVA_HOME`（备选：`~/.gradle/jdks/eclipse_adoptium-17/21-amd64-linux.2`）。证据：`specs/features/2026-10-18-T2.1-mobile-ui-shell/validation.md` §Task 5 |
 | pnpm | ≥9（isolated 安装） | 唯一包管理器；CI 一律 `pnpm install --frozen-lockfile`；**禁止** `npm ci`/`npm install` 现场解析 |
 | EAS CLI | 按 specs/tech-stack.md 钉版 | Build / Update / Submit / Deploy；`EXPO_TOKEN` 只挂 production environment secrets |
 | expo-dev-client | 随 SDK 57 | **Development Build 起步**，Expo Go 不可用（安全模块/生物识别在 Go 下不生效） |

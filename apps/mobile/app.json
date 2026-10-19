@@ -6,7 +6,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "experiments": {
+      "typedRoutes": true
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.github.realalexkwok.nexvault",
@@ -23,12 +26,15 @@
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
-      "./plugins/withVaultCoreTests"
+      "./plugins/withVaultCoreTests",
+      "expo-router",
+      "expo-status-bar"
     ],
     "runtimeVersion": {
       "policy": "fingerprint"
     },
     "web": {
+      "output": "static",
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     }

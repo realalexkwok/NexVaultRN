@@ -29,7 +29,9 @@
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
-| nativewind | v4 稳定线（4.2.7，2026-09-14） | Tailwind 样式层，三端编译期 | apps/mobile | 高（v4 维护 + v5 积极开发中） | 自身无 CVE；**v5 RC 钉住 worklets 0.10.1（带 CVE-2026-97724）→ 裁决：不选 v5 RC** | 信任依据：官方文档明示 "V4 remains the stable release"。风险点：v5 RC「最新」诱惑。缓解：锁 v4；v5 转正后走修宪再评估（C5 裁决：最新 ≠ 最安全）。[^6^] |
+| nativewind | v4 稳定线（4.2.7，2026-09-14） | Tailwind 样式层，三端编译期 | apps/mobile | 高（v4 维护 + v5 积极开发中） | 自身无 CVE；**v5 RC 钉住 worklets 0.10.1（带 CVE-2026-97724）→ 裁决：不选 v5 RC** | 信任依据：官方文档明示 "V4 remains the stable release"。风险点：v5 RC「最新」诱惑。缓解：锁 v4；v5 转正后走修宪再评估（C5 裁决：最新 ≠ 最安全）。**2026-10-18 T2.1 R4 修宪（owner 批准）**：必需 peer `tailwindcss` 精确钉 3.4.17 为 companion 行（v4 稳定线 = Tailwind v3；Tailwind v4 属 NativeWind v5 RC 路线，排除）；其运行时 `react-native-css-interop` 0.2.7 提升为直接行（D6，见下）。[^6^] |
+| tailwindcss | 3.4.17（精确钉版；2024-12-17 发布，冷静期天然满足） | NativeWind v4 必需 peer（>3.3.0，官方安装文档钉 ^3.4.17）；编译期样式引擎（Tailwind v3 线） | apps/mobile（devDependency） | 高（Tailwind Labs 官方包） | 无已知 CVE（v3 线） | 信任依据：npm 官方包 + NativeWind v4 官方安装文档钉版；**2026-10-18 T2.1 R4 修宪（owner 批准，规划轮 D3）**。风险点：latest 4.3.3 为 Tailwind v4 主线，与 v3 线混淆。缓解：精确钉 3.4.17；升级 Tailwind v4 必须与 NativeWind v5 RC 迁移整单元评估（后者被排除，见上行）。[^6^] |
+| react-native-css-interop | 0.2.7（精确钉版；= nativewind 4.2.7 自身 `dependencies` 钉的同一版本） | NativeWind v4 `jsxImportSource` 的 className 运行时（JSX 被改写为 `react-native-css-interop/jsx-runtime`） | apps/mobile（dependencies；**2026-10-18 T2.1 R4 修宪，owner 批准 D6**） | 高（nativewind 官方仓库组件，随 nativewind 发版） | 无已知 CVE | 信任依据：nativewind 4.2.7 package.json 精确钉 0.2.7。风险点：pnpm isolated 布局下仅在 nativewind 自身上下文可解析，app 代码直接引用其子路径失败（T2.1 web export 首轮实证）。缓解：提升为直接行（依赖图不变，lockfile 已含），钉死 0.2.7 随 nativewind 修宪升级。[^6^] |
 | react-native-reanimated | 4.7（实测 4.7.1） | UI 线程 worklet 动画，60/120fps 基线 | apps/mobile | 高（Software Mansion） | 历史 CVE-2022-24373（<3.0，不适用）；4.6.0 `__proto__` 崩溃 issue 已关 | 信任依据：SDK 56/57 官方钉子版本。风险点：与 Hermes v1 的内存回归（57.0.9 已修）。缓解：配合 expo ≥57.0.21。[^7^] |
 | react-native-worklets | ≥0.12.2（当前 0.13.0） | reanimated 4 的必需 peer | apps/mobile | 高 | **CVE-2026-97724：<0.12.2 原型链污染→远程 DoS；0.12.2 已修 → 锁 ≥0.12.2** | 信任依据：OpenCVE/Rapid7 记录。缓解：package.json 下限 + CI 解析结果断言。[^7^] |
 | @shopify/flash-list | v2（2.3.3，2026-10-01） | 交易记录/地址簿长列表；免 estimatedItemSize | apps/mobile | 高（Shopify 生产验证） | 无已知公告 | 信任依据：新架构重写、官方文档完善。风险点：v2 要求新架构（SDK 55+ 强制，天然满足）。缓解：<200 行静态页退回 FlatList。[^8^] |
@@ -99,7 +101,7 @@
 > 规划轮被裁定为 **CocoaPods pod**（vendored xcframework 与 SPM-via-app-target 均被否，
 > 理由见 T1.5 validation Task 1）；项目/维护方 2026 年更名为 21-DOT-DEV（R4-5 包名核对）。[^25^]
 >
-> **2026-10-17 路线修订（Mac 会话；待 owner 追认，T1.5-H6）。** 上条「CocoaPods 预编译
+> **2026-10-17 路线修订（Mac 会话；2026-10-18 owner 追认——T2.1 规划轮 D1，T1.5-H6 关闭）。** 上条「CocoaPods 预编译
 > xcframework」路线在 Xcode 26.5 / Swift 6.3.2 上**无法消费**，两个独立缺陷均已复现并留证：
 > (a) 制品 interface 第 10 行 `import libsecp256k1`，但 pod/zip 不含该 Clang 模块与头文件
 > （`unzip -l P256K.xcframework.zip` 仅 `P256K.xcframework/**`；两版 interface 内 `secp256k1_`
