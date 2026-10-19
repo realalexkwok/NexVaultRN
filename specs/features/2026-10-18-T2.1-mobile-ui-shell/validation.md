@@ -210,7 +210,7 @@
 | Finding | 判定 | 处置 | 证据 |
 |---|---|---|---|
 | **MAJOR-1** 六个直接依赖未入 R4 登记 | 采纳 | `specs/tech-stack.md` §2 新增 6 行（expo-linking / expo-constants / expo-status-bar / react-native-safe-area-context / react-native-screens / babel-preset-expo，均注记"2026-10-19 T2.1 评审 MAJOR-1 R4 补记"）；`doc/dependencies.md` 新增 **§6d** 补记（第一方 Expo/Meta、SDK 解析、lockfile 精确；零代码变更） | `specs/tech-stack.md` §2；`doc/dependencies.md` §6d |
-| **MINOR-1** B.6-1 的 workspace 门禁是 no-op | 采纳 | `AGENTS.md` B.6-1 修订：CI 门禁 = `pnpm --filter mobile exec tsc --noEmit`；明示 `pnpm -r exec tsc --noEmit` 在本 workspace（无根 `package.json`、`packages/*` 为空）为 no-op、**不得**作为门禁；`packages/*` 出现 TS 工程后改 `pnpm -r --if-present exec tsc --noEmit` | `AGENTS.md` §B.6-1 |
+| **MINOR-1** B.6-1 的 workspace 门禁是 no-op | **部分撤回（MINOR-R3）** | 采纳的门禁写法保留：`pnpm --filter mobile exec tsc --noEmit`；但"`pnpm -r exec tsc --noEmit` 是 no-op"的论断**经评审方 2026-10-19 撤回并由探针证伪**（注入 `const probe: number = "x"` → `probe-review.ts(1,7): error TS2322`、exit 1；移除后 exit 0）——命令行首的 `No projects matched the filters` 仅指根目录无工程。B.6-1 已改为"两种形态等价"；`packages/*` 有 TS 工程后用 `pnpm -r --if-present run typecheck`（NIT-A） | `AGENTS.md` §B.6-1；本节 §Review round 3 探针记录 |
 | **NIT-1** Web 空 `<title>` + 浅色页面底 | 采纳 | `_layout.tsx` 增 `import Head from 'expo-router/head'` + `<title>NexVault</title>` + `theme-color`；`global.css` 增 `html,body,#root{background-color:#1B1815}`（注释指向 tokens）。复跑 export 实证：`<title data-rh="true">NexVault</title>`、字体 CSS 含 `html,body,#root{background-color:#1b1815}` | `evidence/web-route-smoke.txt`；`/tmp/t21-export-fix.log` |
 | **NIT-2** R1 记录命令弱于宪法 | 采纳 | Task 4 / AC-6 / §复现命令 全部改为宪法原文命令（含 `secretKey`、范围 `apps/mobile`、`--exclude-dir=node_modules`、去 `packages/vault-core`）；重跑 **exit 1**（零命中） | 本文件 Task 4 / AC-6 / §复现命令 |
 | **NIT-3** curl 证据不持久 + 相对路径 | 采纳 | 新增 `evidence/web-route-smoke.txt`（2026-10-19 生成：五路由 HTTP 200 + 标记计数 + `<title>` + 背景规则断言 + 复现命令/产物路径）；Task 6 证据表改绝对路径 | `/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/evidence/web-route-smoke.txt` |
@@ -232,6 +232,28 @@
 - 仓库根 R1：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'` → 零输出，**exit 1**（正确形态）
 - `apps/mobile` 内跑同一命令 → `grep: apps/mobile: No such file or directory`，**exit 2**（反例，不得作为干净证据）
 - `pnpm -r --if-present exec tsc --noEmit` → `[ERROR] Unknown option: 'if-present'`，**exit 1**（NIT-A 实证）
+## Review round 3 (2026-10-19, MINOR-R3 更正)
+
+| Finding | 判定 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-R3**（评审方撤回 round-1 MINOR-1 的"`pnpm -r exec` 是 no-op"论断；属评审方自我更正，非开发缺陷） | 采纳 | 三处更正：① `AGENTS.md` B.6-1 —— 两种门禁形态等价（`pnpm --filter mobile exec tsc --noEmit` / `pnpm -r exec tsc --noEmit`），附探针实证，"no-op"结论作废；② 公告板 2026-10-19 评审行内 MINOR-1 段落加撤回标注；③ 本文件 §Review-fix round 的 MINOR-1 行改为"部分撤回"并引探针 | 本节探针输出 |
+
+**探针（2026-10-19，pnpm 11.28.5）**：
+
+    $ pnpm -r exec sh -c 'echo MARKER:$(pwd)'
+    No projects matched the filters "<repo root>" in "<repo root>"
+    MARKER:/home/superguo/Projects/NexVaultRN/apps/mobile
+    $ pnpm -r exec tsc --noEmit            # 基线
+    exit 0
+    $ printf 'const probe: number = "x";\n' > apps/mobile/probe-review.ts
+    $ pnpm -r exec tsc --noEmit
+    probe-review.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+    exit 1
+    $ rm apps/mobile/probe-review.ts && pnpm -r exec tsc --noEmit
+    exit 0
+
+结论：`pnpm -r exec` **确实**递归执行到 `apps/mobile`（探针文件被 tsc 检查到）；命令行首的 `No projects matched the filters "<repo root>"` 只说明根目录无工程，不是"无工程可跑"。原 round-1 MINOR-1 的 no-op 论断不成立。
+
 
 
 
