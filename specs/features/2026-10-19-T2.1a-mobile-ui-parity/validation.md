@@ -178,7 +178,7 @@ adb shell input swipe 320 2270 320 2270 120
 
 | 发现 | 处置 | 证据/状态 |
 |---|---|---|
-| **M1** 首屏文本截断 | 根因：Inter 异步加载后 RN 未重测文本（fallback 测宽、Inter 绘字更宽 → 裁掉尾字）。修复：① `app.json` 加 **expo-font config plugin**，Android 用 xml 字体族名 `inter-regular`…（与 className 一致）、iOS 内嵌 4 个 TTF —— 首帧即用 Inter 测量；② 保留 `useFonts`（web 路径）+ 字体加载完成后的 keyed remount 兜底 | 构建 `/tmp/t21a-rel8.log` **BUILD SUCCESSFUL 5m44s**；APK 45,696,498 B；**装机复核待手机唤醒**（安装期间 Pixel 6a 睡眠、adb shell 超时） |
+| **M1** 首屏文本截断 | 根因：Inter 异步加载后 RN 未重测文本（fallback 测宽、Inter 绘字更宽 → 裁掉尾字）。修复：① `app.json` 加 **expo-font config plugin**，Android 用 xml 字体族名 `inter-regular`…（与 className 一致）、iOS 内嵌 4 个 TTF —— 首帧即用 Inter 测量；② 保留 `useFonts`（web 路径）+ 字体加载完成后的 keyed remount 兜底 | 构建 `/tmp/t21a-rel8.log` **BUILD SUCCESSFUL 5m44s**；APK 45,696,498 B；**设备复核 2026-10-20 05:37 通过**：3× force-stop 冷启动截图 `evidence/shell-release-index-c{1,2,3}.png` 文本完整（NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview →），截断消失 |
 | **M2** NativeTabs 颜色 | `NativeTabsProps.indicatorColor/iconColor` 确实存在（types.d.ts:354/242）→ 接入 `indicatorColor=primaryContainer`、`iconColor={default:onSurfaceVariant,selected:primary}`；§7.4 D-a 旧结论作废 | 23:16 截图 `shell-release-home.png`：指示胶囊已为 cobalt ✓ |
 | **M3** Home 动作 42dp | `h-12 w-12`（rem=14 → 42dp）→ `h-action w-action`（56dp）；标签 body-small/textHigh → labelSmall/onSurfaceVariant | 同上截图：圆 56dp、标签灰 ✓ |
 | **m1** gutter 硬编码 | `Screen` 增 `gutter?: 'md' | 'lg'`；onboarding/receive 用 24 | 代码 |
@@ -193,8 +193,7 @@ adb shell input swipe 320 2270 320 2270 120
 | **n4** inverse 色缺失 | tokens.ts + ui-wallet §2.3 补 inverseSurface/inverseOnSurface/inversePrimary/surfaceTint | 代码 + spec |
 | **n5** 图标名漂移 | History `md="receipt" / sf="receipt"`（原 Icons.Filled.Receipt） | 代码 |
 
-> 静态侧已复核：tsc exit 0 / web export exit 0 / R1 exit 1（干净；修复了 index.tsx 注释里误中 R1 关键词的措辞）/ R5 exit 1 / R7 exit 1 / hex 漂移 exit 1 / web tab ARIA 5×role=tab + aria-selected ✓。
-> **待办（设备侧）**：手机唤醒后重装 45,696,498 B APK，补 (a) 3× 冷启动首屏截图（M1 复核）、(b) 五 tab 截图。手机在 23:20 之后反复进入睡眠，adb push/install 多次超时（23:33–23:58）。
+> 复核（2026-10-20）：静态侧 tsc exit 0 / export exit 0 / R1 exit 1（干净；index.tsx 注释误中 R1 关键词的措辞已改）/ R5 exit 1 / R7 exit 1 / hex 漂移 exit 1 / web tab ARIA 5×role=tab + aria-selected ✓。设备侧（Pixel 6a / Android 17，release APK 45,696,498 B，无 Metro）：**3× 冷启动首屏文本完整**（`shell-release-index-c{1,2,3}.png`）、五 tab 逐个核对（home/history/dapp/nft/settings）、not-found deep-link（`shell-release-notfound.png`）——证据文件名见 `evidence/`。手机睡眠导致的 23:33–23:58 安装超时已解除（改走 TCP 序列 `10.42.0.139:43607` + `svc power stayon true`）。
 
 ## 复现命令（app 侧，`apps/mobile`）
 
