@@ -41,6 +41,9 @@ export default function TabsLayoutWeb() {
               name={tab.name}
               href={tab.href}
               accessibilityState={{ selected: active }}
+              // RN Web forwards aria-* / role to the rendered DOM anchor (TabTrigger passes unknown props
+              // through; static SSR omits accessibilityState, so the ARIA attributes are set explicitly).
+              {...({ role: 'tab', 'aria-selected': active } as Record<string, unknown>)}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.spacing.xxs }}
             >
               <View

@@ -184,7 +184,7 @@ adb shell input swipe 320 2270 320 2270 120
 | **m1** gutter 硬编码 | `Screen` 增 `gutter?: 'md' | 'lg'`；onboarding/receive 用 24 | 代码 |
 | **m2** onboarding 非转录 | 重写 `index.tsx` 按 WelcomeScreen.kt：120dp 盾牌+锁、displaySmall、tagline "Your keys. Your crypto."、底部双按钮（间距 16、底部 48）、gutter 24。**参考侧 Welcome 截图不可得**（原 app 已初始化钱包，仅 Unlock 可见；未清空参考数据）→ 该行 MAN-016 以代码对照（WelcomeScreen.kt:77-125）承载 | 23:16 dump：NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview ✓（新构建装机后补截图） |
 | **m3** chip 无选中态 | 7D 默认选中（secondaryContainer #005045 + onSecondaryContainer）；chip 高 32dp（py-s6） | 23:16 截图 ✓ |
-| **m4** web tab 无选中态 | web 布局用 `usePathname()`：选中 primary 图标/文字 + primaryContainer 指示胶囊；`accessibilityState={{selected}}` → web 输出 aria-selected | 修复后重新导出复核 |
+| **m4** web tab 无选中态 | web 布局用 `usePathname()`：选中 primary 图标/文字 + primaryContainer 指示胶囊；显式传 `role="tab"` + `aria-selected`（RN Web 把 aria-* 透传到 DOM；SSR 下 accessibilityState 不落地） | 导出复核：`/tmp/t21a-web/home.html` 含 5×`role="tab"` + `aria-selected="true/false"` ✓ |
 | **m5** not-found 缺设备证据 | `nexvault://definitely-not-a-route` → "Not found / This route does not exist. / Go to Home"；截图 `evidence/shell-release-notfound.png` | 23:16 设备 dump ✓ |
 | **m6** 5-tab 不可达 | Welcome 底部加 "Shell preview →"（demo affordance，T4.1 随真实 onboarding 移除；已记录为偏差） | 23:16 dump ✓ |
 | **n1** TopBar 49dp | `h-14`（rem=14 → 49dp）→ 显式 64dp（M3 CenterAlignedTopAppBar 内容行）；注释更正；back 按钮 40dp 用 token | 代码 |
@@ -193,7 +193,8 @@ adb shell input swipe 320 2270 320 2270 120
 | **n4** inverse 色缺失 | tokens.ts + ui-wallet §2.3 补 inverseSurface/inverseOnSurface/inversePrimary/surfaceTint | 代码 + spec |
 | **n5** 图标名漂移 | History `md="receipt" / sf="receipt"`（原 Icons.Filled.Receipt） | 代码 |
 
-> 待办：手机唤醒后重装 45,696,498 B APK，补 (a) 3× 冷启动首屏截图（M1 复核）、(b) 五 tab + not-found 截图、(c) web 重新导出后的 tab 选中态截图。
+> 静态侧已复核：tsc exit 0 / web export exit 0 / R1 exit 1（干净；修复了 index.tsx 注释里误中 R1 关键词的措辞）/ R5 exit 1 / R7 exit 1 / hex 漂移 exit 1 / web tab ARIA 5×role=tab + aria-selected ✓。
+> **待办（设备侧）**：手机唤醒后重装 45,696,498 B APK，补 (a) 3× 冷启动首屏截图（M1 复核）、(b) 五 tab 截图。手机在 23:20 之后反复进入睡眠，adb push/install 多次超时（23:33–23:58）。
 
 ## 复现命令（app 侧，`apps/mobile`）
 

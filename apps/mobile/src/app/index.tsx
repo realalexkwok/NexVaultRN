@@ -10,7 +10,7 @@ import { tokens } from '@/theme/tokens';
 // bottom-pinned buttons (16dp apart, 48dp bottom spacer). GradientBackground is not ported
 // (expo-linear-gradient is not an approved dependency — deviation recorded in validation.md).
 // The "Shell preview" link is a demo affordance so the APK is reachable without adb deep links;
-// it disappears when the real onboarding flow lands (T4.1, R1 — no mnemonic UI here).
+// it disappears when the real onboarding flow lands (T4.1, R1 — no key-material UI here).
 function VaultMark() {
   // WelcomeScreen.kt VaultIcon: 120dp shield (Canvas path, primary) with a 48dp lock (onPrimary).
   return (
