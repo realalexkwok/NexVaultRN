@@ -17,6 +17,7 @@
 - Day 1：工程基建 + vault-core Android native 闭环（关键路径），G1 门槛。
 - Day 2：iOS 移植 + 三端核心流程 + 安全 MVP 六项（集成联调与对照演示子集），G2 门槛。
 - Day 3：EAS Update 签名 OTA + EAS Build + 演示打磨，G3 门槛。
+- **2026-10-19 修宪（owner 裁定 route A / scope A）**：在 Day 1 末的 **T2.1 之后插入子条目 T2.1a — 视觉对齐原仓库**（T2.1 的后续条目：原 Kotlin 工程设计系统全量移植—暗色 M3 色板、Inter、NexVaultCard/Button/TextField/TopBar 原语、透明居中 TopBar、5-tab 底部导航）。**T2.1 保持关闭不重开**；**T2.2 编号与内容不变**（viem + polyfill + Zustand/Query + 余额只读，排在 T2.1a 之后）。排期与验收细节见 `plans/3-day-implementation-plan.md` 修订记录 v1.3；以原仓库 **实现代码**（`/home/superguo/Projects/NexVault` @ `3c7487f`）为准，其 `doc/03` 的紫 + Space Grotesk 草案不作依据。
 - 验收纪律：双侧验证（命令+观察结果 / 真机走查），每日 22:00–23:00 收尾，Handoff 清单逐条裁定。
 
 ## 阶段 2 — 加固（roadmap，按序）
