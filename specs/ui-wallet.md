@@ -110,6 +110,11 @@ export const tokens = {
     textDisabled:      '#5A6180',  // NexVaultColors.kt:textDisabled
     gradientStart:     '#0A0E1A',  // NexVaultColors.kt:gradientStart
     gradientEnd:       '#121829',  // NexVaultColors.kt:gradientEnd
+    // Color.kt dark scheme 的 inverse/surfaceTint（2026-10-19 评审补全；当前无屏幕使用）
+    inverseSurface:    '#E6E1E5',  // Color.kt:DarkInverseSurface
+    inverseOnSurface:  '#313033',  // Color.kt:DarkInverseOnSurface
+    inversePrimary:    '#0A2472',  // Color.kt:DarkInversePrimary
+    surfaceTint:       '#2D5AF0',  // Color.kt: surfaceTint = DarkPrimary
   },
   radius: {
     // NexVaultDimens.kt:cornerRadius*；组件级用法（NexVaultCard/Button/TextField.kt）
@@ -129,6 +134,7 @@ export const tokens = {
     bottomNavHeight: 64,   // NexVaultDimens.kt:bottomNavHeight
     icon: 24, iconSmall: 20, tokenIcon: 40, actionButton: 56,
     chartHeight: 180,      // NexVaultDimens.kt:chartHeight
+    navBar: 80,            // M3 NavigationBar 默认（NexVaultDimens.bottomNavHeight=64 未被 MainScreen 使用）
     borderWidth: 1, borderWidthEmphasis: 1.5, borderWidthStrong: 2,  // NexVaultDimens.kt
   },
   type: {

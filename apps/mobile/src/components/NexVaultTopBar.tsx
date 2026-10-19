@@ -35,9 +35,11 @@ export function NexVaultTopBar({
             onPress={onBack}
             hitSlop={tokens.spacing.sm}
             className="absolute left-md items-center justify-center"
-            style={{ width: tokens.size.tokenIcon, height: tokens.size.tokenIcon }}
+            style={{ width: tokens.spacing.xxl, height: tokens.spacing.xxl }}
           >
-            <Text className="text-headline-small font-inter-regular text-text-high">{'\u2190'}</Text>
+            <Text style={{ fontSize: tokens.size.icon }} className="font-inter-regular text-text-high">
+              {'\u2190'}
+            </Text>
           </Pressable>
         ) : null}
         <Text numberOfLines={1} className="text-title-large font-inter-semibold text-text-high">

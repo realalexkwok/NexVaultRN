@@ -136,6 +136,8 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 | D-c | 选中态 filled 图标 | 单 md/sf 图标 + primary tint（filled 变体名待验证/后续） |
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
+| D-f | tab 屏标题纵向位置 | 原 app 在 MainScreen Scaffold 内再嵌 Scaffold，状态栏 inset 计入两次（标题中心 134dp vs 本实现 83dp）；本实现取单次 inset —— 记为**有意更正**（2026-10-20 复审 N1） |
+| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 以纯 View 三角/矩形复刻同一六边形顶点（0.5w,0 → w,0.25h → 0.85w,0.75h → 0.5w,h → 0.15w,0.75h → 0,0.25h）+ 锁形（R2-2） |
 
 ### 7.5 待 owner
 MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告板行 + `--no-ff` 合并 + 删分支 + push main。
@@ -179,21 +181,39 @@ adb shell input swipe 320 2270 320 2270 120
 | 发现 | 处置 | 证据/状态 |
 |---|---|---|
 | **M1** 首屏文本截断 | 根因：Inter 异步加载后 RN 未重测文本（fallback 测宽、Inter 绘字更宽 → 裁掉尾字）。修复：① `app.json` 加 **expo-font config plugin**，Android 用 xml 字体族名 `inter-regular`…（与 className 一致）、iOS 内嵌 4 个 TTF —— 首帧即用 Inter 测量；② 保留 `useFonts`（web 路径）+ 字体加载完成后的 keyed remount 兜底 | 构建 `/tmp/t21a-rel8.log` **BUILD SUCCESSFUL 5m44s**；APK 45,696,498 B；**设备复核 2026-10-20 05:37 通过**：3× force-stop 冷启动截图 `evidence/shell-release-index-c{1,2,3}.png` 文本完整（NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview →），截断消失 |
-| **M2** NativeTabs 颜色 | `NativeTabsProps.indicatorColor/iconColor` 确实存在（types.d.ts:354/242）→ 接入 `indicatorColor=primaryContainer`、`iconColor={default:onSurfaceVariant,selected:primary}`；§7.4 D-a 旧结论作废 | 23:16 截图 `shell-release-home.png`：指示胶囊已为 cobalt ✓ |
+| **M2** NativeTabs 颜色 | `NativeTabsProps.indicatorColor/iconColor` 确实存在（types.d.ts:354/242）→ 接入 `indicatorColor=primaryContainer`、`iconColor={default:onSurfaceVariant,selected:primary}`；§7.4 D-a 旧结论作废 | 2026-10-20 05:37 截图 `shell-release-home.png`：指示胶囊已为 cobalt ✓ |
 | **M3** Home 动作 42dp | `h-12 w-12`（rem=14 → 42dp）→ `h-action w-action`（56dp）；标签 body-small/textHigh → labelSmall/onSurfaceVariant | 同上截图：圆 56dp、标签灰 ✓ |
 | **m1** gutter 硬编码 | `Screen` 增 `gutter?: 'md' | 'lg'`；onboarding/receive 用 24 | 代码 |
-| **m2** onboarding 非转录 | 重写 `index.tsx` 按 WelcomeScreen.kt：120dp 盾牌+锁、displaySmall、tagline "Your keys. Your crypto."、底部双按钮（间距 16、底部 48）、gutter 24。**参考侧 Welcome 截图不可得**（原 app 已初始化钱包，仅 Unlock 可见；未清空参考数据）→ 该行 MAN-016 以代码对照（WelcomeScreen.kt:77-125）承载 | 23:16 dump：NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview ✓（新构建装机后补截图） |
-| **m3** chip 无选中态 | 7D 默认选中（secondaryContainer #005045 + onSecondaryContainer）；chip 高 32dp（py-s6） | 23:16 截图 ✓ |
+| **m2** onboarding 非转录 | 重写 `index.tsx` 按 WelcomeScreen.kt：120dp 盾牌+锁、displaySmall、tagline "Your keys. Your crypto."、底部双按钮（间距 16、底部 48）、gutter 24。**参考侧 Welcome 截图不可得**（原 app 已初始化钱包，仅 Unlock 可见；未清空参考数据）→ 该行 MAN-016 以代码对照（WelcomeScreen.kt:77-125）承载 | 2026-10-20 05:37 dump：NexVault / Your keys. Your crypto. / Create New Wallet / Import Wallet / Shell preview ✓（新构建装机后补截图） |
+| **m3** chip 无选中态 | 7D 默认选中（secondaryContainer #005045 + onSecondaryContainer）；chip 渲染高 34dp（labelLarge 20 + 2×py-s6 6 + 2×1 边框；原 FilterChip 32dp，差 2dp 记录 — N3） | 2026-10-20 05:37 截图 ✓ |
 | **m4** web tab 无选中态 | web 布局用 `usePathname()`：选中 primary 图标/文字 + primaryContainer 指示胶囊；显式传 `role="tab"` + `aria-selected`（RN Web 把 aria-* 透传到 DOM；SSR 下 accessibilityState 不落地） | 导出复核：`/tmp/t21a-web/home.html` 含 5×`role="tab"` + `aria-selected="true/false"` ✓ |
-| **m5** not-found 缺设备证据 | `nexvault://definitely-not-a-route` → "Not found / This route does not exist. / Go to Home"；截图 `evidence/shell-release-notfound.png` | 23:16 设备 dump ✓ |
-| **m6** 5-tab 不可达 | Welcome 底部加 "Shell preview →"（demo affordance，T4.1 随真实 onboarding 移除；已记录为偏差） | 23:16 dump ✓ |
-| **n1** TopBar 49dp | `h-14`（rem=14 → 49dp）→ 显式 64dp（M3 CenterAlignedTopAppBar 内容行）；注释更正；back 按钮 40dp 用 token | 代码 |
+| **m5** not-found 缺设备证据 | `nexvault://definitely-not-a-route` → "Not found / This route does not exist. / Go to Home"；截图 `evidence/shell-release-notfound.png` | 2026-10-20 05:37 设备 dump ✓ |
+| **m6** 5-tab 不可达 | Welcome 底部加 "Shell preview →"（demo affordance，T4.1 随真实 onboarding 移除；已记录为偏差） | 2026-10-20 05:37 dump ✓ |
+| **n1** TopBar 49dp | `h-14`（rem=14 → 49dp）→ 显式 64dp（M3 CenterAlignedTopAppBar 内容行）；注释更正；back 按钮 48dp 触控盒（Material IconButton）+ 24dp 字形 | 代码 |
 | **n2** bottomNav 64 无出处 | 新增 `tokens.size.navBar = 80`（M3 默认，设备实测）；web bar 用 80；ui-wallet §2.1 已更正 | 代码 + spec |
 | **n3** 记录不一致 | 头部状态 / D-a / D-b / §7.6 尺寸（被 22:26 重建覆盖）/ AC-4（两行批准依赖）逐条更正 | 本文件 |
 | **n4** inverse 色缺失 | tokens.ts + ui-wallet §2.3 补 inverseSurface/inverseOnSurface/inversePrimary/surfaceTint | 代码 + spec |
 | **n5** 图标名漂移 | History `md="receipt" / sf="receipt"`（原 Icons.Filled.Receipt） | 代码 |
 
 > 复核（2026-10-20）：静态侧 tsc exit 0 / export exit 0 / R1 exit 1（干净；index.tsx 注释误中 R1 关键词的措辞已改）/ R5 exit 1 / R7 exit 1 / hex 漂移 exit 1 / web tab ARIA 5×role=tab + aria-selected ✓。设备侧（Pixel 6a / Android 17，release APK 45,696,498 B，无 Metro）：**3× 冷启动首屏文本完整**（`shell-release-index-c{1,2,3}.png`）、五 tab 逐个核对（home/history/dapp/nft/settings）、not-found deep-link（`shell-release-notfound.png`）——证据文件名见 `evidence/`。手机睡眠导致的 23:33–23:58 安装超时已解除（改走 TCP 序列 `10.42.0.139:43607` + `svc power stayon true`）。
+
+### 7.11 复审修复轮（2026-10-20 06:05–06:40）
+
+| # | 发现 | 处置 | 证据 |
+|---|---|---|---|
+| **R2-1** | 原生 tab 仅显选中标签（M3 labelVisibilityMode=auto）+ 标签 12sp 过宽 | `labelVisibilityMode="labeled"` + `labelStyle.fontSize = tokens.type.labelSmall.size`（10） | 重建后 home 截图：五标签同显、标签宽回 10sp |
+| **R2-2** | VaultMark 为臆造近似且注释称“transcription” | 按 WelcomeScreen.kt `drawShieldShape` 顶点重画六边形（三角+矩形+三角），注释标明以 View 组合实现 | `shell-release-index-c{1,2,3}.png`（重建后） |
+| **R2-3** | §7.10 引用时间错位（写 23:16，文件实为 05:37）；receive/send 截图早于修复 | 全部截图于最终 APK 重拍；§7.10 引用统一为 2026-10-20 05:37 | `evidence/` 文件 mtime |
+| **N1** | tab 屏标题比原 app 低/高 51dp | 记为 D-f 有意更正（单次 inset；原 app 双计） | §7.4 |
+| **N2** | back 控件 40dp 盒 / 20sp 箭头 | 改 48dp 触控盒（`tokens.spacing.xxl`）+ 24dp 字形（`tokens.size.icon`） | 代码 |
+| **N3** | chip 实测 34.3dp vs 记录 32dp | 记录更正为 34dp（label 20 + 2×6 + 2×1 边框；原 FilterChip 32dp，差 2dp 记录） | 本文件 |
+| **N4** | ui-wallet §2.3 fenced 块缺 inverse/navBar | 块内补 inverseSurface/inverseOnSurface/inversePrimary/surfaceTint + size.navBar | spec diff |
+| **N5** | 表格时间戳与文件不符 | 统一为 2026-10-20 05:37（最终 APK 重拍） | 本文件 |
+| **N6** | `_layout.tsx` 注释称 config plugin 未使用 | 更正为双路径：原生内嵌（app.json plugin）+ web `useFonts` | 代码 |
+| **N7** | Welcome 参考截图不可得 | 已记录（原 app 已初始化 → 仅 Unlock；该行以代码对照 WelcomeScreen.kt） | 本文件 §7.10 m2 |
+| **N8** | web 面板无 `role="tabpanel"` | `TabSlot` 外包 `role="tabpanel"` | 导出复核 |
+
+> 复核（2026-10-20 06:24–06:26，最终 APK **45,696,738 B**，arm64 release，无 Metro）：home/history 截图**五标签同显**（${B}labelVisibilityMode="labeled"${B} + 10sp）；VaultMark 六边形（${B}shell-release-index-c4.png${B}）；receive/send/notfound 于该 APK 重拍（${B}shell-release-{receive,send,notfound}.png${B}）；web 导出含 ${B}role="tabpanel"${B} + 5×${B}role="tab"${B} + aria-selected。
 
 ## 复现命令（app 侧，`apps/mobile`）
 

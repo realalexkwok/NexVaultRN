@@ -9,10 +9,10 @@ import { tokens } from '@/theme/tokens';
 
 // Root Stack (T2.1 shell + T2.1a visual parity): onboarding (index) / (tabs) / receive / send
 // / +not-found. Typed routes are on (app.json experiments.typedRoutes). No vault-core, no wallet
-// logic. Inter loads at runtime via expo-font `useFonts` (Android/iOS/web — the expo-font config
-// plugin is deliberately not used; see validation.md). The shell renders immediately: gating the
-// tree on font load leaves the splash up forever if the asset never settles, so text falls back
-// to the system face until Inter resolves (device check 2026-10-19).
+// logic. Inter ships two ways: embedded at build time by the expo-font config plugin (app.json —
+// Android xml families inter-regular…, iOS TTFs, so the first frame measures with Inter) and
+// loaded at runtime via `useFonts` for web. The remount below re-lays-out text once fonts settle
+// (review M1/R2 — first paint must not be measured against the fallback face).
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     'inter-regular': require('../../assets/fonts/inter_regular.ttf'),

@@ -12,38 +12,48 @@ import { tokens } from '@/theme/tokens';
 // The "Shell preview" link is a demo affordance so the APK is reachable without adb deep links;
 // it disappears when the real onboarding flow lands (T4.1, R1 — no key-material UI here).
 function VaultMark() {
-  // WelcomeScreen.kt VaultIcon: 120dp shield (Canvas path, primary) with a 48dp lock (onPrimary).
+  // WelcomeScreen.kt VaultIcon: 120dp shield + 48dp lock, drawn there with Canvas. The shield path
+  // is the hexagon (0.5w,0) → (w,0.25h) → (0.85w,0.75h) → (0.5w,h) → (0.15w,0.75h) → (0,0.25h);
+  // here it is composed from plain Views (triangles + rect) — no drawing dependency is approved.
   return (
     <View className="items-center justify-center" style={{ width: 120, height: 120 }}>
+      {/* top facet: apex (60,0) → shoulders (0/120, 30) */}
       <View
         style={{
           position: 'absolute',
-          top: 4,
-          width: 96,
-          height: 70,
-          borderTopLeftRadius: 48,
-          borderTopRightRadius: 48,
-          backgroundColor: tokens.color.primary,
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          top: 74,
+          top: 0,
           width: 0,
           height: 0,
-          borderLeftWidth: 48,
-          borderRightWidth: 48,
-          borderTopWidth: 42,
+          borderLeftWidth: 60,
+          borderRightWidth: 60,
+          borderBottomWidth: 30,
+          borderLeftColor: 'transparent',
+          borderRightColor: 'transparent',
+          borderBottomColor: tokens.color.primary,
+        }}
+      />
+      {/* body: 30..90 */}
+      <View style={{ position: 'absolute', top: 30, width: 120, height: 60, backgroundColor: tokens.color.primary }} />
+      {/* bottom facet: shoulders (9/111, 90) → apex (60,120) */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 90,
+          width: 0,
+          height: 0,
+          borderLeftWidth: 51,
+          borderRightWidth: 51,
+          borderTopWidth: 30,
           borderLeftColor: 'transparent',
           borderRightColor: 'transparent',
           borderTopColor: tokens.color.primary,
         }}
       />
+      {/* lock (48dp in the original, centred): shackle + body in onPrimary */}
       <View
         style={{
           position: 'absolute',
-          top: 38,
+          top: 40,
           width: 28,
           height: 20,
           borderTopLeftRadius: 14,
@@ -55,7 +65,7 @@ function VaultMark() {
       <View
         style={{
           position: 'absolute',
-          top: 54,
+          top: 56,
           width: 44,
           height: 30,
           borderRadius: 6,

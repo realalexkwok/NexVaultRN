@@ -22,7 +22,9 @@ export default function TabsLayoutWeb() {
   const pathname = usePathname();
   return (
     <Tabs>
-      <TabSlot />
+      <View style={{ flex: 1 }} {...({ role: 'tabpanel' } as Record<string, unknown>)}>
+        <TabSlot />
+      </View>
       <TabList
         style={{
           flexDirection: 'row',

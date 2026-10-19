@@ -12,7 +12,10 @@ export default function TabsLayout() {
       tintColor={tokens.color.primary}
       iconColor={{ default: tokens.color.onSurfaceVariant, selected: tokens.color.primary }}
       indicatorColor={tokens.color.primaryContainer}
-      labelStyle={{ color: tokens.color.onSurfaceVariant }}
+      // Material NavigationBarItem in the original sets alwaysShowLabel = true; NativeTabs defaults
+      // to 'auto' (5 items → selected label only, review R2-1 2026-10-20), so force 'labeled'.
+      labelVisibilityMode="labeled"
+      labelStyle={{ color: tokens.color.onSurfaceVariant, fontSize: tokens.type.labelSmall.size }}
       backgroundColor={tokens.color.surface}
       disableTransparentOnScrollEdge
     >
