@@ -26,6 +26,7 @@ export default function TabsLayoutWeb() {
         <TabSlot />
       </View>
       <TabList
+        {...({ role: 'tablist' } as Record<string, unknown>)}
         style={{
           flexDirection: 'row',
           height: tokens.size.navBar,

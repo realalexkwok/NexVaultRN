@@ -137,7 +137,7 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
 | D-f | tab 屏标题纵向位置 | 原 app 在 MainScreen Scaffold 内再嵌 Scaffold，状态栏 inset 计入两次（标题中心 134dp vs 本实现 83dp）；本实现取单次 inset —— 记为**有意更正**（2026-10-20 复审 N1） |
-| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 以纯 View 三角/矩形复刻同一六边形顶点（0.5w,0 → w,0.25h → 0.85w,0.75h → 0.5w,h → 0.15w,0.75h → 0,0.25h）+ 锁形（R2-2） |
+| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底两facet 用三角（顶点与 drawShieldShape 相同），**body 以矩形近似**（RN 无 skew/路径 API，侧边从 120 到 102 的 9px 收分未实现，2px 内视觉不可辨）；锁 44×30 + 28×20（R2-2，记录为近似） |
 
 ### 7.5 待 owner
 MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告板行 + `--no-ff` 合并 + 删分支 + push main。
@@ -146,7 +146,7 @@ MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告
 
 - 用户报告红屏 `Unable to load script`：**dev build 依赖 Metro**（`adb reverse` + 8082）；Metro/端口断开即红屏——普通用户体验不可接受（T2.1 的 dev-build 已知限制）。本期把「可演示产物」升级为 **release APK（内置 JS bundle，零 Metro 依赖）**。
 - 构建：`cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a` → **BUILD SUCCESSFUL in 2m 26s**（532 tasks；先跑过 4 ABI 全量构建约 25 min 后中止，arm64-only 提速）。
-- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。**注（2026-10-19 评审 n3）**：该 21:43 构建已被 22:26 重建覆盖 —— 现行 APK 44,892,134 B / bundle 3,067,008 B，见 §7.10 n3。
+- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。**注（2026-10-20 复审 N3）**：该 21:43 构建已先后被 22:26 / 23:22 / 06:23 重建覆盖 —— **现行发布物 APK 45,696,738 B / bundle `3,068,796 B`（unzip -l 实测，2026-10-20 06:23 构建）**，即以 §7.11 复核的 06:23 构建为准。
 - **独立运行实证：先停 Metro（job killed）** → `adb install -r app-release.apk` → `monkey -p io.github.realalexkwok.nexvault -c android.intent.category.LAUNCHER 1` → onboarding 渲染（无红屏、无 Metro）；五 tab 逐一点按 + 文本核对（home/history/dapp/nft/settings 全部命中）+ receive/send deep link。
 - 截图（release 产物）：`evidence/shell-release-{index,home,history,dapp,nft,settings,receive,send}.png`。
 - 注：NativeTabs 对短 `input tap` 不敏感（dev/release 均如此）→ 脚本用 `input swipe x y x y 120`（120ms 按压）切换 tab，已记入复现命令。
