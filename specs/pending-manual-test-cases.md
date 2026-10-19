@@ -25,6 +25,8 @@
 | MAN-014 | Android 路由点走（T2.1 UI shell）：dev build 上依次走 onboarding（`/`）→ home → receive → send，含返回与未匹配路由（+not-found） | 四路由无 crash、无红屏；每页「Not configured」占位如 spec；暗色令牌渲染正常 | TC-UI-001 子集 | Pixel 6a / Android 17 | ☑ **通过** 2026-10-19（Pixel 6a / Android 17；owner 点走通过；自动侧 deep-link + UI dump + 截图见 `specs/features/2026-10-18-T2.1-mobile-ui-shell/evidence/`） |
 | MAN-015 | Web 浏览器路由走查（T2.1 UI shell）：桌面 Chrome/Safari 走查 `/`、`/home`、`/receive`、`/send` | 四路由渲染正常、console 无报错；写操作入口呈「扫码回手机」降级由后续条目承载（本条目仅 shell） | TC-UI-001/009 子集 | 桌面浏览器 ×1 | ☑ **通过** 2026-10-19（桌面浏览器；owner 走查通过；自动侧静态导出 curl 四路由 200 见 `specs/features/2026-10-18-T2.1-mobile-ui-shell/validation.md` Task 6） |
 
+| MAN-016 | 视觉对齐走查（T2.1a）：原仓库 APK（com.nexvault.wallet，debug，2026-10-18 构建，`/home/superguo/Projects/NexVault/app/build/outputs/apk/debug/app-debug.apk`）与 RN shell 在同一 Pixel 6a 上并排截图对照——5 tab（Home/History/DApp/NFT/Settings）+ onboarding + receive/send；核对 tokens（色板/Inter/形状/间距）、TopBar 透明居中（Home 无 bar）、卡片 1dp 描边无阴影、按钮 52/输入 56 | 逐屏并排一致，owner 逐条裁决；偏差逐条登记为 bug 或 Handoff（禁静默） | TC-UI-007（人工侧） | Pixel 6a / Android 17（两侧同机） | ☐ 待走查（T2.1a 实施后；参考侧 APK 已存在；若安装/解锁受阻按 skill 回退 code+inventory 转录并记录路径） |
+
 ## 规则
 
 1. 新增手工用例追加 MAN 编号（顺序分配，不复用），删除须注明原因。

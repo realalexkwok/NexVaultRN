@@ -151,13 +151,13 @@
 |---|---|---|---|
 | T2.1-H1 | 人工走查：Android 路由点走（MAN-014） | **`[x]` closed 2026-10-19**（owner 通过；Pixel 6a / Android 17） | — |
 | T2.1-H2 | 人工走查：Web 浏览器路由走查（MAN-015） | **`[x]` closed 2026-10-19**（owner 通过；桌面浏览器） | — |
-| T2.1-H3 | 真实数据接入（FlashList 真实列表、Zustand store、TanStack Query Provider 挂载） | `[ ]` open | replan → T2.2 |
-| T2.1-H4 | 自定入口 polyfill 槽（`index.ts`：`react-native-get-random-values` 首行 + TextEncoder polyfill，ui-wallet §2.1 契约） | `[ ]` open | replan → T2.2（当前入口 = `expo-router/entry`，无 polyfill） |
-| T2.1-H5 | 首页/历史/设置 tabs 导航（NativeTabs）与其余路由表页（unlock/receive-confirm/address-book 等） | `[ ]` open | replan → 后续 UI 条目（T4.x 流程条目） |
-| T2.1-H6 | iOS 路由 smoke（本条目仅 Android/Web，符合任务界定；iOS 需 Mac/Xcode） | `[ ]` open | 随 T1.5-H1 真机门一并处理（T4.1） |
-| T2.1-H7 | eslint/jest 引入（B.6-2/B.6-3 现为零覆盖；T1.1 scaffold 债 H6） | `[ ]` open | 维持 → T1.1 closure 吸收 |
-| T2.1-H8 | `expo-env.d.ts` 被 SDK 57 CLI 自动加入 `.gitignore`（不入库）→ `*.css` 模块声明改由 `nativewind-env.d.ts` 自持 | 已规避（`[x]` 记录） | 备注：CI 裸检出下 tsc 已实证通过（2026-10-19 复跑） |
-| T2.1-H9 | expo-router 解析为 57.0.28（tech-stack 括注 57.0.26，同为 ~57 线）；expo 基座 57.0.28→57.0.30 补丁对齐 | 已记录（`[x]` 备注） | 不需修宪（~57 范围内）；下次 R4 修订时同步括注 |
+| T2.1-H3 | 真实数据接入（FlashList 真实列表、Zustand store、TanStack Query Provider 挂载） | `[ ]` open | replan → T2.2；**2026-10-19 T2.1a 规划轮 D4 重申（维持）** |
+| T2.1-H4 | 自定入口 polyfill 槽（`index.ts`：`react-native-get-random-values` 首行 + TextEncoder polyfill，ui-wallet §2.1 契约） | `[ ]` open | replan → T2.2（当前入口 = `expo-router/entry`，无 polyfill）；**2026-10-19 T2.1a 规划轮 D4 重申（维持）** |
+| T2.1-H5 | 首页/历史/设置 tabs 导航（NativeTabs）与其余路由表页（unlock/receive-confirm/address-book 等） | `[ ]` open；**2026-10-19 T2.1a 规划轮 D4：implement（5-tab 底部导航）+ replan（其余路由表页）** | → T2.1a（5-tab 导航，Home/History/DApp/NFT/Settings）+ T4.x（其余页面） |
+| T2.1-H6 | iOS 路由 smoke（本条目仅 Android/Web，符合任务界定；iOS 需 Mac/Xcode） | `[ ]` open | 随 T1.5-H1 真机门一并处理（T4.1）；**2026-10-19 T2.1a 规划轮 D4 保持** |
+| T2.1-H7 | eslint/jest 引入（B.6-2/B.6-3 现为零覆盖；T1.1 scaffold 债 H6） | `[ ]` open | 维持 → T1.1 closure 吸收；**2026-10-19 T2.1a 规划轮 D4 保持** |
+| T2.1-H8 | `expo-env.d.ts` 被 SDK 57 CLI 自动加入 `.gitignore`（不入库）→ `*.css` 模块声明改由 `nativewind-env.d.ts` 自持 | 已规避（`[x]` 记录）；**2026-10-19 T2.1a 规划轮 D4 复核确认无动作** | 备注：CI 裸检出下 tsc 已实证通过（2026-10-19 复跑） |
+| T2.1-H9 | expo-router 解析为 57.0.28（tech-stack 括注 57.0.26，同为 ~57 线）；expo 基座 57.0.28→57.0.30 补丁对齐 | **`[x]` closed 2026-10-19**（T2.1a 规划轮 R4 修订已同步括注 → 57.0.28，D4） | 处置完成：tech-stack expo-router 行括注已改 57.0.28 |
 
 ## 收尾材料（2026-10-19 owner 批准执行）
 
