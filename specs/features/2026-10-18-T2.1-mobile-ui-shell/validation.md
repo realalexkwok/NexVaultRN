@@ -110,7 +110,7 @@
 |---|---|
 | 自动侧（导出 + curl 四路由 200 + 标记） | `[x]` verified 2026-10-18 |
 | 人工侧（owner 浏览器走查，MAN-015） | `[x]` verified 2026-10-19——**owner 浏览器走查通过**（桌面浏览器；自动侧 curl 四路由 200 见 Task 6） |
-## T2.1 总览（截至 2026-10-18 实现完成）
+## T2.1 总览（2026-10-19 复核关闭）
 
 | 项 | 状态 |
 |---|---|
@@ -121,7 +121,17 @@
 | Task 4 自动门禁（export/tsc/R7/R1/doctor） | `[x]` verified |
 | Task 5 Android smoke | `[x]` verified（自动侧：真机五路由渲染 + 0 crash；人工侧：MAN-014 owner 点走通过 2026-10-19） |
 | Task 6 Web smoke | `[x]` verified（自动侧：curl 四路由 200 + 标记；人工侧：MAN-015 owner 浏览器走查通过 2026-10-19） |
-| Task 7 收尾（Handoff + 公告板 + git） | `[x]` verified 2026-10-19（owner 闭项指令：公告板行 + merge --no-ff 入 main + 分支删除 + push） |
+| Task 7 收尾（Handoff + 公告板 + git） | `[x]` verified 2026-10-19（owner 闭项指令 + 评审轮 1–3 复核后重关：公告板行 + merge --no-ff 入 main + 分支删除 + push） |
+## Closure (2026-10-19, owner 裁定)
+
+| 项 | 内容 |
+|---|---|
+| 关闭依据 | owner 于 2026-10-19 复核通过并指令关闭（"All verified"）；评审轮 1–3 的发现全部处置完毕（见 §Review-fix round / §Review round 2 / §Review round 3） |
+| 最终修订 | 评审分支 `feature/T2.1-mobile-ui-shell` 末提交 `bbb4896`（合并提交见 main 历史） |
+| 关闭时复跑 | export exit 0（6 静态路由）；tsc exit 0；R7 grep exit 1（干净）；R1 宪法原文命令（仓库根）exit 1（干净） |
+| 遗留（已登记，非阻塞） | NIT-C 正文缺席（评审方粘贴截断，若补发则另开记录）；可选改进（`_sitemap` 标题、enabled 元素 a11y role、CSS 变量化）随 T2.1a UI 重皮处理 |
+| 后续 | 下一步 **T2.1a（视觉对齐原仓库，T2.1 后续子条目）** → T2.2（viem + polyfill + Zustand/Query） |
+
 
 ## AC 对照（收尾核对，2026-10-19 复跑版）
 
