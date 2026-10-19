@@ -101,13 +101,44 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 
 漂移审计（design-system-enforcer 清单）：hex/rgba/魔法间距/临场字号 = 0 处（除上述受控字面量与 `h-14` 的 M3 app bar 56dp 内容行，注释说明）；组件重复 = 0（四原语单一定义）。
 
-## Task 7 — 设备 smoke + MAN-016 + 关闭 [ ] 待设备
+## Task 7 — 设备 smoke + MAN-016 [x]（自动侧完成；owner 裁决待 MAN-016）
 
-- **阻塞**：Pixel 6a 于 2026-10-19 18:39 从 adb 消失 —— `ping 10.42.0.139` 100% 丢包、`adb connect` → `No route to host`、`adb mdns services` 空。需 owner 恢复 Wi-Fi/无线调试（或 USB）后执行：
-  - `adb reverse tcp:8082 tcp:8082` + dev-client deep link（Metro 8082 已在跑）
-  - 五 tab + receive/send/+not-found deep-link 截图 + UI dump（0 crash；fonts 加载实证）
-  - MAN-016：原仓库 `app-debug.apk` 安装 + onboarding 截图 vs RN shell 同机并排 → owner 裁决
-- 静态侧已全部就绪；设备恢复后按序补齐 AC-5 + AC-8，再走公告板 + merge。
+### 7.1 设备 findings 与修复（2026-10-19，Pixel 6a 重连后）
+
+| # | 发现 | 根因 | 修复 |
+|---|---|---|---|
+| F1 | 启动后永久停在 splash（JS 已运行，`T21A_ROOT_RENDER` 有日志） | `useFonts` 门控 `if (!loaded) return null`，字体加载未结算时 splash 不消失 | 根布局改为**立即渲染**，字体异步加载、失败回退系统字体（`_layout.tsx`） |
+| F2 | 文本块高度膨胀 ~20×（探针：`SIZE_ONLY` 文本 735px vs `PLAIN_NOCLASS` 51px） | 字阶元组的 `lineHeight`/`letterSpacing` 为无单位数值 → Tailwind 原样输出 → 被当作倍数 | `tailwind.config.js` 改为 `${n}px` 字符串（device-diff 定位） |
+| F3 | 顶部内容被状态栏裁切（顶端胶囊只剩半截） | 缺 `SafeAreaProvider` → insets 全 0 | 根布局包 `SafeAreaProvider`（react-native-safe-area-context） |
+| F4 | `flex-1` 居中容器失效（onboarding 内容贴顶） | ScrollView contentContainer 无 `flexGrow` | `Screen.tsx` 补 `flexGrow: 1` |
+
+复测：onboarding/home 文本 bounds 恢复正常（display-large 116px），字体为 Inter。
+
+### 7.2 Android 路由 smoke（Pixel 6a / Android 17，0 crash）
+
+- `adb reverse tcp:8082 tcp:8082` → 8082；dev-client deep link 拉起（Metro 8082，`--clear` 后 1830 模块整包）。
+- 路由 ×8：`nexvault://{home,history,dapp,nft,settings,receive,send}` + 启动页 index —— 全部渲染、无红屏、0 crash。
+- UI dump 核对（home）：NexVault / Chain · Not configured / Total balance / Not configured / Price chart · Not configured / Tokens / NFTs / Activity / Receive / Send / Home。
+- 截图（绝对路径，`specs/features/2026-10-19-T2.1a-mobile-ui-parity/evidence/`）：`shell-{index,home,history,dapp,nft,settings,receive,send}.png`。
+
+### 7.3 MAN-016 参考侧（原仓库 APK，同机）
+
+- 安装 `com.nexvault.wallet.debug`（APK `/home/superguo/Projects/NexVault/app/build/outputs/apk/debug/app-debug.apk`）；PIN `123456`（原仓库 `UnlockViewModelTest` 样例）解锁成功。
+- 原 app 截图：`evidence/orig-{unlock,home,history,dapp,nft,settings}.png`。
+- 并排要点：色板一致（#0A0E1A 底 / #121829 surface / #141928 卡面 / #1E2440 描边）、Inter 渲染、五 tab 原生 Material symbols + 选中 primary、TopBar 透明居中（send/receive）、Home 无 bar、卡片 1dp 描边无阴影、按钮 52/输入 56。
+
+### 7.4 偏差清单（owner 裁决 MAN-016 时逐条判定）
+
+| # | 偏差 | 说明 |
+|---|---|---|
+| D-a | M3 active indicator 颜色 | NativeTabs 未暴露 indicator 颜色（文档仅 `tintColor`/`backgroundColor`/`labelStyle`），系统主题给琥珀调；原 app 为 primaryContainer #1E3A8A |
+| D-b | Home 头部 | 保留 wordmark + 链选择器胶囊行；原 app Home 首屏直接是余额卡（无 wordmark） |
+| D-c | 选中态 filled 图标 | 单 md/sf 图标 + primary tint（filled 变体名待验证/后续） |
+| D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
+| D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
+
+### 7.5 待 owner
+MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告板行 + `--no-ff` 合并 + 删分支 + push main。
 
 ## 复现命令（app 侧，`apps/mobile`）
 

@@ -25,6 +25,7 @@ export function Screen({
   opaqueBar?: boolean;
 }) {
   const contentStyle = {
+    flexGrow: 1,
     paddingHorizontal: tokens.spacing.gutterMd,
     paddingBottom: tokens.spacing.lg,
   };

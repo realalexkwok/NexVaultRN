@@ -1,4 +1,4 @@
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { NexVaultCard } from '@/components/NexVaultCard';
 import { Screen } from '@/components/Screen';

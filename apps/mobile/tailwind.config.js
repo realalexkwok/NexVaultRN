@@ -4,7 +4,9 @@
 const { tokens } = require('./src/theme/tokens');
 
 const t = tokens.type;
-const scale = (s) => [s.size, { lineHeight: s.lineHeight, letterSpacing: s.letterSpacing }];
+// lineHeight/letterSpacing MUST carry units: unitless values are CSS multipliers (Tailwind emits
+// them verbatim), which blew the text height up to ~20x on device (2026-10-19 device finding).
+const scale = (s) => [s.size, { lineHeight: `${s.lineHeight}px`, letterSpacing: `${s.letterSpacing}px` }];
 
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
