@@ -1,6 +1,7 @@
 import '../../global.css';
 
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 
 import { tokens } from '@/theme/tokens';
@@ -10,6 +11,10 @@ import { tokens } from '@/theme/tokens';
 export default function RootLayout() {
   return (
     <>
+      <Head>
+        <title>NexVault</title>
+        <meta name="theme-color" content={tokens.color.bg} />
+      </Head>
       <StatusBar style="light" />
       <Stack
         screenOptions={{

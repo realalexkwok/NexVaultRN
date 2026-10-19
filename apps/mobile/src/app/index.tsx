@@ -18,10 +18,20 @@ export default function OnboardingScreen() {
         Self-custodial EVM wallet prototype — Android/iOS full, Web read-only.
       </Text>
       <View className="bg-surface rounded-card border border-border p-cardPad gap-cardPad">
-        <Pressable disabled className="bg-surfaceHi rounded-button py-3 items-center opacity-50">
+        <Pressable
+          disabled
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true }}
+          className="bg-surfaceHi rounded-button py-3 items-center opacity-50"
+        >
           <Text className="text-textDim font-semibold">Import wallet</Text>
         </Pressable>
-        <Pressable disabled className="bg-surfaceHi rounded-button py-3 items-center opacity-50">
+        <Pressable
+          disabled
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true }}
+          className="bg-surfaceHi rounded-button py-3 items-center opacity-50"
+        >
           <Text className="text-textDim font-semibold">Create wallet</Text>
         </Pressable>
         <Text className="text-textDim text-center">Not configured</Text>

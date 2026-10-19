@@ -21,7 +21,12 @@ export default function SendScreen() {
             <Text className="text-textDim">Not configured</Text>
           </View>
         </View>
-        <Pressable disabled className="bg-surfaceHi rounded-button py-3 items-center opacity-50">
+        <Pressable
+          disabled
+          accessibilityRole="button"
+          accessibilityState={{ disabled: true }}
+          className="bg-surfaceHi rounded-button py-3 items-center opacity-50"
+        >
           <Text className="text-textDim font-semibold">Continue</Text>
         </Pressable>
       </View>

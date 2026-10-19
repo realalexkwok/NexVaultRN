@@ -120,6 +120,20 @@
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
 | swift-secp256k1（21-DOT-DEV，ex-Blockstream） | **0.23.2 精确钉版**（GitHub tag `0.23.2`；release published 2026-05-23T07:46:28Z，≥7 天冷静期；CocoaPods trunk 已收录 0.23.2） | BIP-32/44 HD 派生所需的 secp256k1 公钥运算（`P256K.Recovery.PrivateKey.publicKey`）与 **RFC6979 可恢复 ECDSA 签名**（`secp256k1_ecdsa_sign_recoverable`，noncefp = NULL；low-s 归一化与 recid 翻转由库内完成，与 Android T1.4 BLOCKER-1 修复后的语义一致） | modules/vault-core/ios `VaultCoreCore.podspec`（core，iOS 15.1）/ `VaultCore.podspec`（Expo bridge，16.4）→ `spm_dependency(s, …, requirement: { kind: 'exactVersion', version: '0.23.2' }, products: ['P256K'])`（**2026-10-17 路线修订**：原 `s.dependency` 预编译 xcframework 路线作废，理由与证据见本节顶部） | 活跃（repo pushed 2026-10-16；160 stars；非 fork、未归档；MIT） | **未发现已知 CVE**；供应链核对：CocoaPods trunk podspec 的 `source` 指向 GitHub release 制品 `P256K.xcframework.zip`，sha256 `0084b98982506a85dfbdf4568236c7c95cc77f10c2b8cdc0e567647844c00f77`（podspec 内钉死） | 信任依据：官方 21-DOT-DEV 仓库 + CocoaPods trunk 收录 + 制品 sha256 钉死；**库自述 pre-1.0**（docs.21.dev 明示生产前须读 Security Considerations）→ 记录为成熟度备注，与本工程 `[C]/[P]` 标注纪律一致；风险点：**pod 平台下限 core 15.1 / bridge 16.4**（`app.json` 同步 `ios.deploymentTarget = 18.0`）；内置 nonce 生成使 k 字节位于库内部内存、无法 `memset_s` 清零 → 清零评审记为 **[C]**（owner 2026-10-16 Q2 裁定）。缓解：版本钉死 0.23.2，升级走 R4；BIP-32 CKD 胶水/Keccak-256/RIPEMD-160 仍自写并由官方向量门禁。[^25^]
+## 6d. Expo Router 传输/构建配套（apps/mobile，T2.1 R4 补记）
+
+> **补记说明（2026-10-19，T2.1 代码评审 MAJOR-1）：** 下列六包在 T2.1 Task 1 经 `expo install` 装入
+> `apps/mobile/package.json` 并已通过 lockfile 精确锁定，但当时漏记入本文件与 `specs/tech-stack.md`；
+> 本补记按 R4 §1 补齐记录（所有包均为第一方 Expo/Meta 制品、SDK 57 解析、无版本手选）。
+
+| 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
+|---|---|---|---|---|---|---|
+| expo-linking | ~57.0.13（SDK 解析） | 深层链接（scheme `nexvault`；路由 deep-link smoke 依赖） | apps/mobile | 高（Expo 官方） | 无 | expo-router **57.0.28** 必需 peer（`^57.0.13`）。信任依据：第一方制品随 SDK 发布；lockfile 精确。[^2^] |
+| expo-constants | ~57.0.22（SDK 解析） | 应用常量/配置注入 | apps/mobile | 高（Expo 官方） | 无 | expo-router **57.0.28** 必需 peer（`^57.0.22`）。[^2^] |
+| expo-status-bar | ~57.0.1（SDK 解析） | 状态栏样式（暗色主题 light 图标） | apps/mobile | 高（Expo 官方） | 无 | expo-router 手动安装文档钉版。[^2^] |
+| react-native-safe-area-context | ~5.7.0（SDK 解析） | 安全区（SafeAreaView） | apps/mobile | 高（官方维护、Expo 生态标准） | 无 | expo-router 57 peer（`>=5.4.0`）。[^2^] |
+| react-native-screens | ~4.26.2（SDK 解析） | 原生屏幕容器（Stack） | apps/mobile | 高（Software Mansion） | 无 | expo-router 57 peer（`^4.26.0`）。[^2^] |
+| babel-preset-expo | ~57.0.15（devDependency，SDK 解析） | Babel 预设（NativeWind v4 babel preset 前置） | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元（与 expo 57.0.30 同线）；仅在构建期使用。[^2^] |
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |

@@ -69,7 +69,7 @@
 | web export | `npx expo export -p web --output-dir /tmp/t21-web` | **0** | `Web Bundled` 852 modules；`Static routes (6): /home /send / (index) /receive /_sitemap /+not-found`；日志存 `evidence/web-export.log` |
 | R7 grep | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/` | **1（零命中）** | 导出 JS 无签名/导入/模块路径（R7 干净） |
 | tsc | `npx --no-install tsc --noEmit`（typed routes 由 `expo start` 生成 `.expo/types/router.d.ts` 后） | **0** | 严格模式零错误；typed routes 生效（四路由字面量在生成物中） |
-| R1 grep | `grep -rnEi 'mnemonic|privateKey|seedPhrase|xprv' src` | **1（零命中）**（首轮 1 命中为注释措辞，已改；重跑干净捕获 exit 1） | 密钥语义标识符干净 |
+| R1 grep | **宪法原文命令（AGENTS.md R1），工作目录 = 仓库根**：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'; echo "exit: ${PIPESTATUS[0]}"` | **exit 1，零命中，且无 `No such file or directory`**（首轮 1 命中为注释措辞，已改；2026-10-19 评审修复轮与第二轮复跑均从仓库根执行——**MINOR-A**：在 `apps/mobile` 内执行同一命令会打印 `apps/mobile: No such file or directory` 且 grep 以 exit 2 失败——旧记录的 `exit 1` 实为管道误读，属假通过；已在 §复现命令 拆分为"应用侧（apps/mobile）"与"仓库根侧"两段） | 密钥语义标识符干净（NIT-2：早前记录的命令漏 `secretKey` 且范围窄于宪法，已改正） |
 | expo-doctor | `npx --yes expo-doctor@latest` | 0 | **21/21 passed** |
 
 ### Task 4 状态
@@ -101,8 +101,8 @@
 | 步骤 | 命令 | 观察结果 |
 |---|---|---|
 | 静态服务 | `python3 -m http.server 8931 -d /tmp/t21-web`（后台 job） | 常驻（供 owner 浏览器走查备选） |
-| curl 四路由 | `curl -s -o /dev/null -w '%{http_code}'` `/index.html /home.html /receive.html /send.html /+not-found.html` | 全部 **HTTP 200**；四页各含 `Not configured` 标记 ≥1（+not-found 含其专属文案） |
-| 导出日志 | `evidence/web-export.log` | `Static routes (6)`：/home /send / (index) /receive /_sitemap /+not-found |
+| curl 五路由 | `curl -s -o /dev/null -w '%{http_code}'` `/index.html /home.html /receive.html /send.html /+not-found.html` | 全部 **HTTP 200**；四页各含 `Not configured` 标记 ≥1（+not-found 含其专属文案）；**完整转录落盘（NIT-3）**：`/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/evidence/web-route-smoke.txt`（2026-10-19 评审修复轮生成；含命令、状态码、标记计数、`<title>` 与背景规则断言） |
+| 导出日志 | `/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/evidence/web-export.log` | `Static routes (6)`：/home /send / (index) /receive /_sitemap /+not-found |
 
 ### Task 6 状态
 
@@ -110,7 +110,7 @@
 |---|---|
 | 自动侧（导出 + curl 四路由 200 + 标记） | `[x]` verified 2026-10-18 |
 | 人工侧（owner 浏览器走查，MAN-015） | `[x]` verified 2026-10-19——**owner 浏览器走查通过**（桌面浏览器；自动侧 curl 四路由 200 见 Task 6） |
-## T2.1 总览（截至 2026-10-18 实现完成）
+## T2.1 总览（2026-10-19 复核关闭）
 
 | 项 | 状态 |
 |---|---|
@@ -121,7 +121,17 @@
 | Task 4 自动门禁（export/tsc/R7/R1/doctor） | `[x]` verified |
 | Task 5 Android smoke | `[x]` verified（自动侧：真机五路由渲染 + 0 crash；人工侧：MAN-014 owner 点走通过 2026-10-19） |
 | Task 6 Web smoke | `[x]` verified（自动侧：curl 四路由 200 + 标记；人工侧：MAN-015 owner 浏览器走查通过 2026-10-19） |
-| Task 7 收尾（Handoff + 公告板 + git） | `[x]` verified 2026-10-19（owner 闭项指令：公告板行 + merge --no-ff 入 main + 分支删除 + push） |
+| Task 7 收尾（Handoff + 公告板 + git） | `[x]` verified 2026-10-19（owner 闭项指令 + 评审轮 1–3 复核后重关：公告板行 + merge --no-ff 入 main + 分支删除 + push） |
+## Closure (2026-10-19, owner 裁定)
+
+| 项 | 内容 |
+|---|---|
+| 关闭依据 | owner 于 2026-10-19 复核通过并指令关闭（"All verified"）；评审轮 1–3 的发现全部处置完毕（见 §Review-fix round / §Review round 2 / §Review round 3） |
+| 最终修订 | 评审分支 `feature/T2.1-mobile-ui-shell` 末提交 `bbb4896`（合并提交见 main 历史） |
+| 关闭时复跑 | export exit 0（6 静态路由）；tsc exit 0；R7 grep exit 1（干净）；R1 宪法原文命令（仓库根）exit 1（干净） |
+| 遗留（已登记，非阻塞） | NIT-C 正文缺席（评审方粘贴截断，若补发则另开记录）；可选改进（`_sitemap` 标题、enabled 元素 a11y role、CSS 变量化）随 T2.1a UI 重皮处理 |
+| 后续 | 下一步 **T2.1a（视觉对齐原仓库，T2.1 后续子条目）** → T2.2（viem + polyfill + Zustand/Query） |
+
 
 ## AC 对照（收尾核对，2026-10-19 复跑版）
 
@@ -132,7 +142,7 @@
 | AC-3 Android 路由 smoke | `[x]` | 2026-10-18：五路由 deep-link + UI dump + 截图（`evidence/ui-*.xml`）；2026-10-19 复验：TLS 通道重连、`adb reverse tcp:8082` + dev-server deep link 重新拉起，onboarding 页 UI dump 正常（红屏仅因传输切换后未重连，已恢复） |
 | AC-4 Web 路由 smoke | `[x]` | 2026-10-18：curl `/index.html /home.html /receive.html /send.html` → 全部 200 + 标记（服务器 job 常驻 8931） |
 | AC-5 依赖漂移 | `[x]` | `git diff apps/mobile/package.json`：仅批准行（expo-router + peer 集、nativewind/tailwindcss/css-interop、reanimated/worklets、flash-list、babel-preset-expo、expo 补丁对齐 + `expo.install.exclude`） |
-| AC-6 R1 + Not configured | `[x]` | 2026-10-19 复跑 `grep -rnEi 'mnemonic|privateKey|seedPhrase|xprv' src` → exit 1（零命中）；四页 UI dump 均含 "Not configured" |
+| AC-6 R1 + Not configured | `[x]` | 2026-10-19 复跑宪法原文命令（含 `secretKey`，范围 `apps/mobile`，**从仓库根执行**）→ exit 1（零命中、无 "No such file or directory"）；四页 UI dump 均含 "Not configured" |
 | AC-7 tokens = ui-wallet §2.3 | `[x]` | `src/theme/tokens.ts` 逐值比对（11 色 / 3 半径 / 2 间距 / 1 字体）；tailwind.config.js 全部从 tokens 映射 |
 
 ## Handoff 清单（下一 roadmap 条目规划轮逐条裁定，B.7-1/B.7-2）
@@ -154,9 +164,109 @@
 **Part A 关闭行（已写入 AGENTS.md）**：
 > - 2026-10-19：**T2.1 关闭（owner 裁定）**——Expo Router 57 Stack 四页壳（onboarding/home/receive/send + not-found，typed routes、暗色令牌、FlashList v2 占位）；NativeWind 4.2.7 + tailwindcss 3.4.17 + css-interop 0.2.7（R4 修宪 D3/D6）+ Reanimated 4.7.1/worklets 0.13.0/FlashList 2.3.3 精确钉版；门禁 tsc exit 0、web export exit 0（6 静态路由）、R7/R1 grep 零命中、expo-doctor 21/21；Android 真机（Pixel 6a / Android 17）五路由 deep-link 渲染 0 crash（UI dump + 截图）、Web curl 四路由 200；MAN-014/015 走查通过（owner）。证据：`/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/validation.md`
 
-**Part A 工程阶段 cell 更新（已写入）**：`… 下一步 **T2.2（viem + polyfill + Zustand/Query 挂载 + 余额只读）**`
+**Part A 工程阶段 cell 更新（NIT-5 更正）**：本评审分支（`feature/T2.1-mobile-ui-shell`，自 main `26ad458`）的公告板仍是 `… 下一步 **T2.2（viem + polyfill + Zustand/Query 挂载 + 余额只读）**`；把此 cell 改为 `… **T2.1a（视觉对齐原仓库）→ T2.2**` 的治理提交在**另一分支** `feature/T2.1a-mobile-ui-parity`（`c27c96d`），随 T2.1a 流程合入——两处记录已按分支实际状态更正。
 
 **git（已执行 2026-10-19）**：`git merge --no-ff` → main（提交见 main 历史）；本地分支删除；`git push origin main`。
+## Code review handoff (2026-10-19)
+
+> 评审范围：**`407d5ae..HEAD`**（分支 **`feature/T2.1-mobile-ui-shell`**）。
+> 提交：`9b78205`（实现 + 证据 + 规格/依赖文档）、`5277f9b`（AC 对照 + Handoff 草案）、`d9aa3f2`（闭项文档）、`26ad458`（merge --no-ff），以及本分支最新提交（**本节 §Code review handoff**；T2.1a 的 roadmap 修宪在独立分支 `feature/T2.1a-mobile-ui-parity`，与本评审无关）。
+
+### 阅读顺序
+
+1. `apps/mobile/package.json` / `app.json` / `tsconfig.json`——钉版、`expo.install.exclude`、typed routes、`web.output: "static"`。
+2. `apps/mobile/babel.config.js` / `metro.config.js` / `tailwind.config.js` / `global.css` / `nativewind-env.d.ts`——NativeWind v4 形态（对照 v4.2.7 官方安装页，2026-10-18 实取）。
+3. `apps/mobile/src/theme/tokens.ts`——逐值对照 `specs/ui-wallet.md` §2.3。
+4. `apps/mobile/src/app/_layout.tsx` + `index.tsx` / `home.tsx` / `receive.tsx` / `send.tsx` / `+not-found.tsx` + `src/components/Screen.tsx`。
+5. 本文件 Task 0–7 + `evidence/`（`android-dev-build.log`、`ui-*.xml` ×5、`android-route-*.png` ×5、`web-export.log`）。
+6. 规格/依赖 diff：`specs/tech-stack.md`（tailwindcss / css-interop 行 + swift-secp256k1 追认措辞）、`doc/dependencies.md`（同级）、`specs/dev-environment.md` §1（JDK）、`specs/pending-manual-test-cases.md`（MAN-014/015）、T1.5 `validation.md` 的 H6 行。
+
+### 评审须盯住的红线与不变量
+
+- **R4**：直接依赖仅批准行——expo-router ~57（解析 **57.0.28**，在 tech-stack"~57（57.0.26）"线内）、SDK-57 peer 集、nativewind **4.2.7**、tailwindcss **3.4.17**（**D3 修宪**）、react-native-css-interop **0.2.7**（**D6 修宪**，依赖图未变）、reanimated **4.7.1**、worklets **0.13.0**、flash-list **2.3.3**、babel-preset-expo 57.0.15（SDK 绑定单元）；expo `~57.0.30` 为 SDK 57 补丁对齐。`expo.install.exclude` 的三项是**故意偏离 SDK 默认集**（CVE-2026-97724 下限），不是漏配。
+- **R1**：`apps/mobile/src` 无 key-material 标识符、无 vault-core import（`grep` exit 1 见 Task 4）；onboarding 零助记词 UI。
+- **R5**：所有占位为 "Not configured"，无假数据；无敏感日志。
+- **R7**：导出 web JS 无 `signDigest|importMnemonic|vault-core`（Task 4 证据）。
+- **B.6-1**：`tsc --noEmit` exit 0（strict；typed routes 类型 `.expo/types/router.d.ts` 由 `expo start` 生成，不入库）。
+- **CNG**：`apps/mobile/android/` 未手改（gitignored），配置仅经 app.json/plugins。
+- **禁项**：无 `@react-navigation/*` 直接导入；零动画代码（reanimated 仅接入）。
+- **证据完整性**：`evidence/*.log` 用 `git add -f` 入库（根 `.gitignore` 有 `*.log`，T1.3 先例）；截图/UI dump 为真机（Pixel 6a / Android 17）实采；`nativewind-env.d.ts` 自带 `declare module '*.css'` 是因为 SDK 57 CLI 会把 `expo-env.d.ts` 自动加进 `.gitignore`（不入库），tsc 已在无该文件时复验 exit 0。
+
+### 复现命令
+
+    # 1) 应用侧（工作目录 apps/mobile）
+    pnpm install --frozen-lockfile
+    cd apps/mobile
+    npx --no-install tsc --noEmit
+    npx expo export -p web --output-dir /tmp/t21-web
+    grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21-web/_expo/static/js/; echo "R7 exit: $?"   # 期望 exit 1（无输出）
+    npx --yes expo-doctor@latest                                                    # 21/21
+
+    # 2) 仓库根侧（工作目录 = 仓库根；**R1 必须在此执行**，MINOR-A）
+    cd /home/superguo/Projects/NexVaultRN
+    grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile \
+      --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'
+    echo "R1 exit: ${PIPESTATUS[0]}"   # 期望 exit 1，且不得出现 'apps/mobile: No such file or directory'
+
+### 已知开放项（记录在案的决策，**不是缺陷**）
+
+- **视觉差异**：当前壳层按 ui-wallet §2.3 自研暖色令牌实现，与原 Kotlin 工程差异显著 → **已由 2026-10-19 roadmap 修宪插入 T2.1a（视觉对齐，route A/scope A）**；评审请勿把"长得不像原仓库"记为 T2.1 缺陷。
+- T2.1-H3（真实数据 → T2.2）、H4（polyfill 自定入口 → T2.2）、H5（tabs/其余路由 → 后续 UI 条目）、H6（iOS 路由 smoke → T1.5-H1/T4.1）、H7（eslint/jest → T1.1 H6）、H8（expo-env.d.ts 与 `*.css` 声明，已规避）、H9（expo-router 57.0.28 vs 括注 57.0.26，备注）。
+- 真机 smoke 为 **debug dev build + Metro 8082**（原生模块要求 dev build；Expo Go 不适用）；Release/EAS 构建不在 T2.1 范围（T1.5-H8 → T5.3）。
+- 本条目**无自动化测试**（jest/eslint 属 T1.1 H6 债，未在本期引入）——门禁为 tsc/export/grep/doctor/真机 smoke。
+
+## Review-fix round (2026-10-19, 独立评审发现处置)
+
+| Finding | 判定 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** 六个直接依赖未入 R4 登记 | 采纳 | `specs/tech-stack.md` §2 新增 6 行（expo-linking / expo-constants / expo-status-bar / react-native-safe-area-context / react-native-screens / babel-preset-expo，均注记"2026-10-19 T2.1 评审 MAJOR-1 R4 补记"）；`doc/dependencies.md` 新增 **§6d** 补记（第一方 Expo/Meta、SDK 解析、lockfile 精确；零代码变更） | `specs/tech-stack.md` §2；`doc/dependencies.md` §6d |
+| **MINOR-1** B.6-1 的 workspace 门禁是 no-op | **部分撤回（MINOR-R3）** | 采纳的门禁写法保留：`pnpm --filter mobile exec tsc --noEmit`；但"`pnpm -r exec tsc --noEmit` 是 no-op"的论断**经评审方 2026-10-19 撤回并由探针证伪**（注入 `const probe: number = "x"` → `probe-review.ts(1,7): error TS2322`、exit 1；移除后 exit 0）——命令行首的 `No projects matched the filters` 仅指根目录无工程。B.6-1 已改为"两种形态等价"；`packages/*` 有 TS 工程后用 `pnpm -r --if-present run typecheck`（NIT-A） | `AGENTS.md` §B.6-1；本节 §Review round 3 探针记录 |
+| **NIT-1** Web 空 `<title>` + 浅色页面底 | 采纳 | `_layout.tsx` 增 `import Head from 'expo-router/head'` + `<title>NexVault</title>` + `theme-color`；`global.css` 增 `html,body,#root{background-color:#1B1815}`（注释指向 tokens）。复跑 export 实证：`<title data-rh="true">NexVault</title>`、字体 CSS 含 `html,body,#root{background-color:#1b1815}` | `evidence/web-route-smoke.txt`；`/tmp/t21-export-fix.log` |
+| **NIT-2** R1 记录命令弱于宪法 | 采纳 | Task 4 / AC-6 / §复现命令 全部改为宪法原文命令（含 `secretKey`、范围 `apps/mobile`、`--exclude-dir=node_modules`、去 `packages/vault-core`）；重跑 **exit 1**（零命中） | 本文件 Task 4 / AC-6 / §复现命令 |
+| **NIT-3** curl 证据不持久 + 相对路径 | 采纳 | 新增 `evidence/web-route-smoke.txt`（2026-10-19 生成：五路由 HTTP 200 + 标记计数 + `<title>` + 背景规则断言 + 复现命令/产物路径）；Task 6 证据表改绝对路径 | `/home/superguo/Projects/NexVaultRN/specs/features/2026-10-18-T2.1-mobile-ui-shell/evidence/web-route-smoke.txt` |
+| **NIT-4** 无 ScrollView / 原生 a11y 缺 disabled 态 | 采纳 | `Screen` 新增 `scroll?: boolean`（默认 ScrollView 包裹，`contentContainerStyle` 用 tokens；home 传 `scroll={false}` 避免嵌套虚拟列表）；`index.tsx` 两个与 `send.tsx` 一个 disabled Pressable 增加 `accessibilityRole="button"` + `accessibilityState={{ disabled: true }}`；tsc 复跑 exit 0 | `src/components/Screen.tsx`；`src/app/{index,send,home}.tsx` |
+| **NIT-5** 公告板记录与验证文档不一致 | 采纳 | 本文件 §收尾材料 改为按分支实际状态描述：本评审分支（自 main `26ad458`）cell 仍为 `… T2.2`；`T2.1a → T2.2` 的治理提交在 `feature/T2.1a-mobile-ui-parity`（`c27c96d`），随 T2.1a 合入 | 本文件 §收尾材料；`feature/T2.1a-mobile-ui-parity` |
+
+**评审修复轮复跑（2026-10-19）**：`expo export -p web` exit 0（6 静态路由）；`tsc --noEmit` exit 0；R7 grep exit 1（干净）；R1 宪法原文命令 exit 1（干净）。
+## Review round 2 (2026-10-19, 第二轮复核发现处置)
+
+| Finding | 判定 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-A** R1 命令在应用目录内假通过 | 采纳 | §复现命令 拆为两段："1) 应用侧（apps/mobile）"与"2) 仓库根侧（R1 必须在此执行）"；Task 4 / AC-6 行标注工作目录 = 仓库根；并记录反例形态（从 `apps/mobile` 执行 → `grep: apps/mobile: No such file or directory`，exit **2**；旧记录的 `exit 1` 属管道误读） | 本节复跑证据 |
+| **NIT-A** B.6-1 的"未来命令"非法 | 采纳 | 改为 `pnpm -r --if-present run typecheck`（各包提供 `typecheck` script；`--if-present` 是 `run` 的旗标，不是 `exec` 的）；实测旧命令：`[ERROR] Unknown option: 'if-present'`，exit 1 | `AGENTS.md` §B.6-1；本节复跑 |
+| **NIT-B** R4 行 peer 引文过期 | 采纳 | 按**实际安装**的 expo-router **57.0.28** 更正：expo-linking `^57.0.13`、expo-constants `^57.0.22`（`specs/tech-stack.md` §2 两行 + `doc/dependencies.md` §6d 两行） | `node_modules/expo-router/package.json`（version 57.0.28）；两文件 |
+| **NIT-C** | **未收到正文**——粘贴内容在 NIT-B 之后截断为 `iew), but §Review-fix round`，无法据以修复 | 请 owner 补发 NIT-C 正文后再处置 | — |
+
+**复跑证据（2026-10-19）**：
+
+- 仓库根 R1：`grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile --include='*.ts' --include='*.tsx' --exclude-dir=node_modules | grep -v 'packages/vault-core'` → 零输出，**exit 1**（正确形态）
+- `apps/mobile` 内跑同一命令 → `grep: apps/mobile: No such file or directory`，**exit 2**（反例，不得作为干净证据）
+- `pnpm -r --if-present exec tsc --noEmit` → `[ERROR] Unknown option: 'if-present'`，**exit 1**（NIT-A 实证）
+## Review round 3 (2026-10-19, MINOR-R3 更正)
+
+| Finding | 判定 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-R3**（评审方撤回 round-1 MINOR-1 的"`pnpm -r exec` 是 no-op"论断；属评审方自我更正，非开发缺陷） | 采纳 | 三处更正：① `AGENTS.md` B.6-1 —— 两种门禁形态等价（`pnpm --filter mobile exec tsc --noEmit` / `pnpm -r exec tsc --noEmit`），附探针实证，"no-op"结论作废；② 公告板 2026-10-19 评审行内 MINOR-1 段落加撤回标注；③ 本文件 §Review-fix round 的 MINOR-1 行改为"部分撤回"并引探针 | 本节探针输出 |
+
+**探针（2026-10-19，pnpm 11.28.5）**：
+
+    $ pnpm -r exec sh -c 'echo MARKER:$(pwd)'
+    No projects matched the filters "<repo root>" in "<repo root>"
+    MARKER:/home/superguo/Projects/NexVaultRN/apps/mobile
+    $ pnpm -r exec tsc --noEmit            # 基线
+    exit 0
+    $ printf 'const probe: number = "x";\n' > apps/mobile/probe-review.ts
+    $ pnpm -r exec tsc --noEmit
+    probe-review.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+    exit 1
+    $ rm apps/mobile/probe-review.ts && pnpm -r exec tsc --noEmit
+    exit 0
+
+结论：`pnpm -r exec` **确实**递归执行到 `apps/mobile`（探针文件被 tsc 检查到）；命令行首的 `No projects matched the filters "<repo root>"` 只说明根目录无工程，不是"无工程可跑"。原 round-1 MINOR-1 的 no-op 论断不成立。
+
+
+
+
 
 
 
