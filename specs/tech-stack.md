@@ -17,13 +17,15 @@
 | expo（SDK 57 基座） | ≥57.0.21 | apps/mobile | 修 Hermes v1 回归的下限；SDK↔RN 0.86 / React 19.2.3 绑定单元 |
 | react-native / react | 0.86（0.86.3）/ 19.2.3 | apps/mobile | 随 SDK 钉版，不单独升级 |
 | react-native-web | ~0.21.0 | apps/mobile | Web 端渲染层 |
-| expo-router | ~57（57.0.26） | apps/mobile | 版本与 SDK 对齐；禁 `@react-navigation/*` 直接导入 |
+| expo-router | ~57（57.0.28） | apps/mobile | 版本与 SDK 对齐；禁 `@react-navigation/*` 直接导入；括注 2026-10-19 同步实际解析版本（T2.1-H9 关闭，T2.1a 规划轮 D4） |
 | expo-linking | ~57.0.13 | apps/mobile | expo-router **57.0.28** 必需 peer（`^57.0.13`）；深层链接；**2026-10-19 T2.1 评审 MAJOR-1 R4 补记**（T2.1 Task 1 首装，SDK 解析、lockfile 精确）；NIT-B：引文按实际安装版本核对 |
 | expo-constants | ~57.0.22 | apps/mobile | expo-router **57.0.28** 必需 peer（`^57.0.22`）；同上补记；NIT-B：引文按实际安装版本核对 |
+| expo-font | ~57.0.4 | apps/mobile | SDK 57 绑定单元（expo 基座依赖 ^57.0.4 已在 lockfile）；提升为直接行仅新增 importer 条目、依赖图不变；Inter 4 权重 TTF（OFL；原仓库 core/core-ui/src/main/res/font 复制 + res/raw/inter_ofl_license.txt 随包）；**2026-10-19 T2.1a 规划轮 R4 修宪（owner 批准，D1）** |
 | expo-status-bar | ~57.0.1 | apps/mobile | expo-router 手动安装文档钉版；状态栏样式；同上补记 |
 | react-native-safe-area-context | ~5.7.0 | apps/mobile | expo-router 57 peer（`>=5.4.0`）；安全区；同上补记 |
 | react-native-screens | ~4.26.2 | apps/mobile | expo-router 57 peer（`^4.26.0`）；原生屏幕容器；同上补记 |
 | babel-preset-expo | ~57.0.15（devDependency） | apps/mobile | SDK 57 绑定单元；NativeWind v4 babel preset 前置；同上补记 |
+| @babel/plugin-transform-react-jsx | 7.29.7（精确） | apps/mobile（devDependency） | babel-preset-expo 已含同版传递依赖；pnpm isolated 布局下 Gradle release 打包（`export:embed`）按 app 根解析 Babel 插件 → 首轮 release 构建报 `Cannot find module`；提升为直接行仅新增 importer 条目、零新包下载；**构建期专用**；**2026-10-19 T2.1a R4 修宪（owner 批准）** |
 | @tanstack/react-query | 5.104（5.104.2） | apps/mobile | 仅缓存非敏感数据（R5） |
 | zustand | 5.0（5.0.15） | apps/mobile | 密钥语义状态永不进 store（R1） |
 | nativewind | v4（4.2.7） | apps/mobile | **锁 v4**；v5 RC 钉带 CVE 的 worklets，排除；必需 peer `tailwindcss`（v4 稳定线 = Tailwind v3，companion 行见下，**2026-10-18 T2.1 R4 修宪，owner 批准**） |

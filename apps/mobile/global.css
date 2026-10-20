@@ -2,10 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Web: paint the shell background before/without hydration (NIT-1).
-   Keep in sync with src/theme/tokens.ts color.bg. */
+/* Web: paint the shell background before/without hydration (T2.1 NIT-1; CSS-var form T2.1a).
+   --nv-bg mirrors src/theme/tokens.ts color.bg (= Color.kt:DarkBackground #0A0E1A @3c7487f);
+   this is the single permitted literal outside tokens.ts (recorded in validation.md). */
+:root {
+  --nv-bg: #0A0E1A;
+}
+
 html,
 body,
 #root {
-  background-color: #1B1815;
+  background-color: var(--nv-bg);
 }

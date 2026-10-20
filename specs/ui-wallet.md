@@ -24,10 +24,15 @@ app/
     verify.tsx             # 备份验证
   unlock.tsx               # 生物识别/密码解锁（security-android/ios）
   (tabs)/
-    _layout.tsx            # NativeTabs
-    home.tsx               # 资产总览（骨架屏先行，RPC 异步合并）
-    history.tsx            # 交易历史 FlashList v2
-    settings.tsx           # 安全设置（含安全级别指示 L0–L5 可视化）
+    _layout.tsx            # NativeTabs（2026-10-19 T2.1a 实装：Home/History/DApp/NFT/Settings；
+                           # 容器 surface、选中 primary、未选中 onSurfaceVariant、indicator primaryContainer、
+                           # label labelSmall、高 80（M3 NavigationBar 默认；NexVaultDimens.bottomNavHeight=64
+                           # 在 MainScreen.kt 未被使用 —— 2026-10-19 评审更正）—— 原仓库 MainScreen.kt/MainTab.kt 证据）
+    home.tsx               # 资产总览（T2.1a 视觉对齐：无 TopBar、链选择器行领起；数据接入 T2.2/T4.x）
+    history.tsx            # 交易历史 FlashList v2（T2.1a："Not configured" 占位，R5）
+    dapp.tsx               # DApp 浏览器（T2.1a："Not configured" 占位；WalletConnect v2 后置）
+    nft.tsx                # NFT 画廊（T2.1a："Not configured" 占位）
+    settings.tsx           # 安全设置（T2.1a："Not configured" 占位；L0–L5 指示 T4.x）
   receive/index.tsx        # 收款：地址 + QR（地址经 vault-core.deriveAddress 现取，不信路由参数）
   send/
     index.tsx              # 表单（地址/金额输入）
@@ -36,6 +41,8 @@ app/
   address-book/index.tsx
   +not-found.tsx
 ```
+
+> **2026-10-19 修订（T2.1a 规划轮，owner D3）**：`(tabs)` 组在 T2.1a 实装五 tab（Home/History/DApp/NFT/Settings；DApp/NFT/Settings 先以 "Not configured" 占位，R5）；其余路由表页（unlock / send/confirm / address-book / token-detail / tx-detail / swap 等）维持后续条目（T4.x）承载。Home 无 TopBar（原仓库 HomeScreen.kt：链选择器领起）。
 
 ### 2.2 ★ 交易确认页 native 地址显示红线（接口契约）
 
@@ -54,31 +61,112 @@ export const NativeTxConfirmView: React.ComponentType<NativeTxConfirmViewProps>;
 
 防篡改逻辑：重打包者篡改 JS 层「显示地址 A、实际签地址 B」的钓鱼攻击，要求显示与签名数据源同构——native 从 `unsignedSerialized` 自解析渲染，JS 无法让「显示」与「签名」分叉 [^4^]。确认页同时开启 `expo-screen-capture` 防截屏（幂等、统一 key，规避 iOS #48985 黑屏 bug [^2^]）。
 
-### 2.3 设计令牌（NativeWind v4，低饱和暖色暗色主题）
+### 2.3 设计令牌（NativeWind v4，原仓库暗色 M3 色板 + Inter）
 
 ```ts
 // theme/tokens.ts —— tailwind.config 的 theme.extend 映射源
+// 2026-10-19 T2.1a 修订（owner D2）：整块替换为原仓库设计系统（/home/superguo/Projects/NexVault @ 3c7487f，实现代码为准）。
+// 每个值注释 = 证据（文件:符号 @3c7487f）；转录错误按 T1.3 向量转录发现同级处理。
 export const tokens = {
   color: {
-    bg:        '#1B1815',  // 暖黑底
-    surface:   '#282219',  // 暖灰面板
-    surfaceHi: '#342C21',
-    primary:   '#C79A6B',  // 低饱和琥珀（主操作）
-    primaryFg: '#1B1815',
-    text:      '#EDE6DC',  // 暖白
-    textDim:   '#A79C8E',
-    success:   '#7FA37A',  // 低饱和绿
-    warning:   '#C9A25B',  // 低饱和黄
-    danger:    '#B4635A',  // 低饱和红
-    border:    '#3D352A',
+    // Color.kt（dark scheme，生产为纯暗色）
+    bg:                '#0A0E1A',  // Color.kt:DarkBackground
+    surface:           '#121829',  // Color.kt:DarkSurface
+    surfaceVariant:    '#1A1F35',  // Color.kt:DarkSurfaceVariant
+    surfaceVariant2:   '#232842',  // Color.kt:DarkSurfaceVariant2
+    primary:           '#2D5AF0',  // Color.kt:DarkPrimary
+    onPrimary:         '#FFFFFF',  // Color.kt:DarkOnPrimary
+    primaryContainer:  '#1E3A8A',  // Color.kt:DarkPrimaryContainer
+    onPrimaryContainer:'#D8E2FF',  // Color.kt:DarkOnPrimaryContainer
+    secondary:         '#00D4AA',  // Color.kt:DarkSecondary
+    onSecondary:       '#003730',  // Color.kt:DarkOnSecondary
+    secondaryContainer:'#005045',  // Color.kt:DarkSecondaryContainer
+    onSecondaryContainer:'#70F7DC',// Color.kt:DarkOnSecondaryContainer
+    tertiary:          '#7B61FF',  // Color.kt:DarkTertiary
+    onTertiary:        '#2E0080',  // Color.kt:DarkOnTertiary
+    tertiaryContainer: '#4A00B8',  // Color.kt:DarkTertiaryContainer
+    onTertiaryContainer:'#E8DDFF', // Color.kt:DarkOnTertiaryContainer
+    error:             '#FF4C6E',  // Color.kt:DarkError
+    onError:           '#FFFFFF',  // Color.kt:DarkOnError
+    errorContainer:    '#93000A',  // Color.kt:DarkErrorContainer
+    onErrorContainer:  '#FFDAD6',  // Color.kt:DarkOnErrorContainer
+    onBackground:      '#FFFFFF',  // Color.kt:DarkOnBackground
+    onSurface:         '#FFFFFF',  // Color.kt:DarkOnSurface
+    onSurfaceVariant:  '#A0A8C8',  // Color.kt:DarkOnSurfaceVariant
+    onSurfaceDisabled: '#5A6180',  // Color.kt:DarkOnSurfaceDisabled
+    outline:           '#404759',  // Color.kt:DarkOutline
+    outlineVariant:    '#252B3F',  // Color.kt:DarkOutlineVariant
+    // NexVaultColors.kt（dark；语义/加密专用色）
+    positive:          '#00E676',  // NexVaultColors.kt:positive
+    negative:          '#FF5252',  // NexVaultColors.kt:negative
+    warning:           '#FFB74D',  // NexVaultColors.kt:warning
+    info:              '#2196F3',  // NexVaultColors.kt:info
+    cardSurface:       '#141928',  // NexVaultColors.kt:cardSurface
+    cardBorder:        '#1E2440',  // NexVaultColors.kt:cardBorder
+    shimmer:           '#1E2440',  // NexVaultColors.kt:shimmer
+    shimmerHighlight:  '#2A3148',  // NexVaultColors.kt:shimmerHighlight
+    textHigh:          '#FFFFFF',  // NexVaultColors.kt:textHigh
+    textMedium:        '#A0A8C8',  // NexVaultColors.kt:textMedium
+    textDisabled:      '#5A6180',  // NexVaultColors.kt:textDisabled
+    gradientStart:     '#0A0E1A',  // NexVaultColors.kt:gradientStart
+    gradientEnd:       '#121829',  // NexVaultColors.kt:gradientEnd
+    // Color.kt dark scheme 的 inverse/surfaceTint（2026-10-19 评审补全；当前无屏幕使用）
+    inverseSurface:    '#E6E1E5',  // Color.kt:DarkInverseSurface
+    inverseOnSurface:  '#313033',  // Color.kt:DarkInverseOnSurface
+    inversePrimary:    '#0A2472',  // Color.kt:DarkInversePrimary
+    surfaceTint:       '#2D5AF0',  // Color.kt: surfaceTint = DarkPrimary
   },
-  radius: { card: 12, button: 10, chip: 999 },
-  spacing: { gutter: 16, cardPad: 16 },
-  type: { addressMono: 'monospace' },   // 地址一律等宽 + 分段着色（首 6/末 4 高亮）
+  radius: {
+    // NexVaultDimens.kt:cornerRadius*；组件级用法（NexVaultCard/Button/TextField.kt）
+    xs: 4, sm: 8, md: 12, lg: 16, xl: 24,
+    card: 16, button: 16, input: 12, chip: 8,
+  },
+  spacing: {
+    // NexVaultDimens.kt:spacing*（+ 扩展步 spacing6/10/12/18/64）
+    xxs: 2, xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48,
+    s6: 6, s10: 10, s12: 12, s18: 18, s64: 64,
+    gutterLg: 24,   // onboarding/receive/swap 屏 gutter（原仓库盘点）
+    gutterMd: 16,   // home/token/history/send/nft 屏 gutter（原仓库盘点）
+  },
+  size: {
+    buttonHeight: 52,      // NexVaultDimens.kt:buttonHeight
+    inputHeight: 56,       // NexVaultDimens.kt:inputHeight
+    bottomNavHeight: 64,   // NexVaultDimens.kt:bottomNavHeight
+    icon: 24, iconSmall: 20, tokenIcon: 40, actionButton: 56,
+    chartHeight: 180,      // NexVaultDimens.kt:chartHeight
+    navBar: 80,            // M3 NavigationBar 默认（NexVaultDimens.bottomNavHeight=64 未被 MainScreen 使用）
+    borderWidth: 1, borderWidthEmphasis: 1.5, borderWidthStrong: 2,  // NexVaultDimens.kt
+  },
+  type: {
+    // Type.kt:NexVaultTypography（size/lineHeight/weight/letterSpacing；family = Inter）
+    displayLarge:   { size: 36, lineHeight: 44, weight: '700', letterSpacing: -0.25 },
+    displayMedium:  { size: 32, lineHeight: 40, weight: '700', letterSpacing: 0 },
+    displaySmall:   { size: 28, lineHeight: 36, weight: '700', letterSpacing: 0 },
+    headlineLarge:  { size: 28, lineHeight: 36, weight: '700', letterSpacing: 0 },
+    headlineMedium: { size: 24, lineHeight: 32, weight: '600', letterSpacing: 0 },
+    headlineSmall:  { size: 20, lineHeight: 28, weight: '600', letterSpacing: 0 },
+    titleLarge:     { size: 18, lineHeight: 26, weight: '600', letterSpacing: 0 },
+    titleMedium:    { size: 16, lineHeight: 24, weight: '600', letterSpacing: 0.1 },
+    titleSmall:     { size: 14, lineHeight: 20, weight: '600', letterSpacing: 0.1 },
+    bodyLarge:      { size: 16, lineHeight: 24, weight: '400', letterSpacing: 0.5 },
+    bodyMedium:     { size: 14, lineHeight: 20, weight: '400', letterSpacing: 0.25 },
+    bodySmall:      { size: 12, lineHeight: 16, weight: '400', letterSpacing: 0.4 },
+    labelLarge:     { size: 14, lineHeight: 20, weight: '500', letterSpacing: 0.1 },
+    labelMedium:    { size: 12, lineHeight: 16, weight: '500', letterSpacing: 0.5 },
+    labelSmall:     { size: 10, lineHeight: 14, weight: '500', letterSpacing: 0.5 },
+  },
+  font: {
+    family: 'Inter',  // Type.kt:NexVaultFontFamily（4 权重 TTF，OFL，自原仓库 res/font 复制）
+    weights: { regular: '400', medium: '500', semibold: '600', bold: '700' },
+  },
 } as const;
 ```
 
 纪律：原生端 NativeWind v4 className；Web 端同一 className 直通 RN Web 的 Tailwind CSS [^5^]；禁止引入 NativeWind v5 RC（钉住带 CVE-2026-97724 的 worklets 0.10.1 [^6^]）。
+
+**2026-10-19 修订（T2.1a 规划轮，owner D2）**：令牌块整体替换为原仓库设计系统（见上；证据注释 `// Color.kt:DarkPrimary @3c7487f` 格式，转录错误按 T1.3 向量转录发现同级处置）；暖色块（`#1B1815`/`#C79A6B` 等）作废；地址等宽 + 首尾高亮纪律随地址组件（T4.x）落地，原 `addressMono` 键不再保留（原仓库无 mono 字体）。
+
+**2026-10-19 评审补全（Color.kt dark scheme 完整性）**：inverseSurface `#E6E1E5` · inverseOnSurface `#313033` · inversePrimary `#0A2472` · surfaceTint = primary `#2D5AF0`（当前无屏幕使用，仅补全方案色板）。
 
 ### 2.4 动画与列表接口纪律
 

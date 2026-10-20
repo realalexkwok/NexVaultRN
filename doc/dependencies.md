@@ -125,6 +125,7 @@
 > **补记说明（2026-10-19，T2.1 代码评审 MAJOR-1）：** 下列六包在 T2.1 Task 1 经 `expo install` 装入
 > `apps/mobile/package.json` 并已通过 lockfile 精确锁定，但当时漏记入本文件与 `specs/tech-stack.md`；
 > 本补记按 R4 §1 补齐记录（所有包均为第一方 Expo/Meta 制品、SDK 57 解析、无版本手选）。
+> **2026-10-19 T2.1a 补记（规划轮 D1，owner 批准）：** expo-font 行同此理由入表（SDK 绑定单元；lockfile 已含 ^57.0.4；直接行仅新增 importer 条目）。
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
@@ -134,6 +135,8 @@
 | react-native-safe-area-context | ~5.7.0（SDK 解析） | 安全区（SafeAreaView） | apps/mobile | 高（官方维护、Expo 生态标准） | 无 | expo-router 57 peer（`>=5.4.0`）。[^2^] |
 | react-native-screens | ~4.26.2（SDK 解析） | 原生屏幕容器（Stack） | apps/mobile | 高（Software Mansion） | 无 | expo-router 57 peer（`^4.26.0`）。[^2^] |
 | babel-preset-expo | ~57.0.15（devDependency，SDK 解析） | Babel 预设（NativeWind v4 babel preset 前置） | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元（与 expo 57.0.30 同线）；仅在构建期使用。[^2^] |
+| @babel/plugin-transform-react-jsx | 7.29.7（精确；构建期） | Babel JSX 转换；Gradle release 打包（`export:embed`）在 pnpm isolated 下按 app 根解析插件，缺此直接行会报 `Cannot find module` | apps/mobile（devDependency） | 高（Babel 官方） | 无 | 与 babel-preset-expo@57.0.15 的传递依赖同版；提升为直接行仅新增 importer 条目、零新包下载；构建期专用，不进运行时 bundle；**2026-10-19 T2.1a R4 修宪（owner 批准）**。[^2^] |
+| expo-font | ~57.0.4（SDK 解析） | 字体加载（useFonts）：Inter 4 权重 TTF（regular/medium/semibold/bold）——原仓库 core/core-ui/src/main/res/font 复制 + res/raw/inter_ofl_license.txt 随包（OFL）；T2.1a 视觉对齐 | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元：expo 基座依赖 ^57.0.4 已在 lockfile（L597），提升为直接行仅新增 importer 条目、依赖图不变；**2026-10-19 T2.1a 规划轮 R4 修宪（owner 批准，D1）**。[^2^] |
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |

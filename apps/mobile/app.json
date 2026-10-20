@@ -28,7 +28,40 @@
     "plugins": [
       "./plugins/withVaultCoreTests",
       "expo-router",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "inter-regular",
+                "fontDefinitions": [{ "path": "./assets/fonts/inter_regular.ttf", "weight": 400 }]
+              },
+              {
+                "fontFamily": "inter-medium",
+                "fontDefinitions": [{ "path": "./assets/fonts/inter_medium.ttf", "weight": 500 }]
+              },
+              {
+                "fontFamily": "inter-semibold",
+                "fontDefinitions": [{ "path": "./assets/fonts/inter_semibold.ttf", "weight": 600 }]
+              },
+              {
+                "fontFamily": "inter-bold",
+                "fontDefinitions": [{ "path": "./assets/fonts/inter_bold.ttf", "weight": 700 }]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/inter_regular.ttf",
+              "./assets/fonts/inter_medium.ttf",
+              "./assets/fonts/inter_semibold.ttf",
+              "./assets/fonts/inter_bold.ttf"
+            ]
+          }
+        }
+      ]
     ],
     "runtimeVersion": {
       "policy": "fingerprint"

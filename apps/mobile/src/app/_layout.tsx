@@ -1,27 +1,41 @@
-import '../../global.css';
-
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import '../../global.css';
 import { tokens } from '@/theme/tokens';
 
-// Root Stack (T2.1 shell): onboarding (index) / home / receive / send / +not-found.
-// Typed routes are on (app.json experiments.typedRoutes). No vault-core, no wallet logic.
+// Root Stack (T2.1 shell + T2.1a visual parity): onboarding (index) / (tabs) / receive / send
+// / +not-found. Typed routes are on (app.json experiments.typedRoutes). No vault-core, no wallet
+// logic. Inter ships two ways: embedded at build time by the expo-font config plugin (app.json —
+// Android xml families inter-regular…, iOS TTFs, so the first frame measures with Inter) and
+// loaded at runtime via `useFonts` for web. The remount below re-lays-out text once fonts settle
+// (review M1/R2 — first paint must not be measured against the fallback face).
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'inter-regular': require('../../assets/fonts/inter_regular.ttf'),
+    'inter-medium': require('../../assets/fonts/inter_medium.ttf'),
+    'inter-semibold': require('../../assets/fonts/inter_semibold.ttf'),
+    'inter-bold': require('../../assets/fonts/inter_bold.ttf'),
+  });
   return (
-    <>
+    <SafeAreaProvider>
       <Head>
         <title>NexVault</title>
         <meta name="theme-color" content={tokens.color.bg} />
       </Head>
       <StatusBar style="light" />
+      {/* Keyed remount once Inter resolves: the first frame is measured with the fallback face and
+          RN does not re-measure text after a font swap → clipped last words (review M1, 2026-10-19). */}
       <Stack
+        key={fontsLoaded ? 'fonts-ready' : 'fonts-pending'}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: tokens.color.bg },
         }}
       />
-    </>
+    </SafeAreaProvider>
   );
 }
