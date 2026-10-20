@@ -137,7 +137,7 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
 | D-f | tab 屏标题纵向位置 | 原 app 在 MainScreen Scaffold 内再嵌 Scaffold，状态栏 inset 计入两次（标题中心 134dp vs 本实现 83dp）；本实现取单次 inset —— 记为**有意更正**（2026-10-20 复审 N1） |
-| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防缝，每带 ≤2px 宽度台阶）** 近似 120→84 线性收分；锁 44×30 + 28×20（记录为近似） |
+| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防带间缝；joint 处另加 2dp 全宽条）** 近似 120→84 线性收分；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，round-5 更正此前“≤2px”的说法，属近似外观）；锁 44×30 + 28×20（记录为近似） |
 | D-h | tab 指示胶囊宽度 | NativeTabs 无 indicator-width 属性：实测 168×125px（64×47.6dp）vs 原 147×120px（56×45.7dp）；且 labelSmall 的 0.5sp tracking 不在 NativeTabsLabelStyle（仅 fontFamily/fontSize/fontStyle/fontWeight/color），round-3 已补 fontWeight 500；tracking 与胶囊宽度记为记录型偏差（复审 N1） |
 
 ### 7.5 待 owner
@@ -147,7 +147,7 @@ MAN-016 裁决（通过 / 失败附 issue / 阻塞）。通过后执行：公告
 
 - 用户报告红屏 `Unable to load script`：**dev build 依赖 Metro**（`adb reverse` + 8082）；Metro/端口断开即红屏——普通用户体验不可接受（T2.1 的 dev-build 已知限制）。本期把「可演示产物」升级为 **release APK（内置 JS bundle，零 Metro 依赖）**。
 - 构建：`cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a` → **BUILD SUCCESSFUL in 2m 26s**（532 tasks；先跑过 4 ABI 全量构建约 25 min 后中止，arm64-only 提速）。
-- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。**注（2026-10-20 复审 N3）**：该 21:43 构建已先后被 22:26 / 23:22 / 06:23 重建覆盖 —— **现行发布物 APK 45,697,254 B / bundle 3,069,312 B（unzip -l 实测，2026-10-20 08:08 构建）**，即以 §7.12 复核的 08:09 构建为准。
+- 产物：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（44,985,066 B；`unzip -l` 实证内置 `assets/index.android.bundle` 3,159,940 B + `libhermesvm.so`）。**注（2026-10-20 复审 N3）**：该 21:43 构建已先后被 22:26 / 23:22 / 06:23 重建覆盖 —— **现行发布物 APK 45,697,350 B / bundle 3,069,408 B（unzip -l 实测，2026-10-20 09:33 构建）**，即以 §7.12 round-5 复核的 09:33 构建为准。
 - **独立运行实证：先停 Metro（job killed）** → `adb install -r app-release.apk` → `monkey -p io.github.realalexkwok.nexvault -c android.intent.category.LAUNCHER 1` → onboarding 渲染（无红屏、无 Metro）；五 tab 逐一点按 + 文本核对（home/history/dapp/nft/settings 全部命中）+ receive/send deep link。
 - 截图（release 产物）：`evidence/shell-release-{index,home,history,dapp,nft,settings,receive,send}.png`。
 - 注：NativeTabs 对短 `input tap` 不敏感（dev/release 均如此）→ 脚本用 `input swipe x y x y 120`（120ms 按压）切换 tab，已记入复现命令。
@@ -221,14 +221,14 @@ adb shell input swipe 320 2270 320 2270 120
 
 | # | 发现 | 处置 | 证据 |
 |---|---|---|---|
-| **R4-M1** | VaultMark 底部 facet 几何与记录不符（“2px”说法错误）；带状 body 出现 1px 背景条纹 | body 改 **20 条 4dp 收分带（1dp 重叠，无条纹；每带 ≤2px 宽度台阶）**，收分 **120→84**；底 facet 基宽 **84（=0.70w，0.85w−0.15w）**；D-g 记录同步更正 | ${B}shell-release-index-c8.png${B}（2026-10-20 08:09） |
+| **R4-M1** | VaultMark 底部 facet 几何与记录不符（“2px”说法错误）；带状 body 出现 1px 背景条纹 | body 改 **20 条 4dp 收分带（1dp 重叠）**，收分 **120→84**；底 facet 基宽 **84（=0.70w）**；joint 处补 **2dp 全宽条**消除 facet↔band0 缝隙（round-5 M1）；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，属 View 近似外观，D-g 记录） | `shell-release-index-c9.png`（2026-10-20 09:33） |
 | **R4-N1** | 指示胶囊 64×47.6dp vs 56×45.7dp；tracking 0.5sp 缺失 | `labelStyle` 补 `fontWeight: '500'`；NativeTabs 无 indicator-width、无 letterSpacing 属性 → 胶囊宽度与 tracking 记为 **D-h** | 代码 + §7.4 D-h |
 | **R4-N2** | §7.11 注记含字面 ` 占位符；行号与 §7.6 冲突 | 注记重写为纯文本；各行改 **R3-Nx**，并补“发布物/bundle 数字”行 **R3-N9** | 本文件 |
 | **R4-N3** | 证据引用错位（c1..c3 为旧标记；index.png 为 23:16；§7.10 引 05:37） | R2-2 行改 `c4`；`shell-release-index.png` 重拍；§7.10 引用改 **06:24** | 文件 mtime |
 | **R4-N4** | ARIA 只有角色、无关系 | 每个 tab 加 `id="nv-tab-<name>"` + `aria-controls="nv-tabpanel"`；面板 `id="nv-tabpanel"` + `aria-labelledby` 指向激活 tab | 导出 grep |
 
-> 复核（2026-10-20 08:07–08:09，最终 APK **45,697,254 B** / bundle **3,069,312 B**，arm64 release）：VaultMark 实心且轮廓平滑（shell-release-index-c8.png，20 条 4dp 收分带 1dp 重叠）；五标签 + 10sp + fontWeight 500（08:09 重拍的 home 截图）；web 导出 ARIA 关系完整（5× aria-controls="nv-tabpanel"、面板 aria-labelledby="nv-tab-home" 随激活页变化、id nv-tab-*）。静态门禁：tsc 0 / export 0（15 路由）/ R1/R5/R7 干净 / hex 干净。
-> 证据溯源（round-4 N1）：`shell-release-index-c5.png`（07:37，10-band 旧构建）与 c6（07:39）**已被 c8 取代**；`shell-release-index.png` 与 `shell-release-home.png` 已于 08:09 在最终 APK 上重拍；历史 c1–c3 属 05:36 构建，仅存档。
+> 复核（2026-10-20 09:33–09:34，最终 APK **45,697,350 B** / bundle **3,069,408 B**，arm64 release）：VaultMark 实心（20 条 4dp 收分带 1dp 重叠 + joint 2dp 全宽条；内部像素扫描：蓝色形状内**无**背景行，seam=0）；轮廓为 20 级阶梯（每侧每带 ≈2.4px，记录为近似外观）；五标签 + 10sp + fontWeight 500；web 导出 ARIA 关系完整（5× aria-controls="nv-tabpanel"、面板 aria-labelledby 随激活页变化、id nv-tab-*）。静态门禁：tsc 0 / export 0（15 路由）/ R1/R5/R7 干净 / hex 干净。
+> 证据溯源（round-4 N1 / round-5）：最终证据 = `shell-release-index-c9.png`（09:33，与 `shell-release-index.png` 同 sha256）；c5（07:37）、c6（07:39）、c7（08:07）、c8（08:09）均**已被 c9 取代**；c1–c3 属 05:36 构建，仅存档。
 
 ## 复现命令（app 侧，`apps/mobile`）
 

@@ -32,9 +32,12 @@ function VaultMark() {
           borderBottomColor: tokens.color.primary,
         }}
       />
+      {/* joint strip: the top facet ends at y=30 and band 0 starts there; RN frame rounding at
+          2.625 px/dp leaves a 1px background line, so a full-width 2dp strip bridges the joint. */}
+      <View style={{ position: 'absolute', top: 29, width: 120, height: 2, backgroundColor: tokens.color.primary }} />
       {/* body: the path tapers 120 → 84 (0.70w) between 25%h and 75%h; approximated with twenty
-          4dp bands (1dp overlap so RN frame rounding cannot leave seams; ≤2px width step per
-          band) — RN has no path/skew primitive. */}
+          4dp bands (1dp overlap so band-to-band rounding cannot leave seams). The silhouette is a
+          20-step staircase (~0.9dp = 2.4px per side per band at 2.625x) — recorded, not "smooth". */}
       {Array.from({ length: 20 }, (_, i) => ({
         top: 30 + i * 3,
         width: Math.round(120 - (i + 0.5) * 1.8),
