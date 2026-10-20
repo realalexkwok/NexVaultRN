@@ -1,0 +1,3 @@
+{"rpc":"sepolia.drpc.org + ethereum-sepolia-rpc.publicnode.com","collected_at_utc":"2026-10-20T11:15:23Z"}
+{"rpc":"https://sepolia.drpc.org","blockNumber":{"id":1,"jsonrpc":"2.0","result":"0xb66af3"}}
+{"rpc":"https://ethereum-sepolia-rpc.publicnode.com","blockNumber":{"jsonrpc":"2.0","result":"0xb66af3","id":1}}

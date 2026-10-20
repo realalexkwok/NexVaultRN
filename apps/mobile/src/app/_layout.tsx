@@ -11,11 +11,12 @@ import '../../global.css';
 import { tokens } from '@/theme/tokens';
 
 // TanStack Query client (T2.2 — spec ui-wallet §2.5 homeSkeletonFirst): mounted at module scope so
-// the keyed Stack remount below does not recycle it. `structuralSharing: false` is deliberate —
-// the default JSON-based structural sharing cannot represent bigint (balance wei) and would
-// corrupt cached values. refetchInterval polls the public RPC (dependencies.md react-query row),
-// never in the background. First frame never awaits an RPC: the balance query is mounted by the
-// home screen after render.
+// the keyed Stack remount below does not recycle it. `structuralSharing: false` is defensive: the
+// balance result is a one-shot { wei, blockNumber } record, so skipping the default
+// replaceEqualDeep pass avoids deep-compare work (v5 never JSON-serializes the cache and compares
+// primitives with ===, so bigint is safe either way — corrects the earlier rationale, review N1).
+// refetchInterval polls the public RPC (dependencies.md react-query row), never in the background.
+// First frame never awaits an RPC: the balance query is mounted by the home screen after render.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

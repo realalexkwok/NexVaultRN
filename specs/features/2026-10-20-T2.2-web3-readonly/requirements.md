@@ -68,7 +68,7 @@
 | AC-4 | Web 只读：导出产物无 `signDigest|importMnemonic|vault-core` 与签名符号 | TC-W3A-012 / R7 | export + grep 退出码 |
 | AC-5 | 余额正确性：UI 格式化值 == curl `eth_getBalance` wei 的 `formatUnits` 截断值 | TC-W3A-013 | curl 转录 + 交叉计算表 |
 | AC-6 | Home 四态 + 首帧零 RPC 阻塞（骨架先行） | TC-UI-010 + TC-W3A-008（部分） | 截图/UI dump + 代码路径 |
-| AC-7 | balance walk：Web + Android 两锚点均返回余额与区块号 | MAN-017 | curl 转录（Web）+ 设备 UI dump/截图（Android） |
+| AC-7 | balance walk：Web + Android 两锚点均返回余额与区块号 | MAN-017 | 自动侧：RPC curl 转录 + `expo serve` 路由 200（Web）、设备 UI dump/截图（Android）；手工侧：MAN-017 owner 浏览器走查（**本期未完成 → ☐**，见 validation §Task 7） |
 | AC-8 | R1/R5 干净；无地址时显示 "Not configured"（无假数据） | R1/R5 门禁 | grep 退出码 + 走查证据 |
 | AC-9 | `pnpm --filter mobile exec tsc --noEmit` 与 `pnpm -r --if-present run typecheck` 双形态 exit 0；`expo export --platform web --output-dir` exit 0 | B.6-1 / R7 | 命令 + 退出码 |
 

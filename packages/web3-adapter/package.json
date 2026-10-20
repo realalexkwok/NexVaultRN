@@ -2,7 +2,7 @@
   "name": "web3-adapter",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "src/index",
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json"

@@ -44,7 +44,7 @@ export const SUPPORTED_CHAINS: readonly ChainConfig[];  // mainnet(1) / sepolia(
 export function getChainConfig(chainId: number): ChainConfig; // 未注册链抛 E_W3A_UNKNOWN_CHAIN
 ```
 
-> **T2.2 交付注记（2026-10-20）**：`SUPPORTED_CHAINS` 实装 mainnet(1) [`https://eth.llamarpc.com`, `https://ethereum-rpc.publicnode.com`] 与 sepolia(11155111) [`https://ethereum-sepolia-rpc.publicnode.com`, `https://rpc.sepolia.org`]——各 2 家独立公共运营商、无 API key；`getChainConfig` 抛 `W3AError('E_W3A_UNKNOWN_CHAIN')`（`code` 机器可读）。failover 由 viem `fallback(..., { rank: false })` 按数组顺序执行。交易/验证段（§2.3/§2.4）保持 T4.x。
+> **T2.2 交付注记（2026-10-20，review M3 更正端点）**：`SUPPORTED_CHAINS` **实装** mainnet(1) [`https://eth.drpc.org`, `https://ethereum-rpc.publicnode.com`] 与 sepolia(11155111) [`https://sepolia.drpc.org`, `https://ethereum-sepolia-rpc.publicnode.com`]——各 2 家独立公共运营商、无 API key；`getChainConfig` 抛 `W3AError('E_W3A_UNKNOWN_CHAIN')`（`code` 机器可读）。failover 由 viem `fallback(..., { rank: false })` 按数组顺序执行。**端点替换依据（O-3）**：`eth.llamarpc.com` 实测 HTTP 525、`rpc.sepolia.org` 空响应、`cloudflare-eth.com` 返回 `-32046`，故换用 drpc 双端点；探针转录见 `specs/features/2026-10-20-T2.2-web3-readonly/evidence/rpc-endpoint-probe.txt`。交易/验证段（§2.3/§2.4）保持 T4.x。
 
 ### 2.3 签名工作流（核心）
 
@@ -104,7 +104,7 @@ export function buildUnsignedTxQrPayload(intent: UnsignedTxIntent, from: `0x${st
 // 明确不导出：prepareTransaction 的签名后续步骤、signPrepared、signAndBroadcast、任何 VaultHandle 引用
 ```
 
-> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 同为只读 barrel，零签名符号。
+> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 同为只读 barrel（自身导出零签名符号）。**Metro 平台解析（review M2 修复）**：包 `main` 为**无扩展名** `src/index`，web 构建解析到 `index.web.ts`、原生构建解析到 `index.ts`（dev bundle 模块路径实证：`packages/web3-adapter/src/index.web.ts` 在 web 图内、`index.ts` 不在；见 T2.2 validation §5.1）；`types` 仍指向 `src/index.ts` 供 tsc。
 
 ### 2.6 错误码表
 
@@ -237,7 +237,7 @@ Then 此前无任何 await RPC；余额区域先骨架屏后异步合并
 |---|---|---|---|
 | AC-9 | 只读 API 契约：§2.5 导出齐全；无签名符号；`E_W3A_UNKNOWN_CHAIN` 机器可读 | TC-W3A-009 / TC-W3A-010 | tsc 双形态 + grep |
 | AC-10 | RPC 顺序 failover 机制（`fallback(..., { rank: false })`）；live-fire 演练递延 T4.x | TC-W3A-011 | 代码 grep + Handoff 记录 |
-| AC-11 | Web 只读产物：零签名/密钥符号 | TC-W3A-012 | export 产物 grep |
+| AC-11 | Web 只读产物：不含 vault-core 绑定与任何**密钥材料**导出（`signDigest`/`importMnemonic`/`privateKeyToAccount`/`mnemonicToAccount`/`hdKey` = 0）；viem root barrel 的 wallet-action 模块（`createWalletClient`、`signMessage` 等）随根导入进入 bundle 但无账户对象可签名——实测计数见 T2.2 validation §5.1（review M4 收窄措辞） | TC-W3A-012 | export 产物 grep（宪法 R7 命令 + 密钥符号矩阵） |
 | AC-12 | 余额显示值与 RPC wei 的 formatUnits 截断（≤4 位小数、去尾零）一致 | TC-W3A-013 | 走查交叉计算 |
 
 ### TC-W3A-009 只读 API 契约（tsc + grep）

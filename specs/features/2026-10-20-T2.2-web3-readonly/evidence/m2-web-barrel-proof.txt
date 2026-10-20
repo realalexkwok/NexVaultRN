@@ -1,0 +1,12 @@
+# M2 — platform barrel proof (dev bundle module paths)
+# date: 2026-10-20 19:05 +08:00; command: npx expo export --platform web --dev --output-dir /tmp/t22-web-dev
+# bundle: /tmp/t22-web-dev/_expo/static/js/web/entry-387a433f27736775868d30a7f5717939.js
+# grep -o 'packages/web3-adapter/src/[a-zA-Z.]*' $JS | sort | uniq -c
+      1 packages/web3-adapter/src/balance.ts
+      1 packages/web3-adapter/src/chains.ts
+      1 packages/web3-adapter/src/errors.ts
+      1 packages/web3-adapter/src/index.web.ts
+
+# index.ts is absent from the web graph -> Metro platform resolution applies (package main = 'src/index').
+# SDK 57 `expo export` has no --dump-sourcemap, so this dev-bundle path list stands in for the source map
+# (review M2 used the 19:02 source map; same conclusion, fixed by the extensionless main field).

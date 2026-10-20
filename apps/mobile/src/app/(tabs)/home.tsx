@@ -66,10 +66,19 @@ export default function HomeScreen() {
   };
 
   const commitAddress = () => {
-    const normalized = normalizeAddress(input.trim());
+    const trimmed = input.trim();
+    if (trimmed.length === 0) {
+      // Empty field = stop watching; the balance section returns to "Not configured" (R5).
+      setInputError(undefined);
+      setWatchedAddress(null);
+      return;
+    }
+    const normalized = normalizeAddress(trimmed);
     if (!normalized) {
-      // Never fabricate a balance for an unparsable address (R5).
+      // Invalid input clears the watch so the rendered balance can never describe a different
+      // address than the field (review N3), then shows the inline error (R5: no fake data).
       setInputError('Invalid address');
+      setWatchedAddress(null);
       return;
     }
     setInputError(undefined);
@@ -102,6 +111,15 @@ export default function HomeScreen() {
           onChangeText={(value) => {
             setInput(value);
             if (inputError) setInputError(undefined);
+            // Commit as soon as the text parses (review N3: the rendered balance must never lag
+            // behind a valid field value). Empty text clears the watch.
+            const trimmed = value.trim();
+            if (trimmed.length === 0) {
+              setWatchedAddress(null);
+            } else {
+              const normalized = normalizeAddress(trimmed);
+              if (normalized) setWatchedAddress(normalized);
+            }
           }}
           onBlur={commitAddress}
           onSubmitEditing={commitAddress}
@@ -126,7 +144,7 @@ export default function HomeScreen() {
         ) : data ? (
           <>
             <Text className="mt-xs text-headline-large font-inter-bold text-text-high">
-              {formatNativeBalance(data.wei)} {chain.nativeCurrency.symbol}
+              {formatNativeBalance(data.wei, chain.nativeCurrency.decimals)} {chain.nativeCurrency.symbol}
             </Text>
             <Text className="mt-xs text-body-medium font-inter-regular text-text-medium">
               {chain.name} · Block #{data.blockNumber.toString()}
@@ -195,9 +213,23 @@ export default function HomeScreen() {
         <Text className="text-label-large font-inter-medium text-primary">+ Add Token</Text>
       </View>
 
-      {/* Token list — one native-coin row once the balance resolves (Q2-A); honest empty
-          state otherwise (R5). */}
-      {data ? (
+      {/* Token list — four states (review N4): no address = "Not configured" (R5, the only place
+          that string may appear), loading = skeleton row, error = em dash, data = one native-coin
+          row (Q2-A). */}
+      {!showBalance ? (
+        <View className="items-center py-xxl">
+          <Text className="text-body-large font-inter-regular text-text-medium">Not configured</Text>
+        </View>
+      ) : balanceQuery.isLoading ? (
+        <View className="flex-row items-center gap-sm rounded-card border border-card-border bg-card-surface px-md py-sm">
+          <View className="h-token w-token rounded-full bg-shimmer" />
+          <View className="flex-1">
+            <View className="h-4 w-24 rounded-sm bg-shimmer" />
+            <View className="mt-xs h-3 w-10 rounded-sm bg-shimmer" />
+          </View>
+          <View className="h-4 w-16 rounded-sm bg-shimmer" />
+        </View>
+      ) : data ? (
         <View className="flex-row items-center gap-sm rounded-card border border-card-border bg-card-surface px-md py-sm">
           <View className="h-token w-token items-center justify-center rounded-full bg-secondary-container">
             <Text className="text-title-medium font-inter-bold text-on-secondary-container">{'\u039e'}</Text>
@@ -209,12 +241,12 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Text className="text-title-small font-inter-semibold text-text-high">
-            {formatNativeBalance(data.wei)}
+            {formatNativeBalance(data.wei, chain.nativeCurrency.decimals)}
           </Text>
         </View>
       ) : (
         <View className="items-center py-xxl">
-          <Text className="text-body-large font-inter-regular text-text-medium">Not configured</Text>
+          <Text className="text-body-large font-inter-regular text-text-medium">{'\u2014'}</Text>
         </View>
       )}
     </Screen>
