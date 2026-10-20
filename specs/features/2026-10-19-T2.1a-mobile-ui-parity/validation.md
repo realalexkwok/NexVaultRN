@@ -1,6 +1,6 @@
 # T2.1a — mobile UI visual parity — validation
 
-> Status: 实现完成（Task 2–7，设备 smoke + release 验收完成，2026-10-19）；MAN-016 owner 裁决待定；评审修复轮见 §7.10。
+> Status: **closed（2026-10-20，owner 复核 “All verified”）**；评审轮 1–8 全部处置；证据见 §7.10–§7.12 与末节 §Closure。
 > 三档制（B.4）：本文件所有 `[x]` 均须命令原文 + 观察结果 + 构件绝对路径；双侧齐备。
 
 ## 规划轮（2026-10-19，owner 裁定）
@@ -248,3 +248,12 @@ grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21a-web/_expo/static/js/ ;
 | H4 | B.5 R7 示例命令 `-o` 失效 | CLI 改为 `--output-dir` | 下次修宪同步 AGENTS.md B.5 R7 命令文字 | R7 |
 | H5 | 18 屏全量 + 真实列表/数据 | T2.2 / T4.x | 随各流程条目 | — |
 | H6 | 地址等宽 + 首尾高亮、GradientBackground | 地址组件属 T4.x；渐变需新依赖 | 各自条目评估 | TC-UI-007 |
+
+## Closure（2026-10-20，owner 复核 “All verified”）
+
+- **复核范围**：评审轮 1（MAJOR-1/MINOR-1/NIT-1..5）→ 轮 2（MINOR-A/NIT-A..C）→ 轮 3–8（M1–M3、m1–m6、n1–n5、R2-1..3、R3/R4/R6/R7 NITs、round-7/8 记录更正）——全部处置；最终 HEAD `4e6fe2e`。
+- **MAN-016**（视觉走查：参考侧原仓库 debug APK + shell release APK，同机 Pixel 6a）：owner **通过**（2026-10-20）。
+- **关闭门禁复跑**（2026-10-20 13:36）：`tsc --noEmit` exit 0；`expo export --platform web` exit 0（15 静态路由）；R1 / R5 / R7 grep exit 1（零命中）；hex 漂移 grep exit 1；`expo-doctor` 21/21。
+- **发布物**：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（**45,697,338 B**；内置 `assets/index.android.bundle` **3,069,396 B**；arm64；debug keystore 签名；**零 Metro 依赖**）。
+- **合并/推送**：`main` 以 `--no-ff` 合并本分支；`feature/T2.1a-mobile-ui-parity` 已删除；`main` 已 push（origin 与本地一致）。
+- **同步记录**：AGENTS.md Part A 关闭行 + 阶段 cell（下一步 T2.2）；`specs/ui-wallet.md` §2.1/§2.3 修订；`specs/tech-stack.md` + `doc/dependencies.md` R4 行（expo-font ~57.0.4；@babel/plugin-transform-react-jsx 7.29.7 构建期 lift）。
