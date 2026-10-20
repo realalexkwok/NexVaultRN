@@ -137,7 +137,7 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
 | D-f | tab 屏标题纵向位置 | 原 app 在 MainScreen Scaffold 内再嵌 Scaffold，状态栏 inset 计入两次（标题中心 134dp vs 本实现 83dp）；本实现取单次 inset —— 记为**有意更正**（2026-10-20 复审 N1） |
-| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防带间缝；joint 处另加 **118×1dp @29.5 的接缝条**（≤1dp/侧肩部外扩，round-6 N1）—— 条宽 118 使左右最外 1dp 在 joint 处各留 **1px 凹口**（正常尺寸不可见；内部扫描 seam=0；改用 120 宽会重新引入 ≤1dp/侧肩部外凸，权衡后**接受该 1px 凹口**，round-7 N2））** 近似 120→84 线性收分；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，round-5 更正此前“≤2px”的说法，属近似外观）；锁 44×30 + 28×20（记录为近似） |
+| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防带间缝；joint 处另加 **118×1dp @29.5 的接缝条**（≤1dp/侧肩部外扩，round-6 N1）—— 条宽 118 使 joint 外围留下**单侧亚 1dp 凹口**：c10/新真机实测为**左边缘一处 2px 凹口（x=384–385 @ y=793），右边缘干净**（正常尺寸不可见；内部扫描 seam=0；改用 120 宽会重新引入 ≤1dp/侧肩部外凸，权衡后**接受该凹口**；round-7 N1 更正此前“两侧各 1px”的过度概括））** 近似 120→84 线性收分；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，round-5 更正此前“≤2px”的说法，属近似外观）；锁 44×30 + 28×20（记录为近似） |
 | D-h | tab 指示胶囊宽度 | NativeTabs 无 indicator-width 属性：实测 168×125px（64×47.6dp）vs 原 147×120px（56×45.7dp）；且 labelSmall 的 0.5sp tracking 不在 NativeTabsLabelStyle（仅 fontFamily/fontSize/fontStyle/fontWeight/color），round-3 已补 fontWeight 500；tracking 与胶囊宽度记为记录型偏差（复审 N1） |
 
 ### 7.5 待 owner
