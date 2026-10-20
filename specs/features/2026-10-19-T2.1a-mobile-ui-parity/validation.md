@@ -242,7 +242,7 @@ grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21a-web/_expo/static/js/ ;
 
 | # | 事项 | 递延理由 | 建议处置 | 关联 AC/TC |
 |---|---|---|---|---|
-| H1 | Android 路由 smoke + MAN-016 视觉走查 | Pixel 6a 掉线（无 route / 无 mDNS） | 设备恢复后立即执行；通过后该项方可关闭 | AC-5 / AC-8 / TC-UI-007 |
+| H1 | Android 路由 smoke + MAN-016 视觉走查 | 曾因 Pixel 6a 掉线阻塞 | **已完成（2026-10-20）：8 路由 0 crash；MAN-016 owner 通过** | AC-5 / AC-8 / TC-UI-007 |
 | H2 | 选中态 filled 图标对（Material/SF） | NativeTabs 单 md/sf 已在真机验证前保守使用；filled 变体名待设备确认 | 设备验证 `md={{default, selected}}` 后切换；偏差记录在案 | MAN-016 |
 | H3 | web tab glyph 图标 | 无批准图标包（R4） | 若 web 视觉需对齐 → 单独 R4 提案（@expo/vector-icons 或 SVG） | AC-7 |
 | H4 | B.5 R7 示例命令 `-o` 失效 | CLI 改为 `--output-dir` | 下次修宪同步 AGENTS.md B.5 R7 命令文字 | R7 |
@@ -251,9 +251,9 @@ grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t21a-web/_expo/static/js/ ;
 
 ## Closure（2026-10-20，owner 复核 “All verified”）
 
-- **复核范围**：评审轮 1（MAJOR-1/MINOR-1/NIT-1..5）→ 轮 2（MINOR-A/NIT-A..C）→ 轮 3–8（M1–M3、m1–m6、n1–n5、R2-1..3、R3/R4/R6/R7 NITs、round-7/8 记录更正）——全部处置；最终 HEAD `4e6fe2e`。
+- **复核范围**：评审轮 1（MAJOR-1/MINOR-1/NIT-1..5）→ 轮 2（MINOR-A/NIT-A..C）→ 轮 3–8（M1–M3、m1–m6、n1–n5、R2-1..3、R3/R4/R6/R7 NITs、round-7/8 记录更正）——全部处置；最终代码 HEAD `4e6fe2e`，记录提交 `ed5594c`。
 - **MAN-016**（视觉走查：参考侧原仓库 debug APK + shell release APK，同机 Pixel 6a）：owner **通过**（2026-10-20）。
 - **关闭门禁复跑**（2026-10-20 13:36）：`tsc --noEmit` exit 0；`expo export --platform web` exit 0（15 静态路由）；R1 / R5 / R7 grep exit 1（零命中）；hex 漂移 grep exit 1；`expo-doctor` 21/21。
 - **发布物**：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk`（**45,697,338 B**；内置 `assets/index.android.bundle` **3,069,396 B**；arm64；debug keystore 签名；**零 Metro 依赖**）。
-- **合并/推送**：`main` 以 `--no-ff` 合并本分支；`feature/T2.1a-mobile-ui-parity` 已删除；`main` 已 push（origin 与本地一致）。
+- **合并/推送**：`git merge --no-ff feature/T2.1a-mobile-ui-parity` → **`827cf6b`**（parents `e2ac943` + `ed5594c`）；分支已删除（was `ed5594c`）；`git push origin main` → **`98e0ba0..827cf6b main -> main`**；`origin/main` == 本地 `HEAD`。
 - **同步记录**：AGENTS.md Part A 关闭行 + 阶段 cell（下一步 T2.2）；`specs/ui-wallet.md` §2.1/§2.3 修订；`specs/tech-stack.md` + `doc/dependencies.md` R4 行（expo-font ~57.0.4；@babel/plugin-transform-react-jsx 7.29.7 构建期 lift）。
