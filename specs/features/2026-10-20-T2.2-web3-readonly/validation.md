@@ -182,7 +182,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **N6** | 新包清单不全 | 补齐 `@noble/curves|hashes|ciphers`、`@scure/*`、`@adraffy/ens-normalize`、`@tanstack/query-core` | §Task 1 |
 | **N7** | merge parents 引用错误 | 更正为 **`9118080` + `d3f773f`**（`git show -s --format=%P 82addd0` 实测） | §Closure |
 
-修复后复跑：tsc 双形态 0 / export 0（15 路由，`entry-fd1422cf…` 1,972,693 B）/ R1·R5·R7 exit 1 / doctor 21/21 / Android 真机复走五态通过（§6.4）。修复提交：`<pending>`。
+修复后复跑：tsc 双形态 0 / export 0（15 路由，`entry-fd1422cf…` 1,972,693 B）/ R1·R5·R7 exit 1 / doctor 21/21 / Android 真机复走五态通过（§6.4）。修复提交：**`3943f28`**（main）。
 ## 记录偏差与观察
 
 | # | 事项 | 处置 |
