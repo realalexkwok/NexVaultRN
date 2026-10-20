@@ -32,10 +32,11 @@ function VaultMark() {
           borderBottomColor: tokens.color.primary,
         }}
       />
-      {/* body: the path tapers 120 → 102 between 25%h and 75%h; approximated with ten 6dp bands
-          (≤2px step per band) because RN has no path/skew primitive. */}
-      {Array.from({ length: 10 }, (_, i) => ({
-        top: 30 + i * 6,
+      {/* body: the path tapers 120 → 84 (0.70w) between 25%h and 75%h; approximated with twenty
+          4dp bands (1dp overlap so RN frame rounding cannot leave seams; ≤2px width step per
+          band) — RN has no path/skew primitive. */}
+      {Array.from({ length: 20 }, (_, i) => ({
+        top: 30 + i * 3,
         width: Math.round(120 - (i + 0.5) * 1.8),
       })).map((band) => (
         <View
@@ -45,20 +46,20 @@ function VaultMark() {
             top: band.top,
             left: (120 - band.width) / 2,
             width: band.width,
-            height: 6,
+            height: 4,
             backgroundColor: tokens.color.primary,
           }}
         />
       ))}
-      {/* bottom facet: shoulders (9/111, 90) → apex (60,120) */}
+      {/* bottom facet: shoulders (18/102, 90) → apex (60,120), base 84 = 0.70w */}
       <View
         style={{
           position: 'absolute',
           top: 90,
           width: 0,
           height: 0,
-          borderLeftWidth: 51,
-          borderRightWidth: 51,
+          borderLeftWidth: 42,
+          borderRightWidth: 42,
           borderTopWidth: 30,
           borderLeftColor: 'transparent',
           borderRightColor: 'transparent',
