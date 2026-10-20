@@ -135,7 +135,14 @@ MAN-017 **通过（2026-10-20）**：Pixel 6a / Android 17 release APK（零 Met
 
 ## Task 8 — 收尾
 
-见 §Closure（合并/推送后回填）。
+## Closure（2026-10-20）
+
+- **关闭依据**：owner 指令「Plan + implement T2.2 … close with Part A board line + git per B.3」（2026-10-20）；plan 经 `exit_plan_mode` `approved: true`；Q/A 推荐答案随批准生效（无 override）。
+- **关闭门禁复跑（2026-10-20 15:0x +08:00）**：`pnpm --filter mobile exec tsc --noEmit` exit 0；`pnpm -r --if-present run typecheck` exit 0；`npx expo export --platform web --output-dir /tmp/t22-web` exit 0（**15 静态路由**，entry `entry-a8f1f27a47acfb7cfb92b2d7479b6815.js` = **1,971,473 B**）；R1 / R5 / R7 grep exit 1（零命中）；`expo-doctor` **21/21**。
+- **balance walk（AC-7）**：Android release APK `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,030 B**（内置 bundle 4,128,088 B；arm64；`BUILD SUCCESSFUL in 2m 32s`；零 Metro）——anchor2 **`5.7731 ETH`** / **`Ethereum · Block #26232113`**；anchor1 **`0 ETH`**；Sepolia **`Block #11953618`**；Web 侧 curl 转录（drpc / publicnode）+ `expo serve` 六路由 200。**MAN-017 通过**（Pixel 6a / Android 17 + Web 双侧，agent 真机走查）。
+- **规格修订**：`specs/web3-adapter.md`（§2.2/§2.5 注记 + 附录 AC-9..AC-12 / TC-W3A-009..013）；`specs/ui-wallet.md`（§2.1 home 行 + §5 TC-UI-010）；`specs/pending-manual-test-cases.md`（MAN-017）；`AGENTS.md`（B.5 R7 `--output-dir`，T2.1a-H4；Part A 阶段 cell + 关闭行）。
+- **合并/推送**：feature commit **`d3f773f`**；`git merge --no-ff feature/T2.2-web3-readonly` → **`82addd0`**（parents `e00b7ee` + `d3f773f`）；分支已删除（was `d3f773f`）；`git push origin main` → **`e00b7ee..82addd0 main -> main`**；`origin/main` == 本地 HEAD（本记录提交另行追加）。
+
 
 ## 记录偏差与观察
 
