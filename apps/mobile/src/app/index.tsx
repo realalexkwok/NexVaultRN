@@ -33,8 +33,9 @@ function VaultMark() {
         }}
       />
       {/* joint strip: the top facet ends at y=30 and band 0 starts there; RN frame rounding at
-          2.625 px/dp leaves a 1px background line, so a full-width 2dp strip bridges the joint. */}
-      <View style={{ position: 'absolute', top: 29, width: 120, height: 2, backgroundColor: tokens.color.primary }} />
+          2.625 px/dp leaves a 1px background line. A 1dp strip at 29.5 bridges it; width 118
+          follows the facet (path ≈118 at 29.5) so the shoulders are not widened (round-6 N1). */}
+      <View style={{ position: 'absolute', top: 29.5, left: 1, width: 118, height: 1, backgroundColor: tokens.color.primary }} />
       {/* body: the path tapers 120 → 84 (0.70w) between 25%h and 75%h; approximated with twenty
           4dp bands (1dp overlap so band-to-band rounding cannot leave seams). The silhouette is a
           20-step staircase (~0.9dp = 2.4px per side per band at 2.625x) — recorded, not "smooth". */}
