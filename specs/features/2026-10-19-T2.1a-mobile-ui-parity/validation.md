@@ -137,7 +137,7 @@ SKILL provenance：.agents 原件 sha256 `67892de8792e1e40815a198e81ebd5a213621b
 | D-d | web tab 图标 | glyph 占位（无批准图标包，R4） |
 | D-e | GradientBackground | 未移植（需 expo-linear-gradient，非批准依赖；原仓库无屏幕实际使用） |
 | D-f | tab 屏标题纵向位置 | 原 app 在 MainScreen Scaffold 内再嵌 Scaffold，状态栏 inset 计入两次（标题中心 134dp vs 本实现 83dp）；本实现取单次 inset —— 记为**有意更正**（2026-10-20 复审 N1） |
-| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防带间缝；joint 处另加 **118×1dp @29.5 的接缝条**（≤1dp/侧肩部外扩，round-6 N1））** 近似 120→84 线性收分；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，round-5 更正此前“≤2px”的说法，属近似外观）；锁 44×30 + 28×20（记录为近似） |
+| D-g | VaultIcon 绘制 | 原 app 用 Canvas 路径；无批准绘图依赖 → 纯 View 组合：顶/底 facet 用三角（顶点同 drawShieldShape），**底 facet 基宽 84 = 0.70w**（0.85w−0.15w，round-4 M1 修正：此前误按 0.85w 取 102）；body 以 **20 条 4dp 收分带（1dp 重叠防带间缝；joint 处另加 **118×1dp @29.5 的接缝条**（≤1dp/侧肩部外扩，round-6 N1）—— 条宽 118 使左右最外 1dp 在 joint 处各留 **1px 凹口**（正常尺寸不可见；内部扫描 seam=0；改用 120 宽会重新引入 ≤1dp/侧肩部外凸，权衡后**接受该 1px 凹口**，round-7 N2））** 近似 120→84 线性收分；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，round-5 更正此前“≤2px”的说法，属近似外观）；锁 44×30 + 28×20（记录为近似） |
 | D-h | tab 指示胶囊宽度 | NativeTabs 无 indicator-width 属性：实测 168×125px（64×47.6dp）vs 原 147×120px（56×45.7dp）；且 labelSmall 的 0.5sp tracking 不在 NativeTabsLabelStyle（仅 fontFamily/fontSize/fontStyle/fontWeight/color），round-3 已补 fontWeight 500；tracking 与胶囊宽度记为记录型偏差（复审 N1） |
 
 ### 7.5 待 owner
@@ -217,11 +217,11 @@ adb shell input swipe 320 2270 320 2270 120
 
 > 复核（2026-10-20 06:24–06:26，最终 APK **45,696,738 B**，arm64 release，无 Metro）：home/history 截图**五标签同显**（labelVisibilityMode=labeled + 10sp + fontWeight 500）；VaultMark 六边形（shell-release-index-c4.png）；receive/send/notfound 于该 APK 重拍；web 导出含 role=tablist / tabpanel / 5×tab + aria-selected（round-3 再补 aria-controls / aria-labelledby，见 §7.12）。
 
-### 7.12 第三/四/五轮复审修复（2026-10-20 07:10–09:34）
+### 7.12 第三–六轮复审修复（2026-10-20 07:10–12:58）
 
 | # | 发现 | 处置 | 证据 |
 |---|---|---|---|
-| **R4-M1** | VaultMark 底部 facet 几何与记录不符（“2px”说法错误）；带状 body 出现 1px 背景条纹 | body 改 **20 条 4dp 收分带（1dp 重叠）**，收分 **120→84**；底 facet 基宽 **84（=0.70w）**；joint 处补 **2dp 全宽条**消除 facet↔band0 缝隙（round-5 M1）；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，属 View 近似外观，D-g 记录） | `shell-release-index-c10.png`（2026-10-20 12:58；strip 118×1dp @29.5，肩部外扩 ≤1dp/侧） |
+| **R4-M1** | VaultMark 底部 facet 几何与记录不符（“2px”说法错误）；带状 body 出现 1px 背景条纹 | body 改 **20 条 4dp 收分带（1dp 重叠）**，收分 **120→84**；底 facet 基宽 **84（=0.70w）**；joint 处补 **118×1dp @29.5 接缝条**（round-5 首用 2dp/120 宽条，round-6 N1 收窄）；轮廓为 20 级阶梯（每侧每带 0.9dp ≈ 2.4px @2.625×，属 View 近似外观，D-g 记录） | `shell-release-index-c10.png`（2026-10-20 12:58；strip 118×1dp @29.5，肩部外扩 ≤1dp/侧） |
 | **R4-N1** | 指示胶囊 64×47.6dp vs 56×45.7dp；tracking 0.5sp 缺失 | `labelStyle` 补 `fontWeight: '500'`；NativeTabs 无 indicator-width、无 letterSpacing 属性 → 胶囊宽度与 tracking 记为 **D-h** | 代码 + §7.4 D-h |
 | **R4-N2** | §7.11 注记含字面 ` 占位符；行号与 §7.6 冲突 | 注记重写为纯文本；各行改 **R3-Nx**，并补“发布物/bundle 数字”行 **R3-N9** | 本文件 |
 | **R4-N3** | 证据引用错位（c1..c3 为旧标记；index.png 为 23:16；§7.10 引 05:37） | R2-2 行改 `c4`；`shell-release-index.png` 重拍；§7.10 引用改 **06:24** | 文件 mtime |
