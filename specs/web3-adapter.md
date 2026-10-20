@@ -44,6 +44,8 @@ export const SUPPORTED_CHAINS: readonly ChainConfig[];  // mainnet(1) / sepolia(
 export function getChainConfig(chainId: number): ChainConfig; // 未注册链抛 E_W3A_UNKNOWN_CHAIN
 ```
 
+> **T2.2 交付注记（2026-10-20）**：`SUPPORTED_CHAINS` 实装 mainnet(1) [`https://eth.llamarpc.com`, `https://ethereum-rpc.publicnode.com`] 与 sepolia(11155111) [`https://ethereum-sepolia-rpc.publicnode.com`, `https://rpc.sepolia.org`]——各 2 家独立公共运营商、无 API key；`getChainConfig` 抛 `W3AError('E_W3A_UNKNOWN_CHAIN')`（`code` 机器可读）。failover 由 viem `fallback(..., { rank: false })` 按数组顺序执行。交易/验证段（§2.3/§2.4）保持 T4.x。
+
 ### 2.3 签名工作流（核心）
 
 ```ts
@@ -101,6 +103,8 @@ export function getTransactionStatus(txHash: `0x${string}`, chainId: number): Pr
 export function buildUnsignedTxQrPayload(intent: UnsignedTxIntent, from: `0x${string}`): Promise<string>; // 二维码导出未签名交易，回手机签名
 // 明确不导出：prepareTransaction 的签名后续步骤、signPrepared、signAndBroadcast、任何 VaultHandle 引用
 ```
+
+> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 同为只读 barrel，零签名符号。
 
 ### 2.6 错误码表
 
@@ -226,6 +230,54 @@ Then 此前无任何 await RPC；余额区域先骨架屏后异步合并
 4. RPC 健康度面板：多源延迟/分歧率监控、自动摘除分歧源。
 5. EIP-712 typed data 签名（WalletConnect 场景需要；注意 EIP-712 本身不含防重放，应用层须处理 [^4^]）。
 6. 行情/价格源接入（CoinGecko 等）与 TLS pinning 联动（仅 pin 自有 API）。
+
+## 附录 — T2.2 交付（只读子集，2026-10-20）
+
+| AC | 内容 | 绑定用例 | 验证方式 |
+|---|---|---|---|
+| AC-9 | 只读 API 契约：§2.5 导出齐全；无签名符号；`E_W3A_UNKNOWN_CHAIN` 机器可读 | TC-W3A-009 / TC-W3A-010 | tsc 双形态 + grep |
+| AC-10 | RPC 顺序 failover 机制（`fallback(..., { rank: false })`）；live-fire 演练递延 T4.x | TC-W3A-011 | 代码 grep + Handoff 记录 |
+| AC-11 | Web 只读产物：零签名/密钥符号 | TC-W3A-012 | export 产物 grep |
+| AC-12 | 余额显示值与 RPC wei 的 formatUnits 截断（≤4 位小数、去尾零）一致 | TC-W3A-013 | 走查交叉计算 |
+
+### TC-W3A-009 只读 API 契约（tsc + grep）
+```gherkin
+Given packages/web3-adapter 源码
+When tsc 双形态类型检查 + grep 签名符号
+Then index.ts / index.web.ts 导出 SUPPORTED_CHAINS/getChainConfig/getNativeBalance/getLatestBlockNumber/formatNativeBalance/isValidAddress/normalizeAddress/W3AError
+And 零命中 privateKeyToAccount|createWalletClient|signDigest|importMnemonic|broadcastSigned
+```
+
+### TC-W3A-010 未注册链
+```gherkin
+Given getChainConfig(999999)
+When 调用
+Then 抛 W3AError，code === 'E_W3A_UNKNOWN_CHAIN'
+And 不发起任何 RPC 请求
+```
+
+### TC-W3A-011 RPC 顺序 failover
+```gherkin
+Given ChainConfig.rpcUrls = [A, B]
+When 构造 public client
+Then transport = fallback([http(A), http(B)], { rank: false })
+And A 失败时自动尝试 B（live-fire 演练递延至 T4.x，Handoff 记录）
+```
+
+### TC-W3A-012 Web 只读产物（CI grep）
+```gherkin
+Given expo export --platform web 产物
+When grep signDigest|importMnemonic|vault-core|signPrepared|signAndBroadcast|privateKeyToAccount
+Then 零命中
+```
+
+### TC-W3A-013 余额交叉计算
+```gherkin
+Given 锚点地址在 mainnet 的 eth_getBalance wei
+When UI 显示 formatNativeBalance(wei)
+Then 显示值 === formatUnits(wei, 18) 截断 4 位小数去尾零
+And 区块号 caption 与 eth_blockNumber 同轮次记录
+```
 
 ---
 ### 来源

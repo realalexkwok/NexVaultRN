@@ -1,0 +1,13 @@
+{
+  "name": "web3-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json"
+  },
+  "dependencies": {
+    "viem": "2.56.9"
+  }
+}
