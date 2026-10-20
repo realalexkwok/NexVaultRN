@@ -1,0 +1,24 @@
+# RPC endpoint probe — 2026-10-20 2026-10-20T06:46:30Z (UTC)
+# method: curl eth_blockNumber + CORS preflight OPTIONS (Origin: http://localhost:8080)
+== https://eth.llamarpc.com ==
+blockNumber: error code: 525
+
+cors: == https://rpc.sepolia.org ==
+blockNumber: 
+cors: == https://cloudflare-eth.com ==
+blockNumber: {"jsonrpc":"2.0","error":{"code":-32046,"message":"Cannot fulfill request"},"id":1}
+cors: access-control-allow-origin: *
+== https://eth.drpc.org ==
+blockNumber: {"id":1,"jsonrpc":"2.0","result":"0x190451f"}
+cors: access-control-allow-origin: http://localhost:8080
+== https://sepolia.drpc.org ==
+blockNumber: {"id":1,"jsonrpc":"2.0","result":"0xb665bf"}
+cors: access-control-allow-origin: http://localhost:8080
+== https://ethereum-rpc.publicnode.com ==
+blockNumber: {"jsonrpc":"2.0","result":"0x1904520","id":1}
+
+cors: access-control-allow-origin: *
+== https://ethereum-sepolia-rpc.publicnode.com ==
+blockNumber: {"jsonrpc":"2.0","result":"0xb665bf","id":1}
+
+cors: access-control-allow-origin: *

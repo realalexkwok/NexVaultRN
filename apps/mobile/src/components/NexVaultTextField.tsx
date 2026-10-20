@@ -17,6 +17,9 @@ export function NexVaultTextField({
   keyboardType = 'default',
   labelBackdrop = 'bg-bg',
   className = '',
+  autoCapitalize = 'sentences',
+  onBlur,
+  onSubmitEditing,
 }: {
   label?: string;
   placeholder?: string;
@@ -28,6 +31,10 @@ export function NexVaultTextField({
   keyboardType?: 'default' | 'numeric' | 'email-address';
   labelBackdrop?: string;
   className?: string;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  /** Commit hook (T2.2 watch-address field); fires after the focus state is updated. */
+  onBlur?: () => void;
+  onSubmitEditing?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
   const floated = focused || value.length > 0;
@@ -59,8 +66,13 @@ export function NexVaultTextField({
           placeholder={floated ? placeholder : (label ?? placeholder)}
           placeholderTextColor={tokens.color.textMedium}
           keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
+          onSubmitEditing={onSubmitEditing}
         />
       </View>
       {error ? <Text className="mt-xs pl-md text-body-small font-inter-regular text-error">{error}</Text> : null}

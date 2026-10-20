@@ -28,7 +28,7 @@ app/
                            # 容器 surface、选中 primary、未选中 onSurfaceVariant、indicator primaryContainer、
                            # label labelSmall、高 80（M3 NavigationBar 默认；NexVaultDimens.bottomNavHeight=64
                            # 在 MainScreen.kt 未被使用 —— 2026-10-19 评审更正）—— 原仓库 MainScreen.kt/MainTab.kt 证据）
-    home.tsx               # 资产总览（T2.1a 视觉对齐：无 TopBar、链选择器行领起；数据接入 T2.2/T4.x）
+    home.tsx               # 资产总览（T2.1a 视觉对齐：无 TopBar、链选择器行领起；**T2.2 数据接入**：链 pill 点按 mainnet/sepolia 切换 + watch 地址输入 → 原生币余额四态（骨架/数据/RPC 错误/Not configured）；图表/行情仍 T4.x）
     history.tsx            # 交易历史 FlashList v2（T2.1a："Not configured" 占位，R5）
     dapp.tsx               # DApp 浏览器（T2.1a："Not configured" 占位；WalletConnect v2 后置）
     nft.tsx                # NFT 画廊（T2.1a："Not configured" 占位）
@@ -299,6 +299,20 @@ Then 仅地址/txHash 复制路径存在；助记词、私钥、签名 hex 相�
 Given Web 静态导出
 When 在 375px / 768px / 1280px 视口走查 home/history/address-book
 Then 布局按断点收敛（单列→双列→侧边栏）；任何写操作入口呈现「扫码回手机」引导
+```
+
+### TC-UI-010 Home 余额四态（T2.2）
+```gherkin
+Given Home 无 watch 地址
+When 渲染
+Then Total Balance 显示 "Not configured"（R5，无假数据）
+Given 输入合法地址
+When 查询进行中
+Then 骨架先行（shimmer 条），首帧零 RPC 阻塞
+Given 查询成功
+Then Total Balance = formatNativeBalance(wei) + symbol；caption = 链名 · Block #n；Tokens 单行 ETH
+Given 查询失败且无缓存
+Then 显示 "RPC unavailable" + Retry；若已有缓存数据则保留内容（不闪回空白）
 ```
 
 ## 6. 依赖与红线
