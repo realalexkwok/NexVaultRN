@@ -182,7 +182,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-4** | 分支/记录不一致：validation 写「本地 ref 未推送」，且分支内嵌记录仍称 MAN-017 通过/T2.2 已关闭 | 分支已推送 origin（`d3f773f`）+ 注释 tag `T2.2-pre-review`；记录标注分支为 **pre-review snapshot**，以 `main` 为准 | §Status correction |
 | **NIT-5** | entry 文件名 hash 不可复现（`entry-fd1422…` vs clean rebuild `entry-160b…`，同体积 1,972,693 B） | 记录改为**以体积为准**并注明 filename hash 是构建快照（差异限于 Expo Router NativeTabs CSS 类图键序）；§5.1/§6.3/§Task 5 同步 | §5.1 #3/#6；§6.3；§Task 5 #3 |
 
-修复后复跑：走查五步 PASS（20:26 +08）、生产 source map 导出 exit 0、按体积核对 entry 1,972,693 B。修复提交：`<pending3>`。
+修复后复跑：走查五步 PASS（20:26 +08）、生产 source map 导出 exit 0、按体积核对 entry 1,972,693 B。修复提交：**`e51691e`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
