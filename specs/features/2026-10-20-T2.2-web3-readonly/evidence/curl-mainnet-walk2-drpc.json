@@ -1,0 +1,4 @@
+{"rpc":"https://eth.drpc.org","collected_at_utc":"2026-10-21T11:38:59Z","purpose":"MAN-017 owner web walk cross-check"}
+{"method":"eth_getBalance","address":"0x9858EfFD232B4033E47d90003D41EC34EcaEda94","response":{"id":1,"jsonrpc":"2.0","result":"0x0"}}
+{"method":"eth_getBalance","address":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045","response":{"id":1,"jsonrpc":"2.0","result":"0x501eb617f2372aeb"}}
+{"method":"eth_blockNumber","response":{"id":1,"jsonrpc":"2.0","result":"0x19066d7"}}
