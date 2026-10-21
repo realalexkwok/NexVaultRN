@@ -130,20 +130,20 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
-- 构件（review 修复后重构建，19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。
-- 设备：Pixel 6a / Android 17（`CP2A.260705.006`，`bluejay`，user/release-keys）；本轮 `adb devices` 串口 **`10.42.0.139:35343`**（会话内曾为 `:39871`，重连后变更）；`adb install -r` → Success；输入方法 = Gboard **Alphabet** 子类型（中文拼音子类型会把 adb 注入的十六进制串组合成汉字，见 §6.5）。
+- 构件（review 修复后重构建，2026-10-20 19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。代码自该构建后未变（复核仅改文档/证据）。
+- 设备：Pixel 6a / Android 17（`CP2A.260705.006`，`bluejay`，user/release-keys）；**2026-10-21 20:00 +08 键盘收起复走**（`adb` 串口 `10.42.0.139:42779`；10-20 首轮为 `:35343`/`:39871`）；输入方法 = Gboard **Alphabet** 子类型（中文拼音子类型会把 adb 注入的十六进制串组合成汉字，见 §6.5）。
 
-| # | 操作 | 观察（UI dump，2026-10-20 19:14–19:16 +08 复走） | 证据 |
+| # | 操作 | 观察（UI dump，2026-10-21 20:00–20:02 +08，键盘收起） | 证据 |
 |---|---|---|---|
-| 1 | 冷启动 deep-link `nexvault://home`（无地址） | `Chain · Ethereum` / `Watch address` / `Total Balance` / **`Not configured`** / `— (24h)` / Tokens `Not configured` | `shell-home-empty.png` |
-| 2 | 输入 `0xd8dA…6045` | **`5.7732 ETH`**；caption **`Ethereum · Block #26233430`**；Tokens 行 `Ethereum / ETH / 5.7732` | `shell-home-balance-vitalik.png` |
-| 3 | 输入 `0x9858…Eda94` | **`0 ETH`**；`Ethereum · Block #26233433` | `shell-home-balance-anchor1.png` |
-| 4 | 点按链 pill → Sepolia | pill `Chain · Sepolia`；**`0 ETH`**；**`Sepolia · Block #11954933`** | `shell-home-balance-sepolia.png` |
-| 5 | 输入 `0x123` 并失焦（N3/N4 回归） | 输入框 **`Invalid address`**；Total Balance **`Not configured`**；Tokens **`Not configured`**（错误输入不再冒充已配置） | `shell-home-invalid.png` |
+| 1 | 冷启动 deep-link `nexvault://home`（无地址） | `Chain · Ethereum` / `Watch address` / `Total Balance` / **`Not configured`** / `— (24h)` / Tokens `Not configured` | `shell-home-empty.png` + `dump-home-empty.xml` |
+| 2 | 输入 `0xd8dA…6045`，`KEYCODE_BACK` 收起键盘 | **`5.7732 ETH`**；caption **`Ethereum · Block #26240838`**；Tokens 行 `Ξ / Ethereum / ETH / 5.7732`（PNG 可见） | `shell-home-balance-vitalik.png` + `dump-home-balance-vitalik.xml` |
+| 3 | 输入 `0x9858…Eda94`，收起键盘 | **`0 ETH`**；`Ethereum · Block #26240840`；Tokens 行 `Ξ / Ethereum / ETH / 0` | `shell-home-balance-anchor1.png` + `dump-home-balance-anchor1.xml` |
+| 4 | 点按链 pill → Sepolia（字段为 `0x9858…Eda94`） | pill `Chain · Sepolia`；**`0 ETH`**；**`Sepolia · Block #11962283`**；Tokens 行 `Ξ / Sepolia / ETH / 0` | `shell-home-balance-sepolia.png` + `dump-home-balance-sepolia.xml` |
+| 5 | 输入 `0x123` + `ENTER`（N3/N4 回归） | 输入框 **`Invalid address`**；Total Balance **`Not configured`**；Tokens **`Not configured`**（错误输入不冒充已配置） | `shell-home-invalid.png` + `dump-home-invalid.xml` |
 
-持久化 UI dump（review round 2 MINOR-1）：`evidence/dump-home-balance-vitalik.xml`（含 `Ξ / Ethereum / ETH / 5.7732` 与 `Ethereum · Block #26233430`）、`dump-home-balance-anchor1.xml`（`ETH / 0`）、`dump-home-balance-sepolia.xml`（`Sepolia / ETH / 0`）、`dump-home-invalid.xml`（`Invalid address` + `Not configured`）。PNG 中软键盘覆盖 Tokens 区，故 **Tokens 行可见性以 dump 文本为准**；loading 骨架为瞬时态、em-dash 错误态需断网注入（会切断 adb-over-TCP），两者以代码路径 + invalid 态 dump 佐证，未单独截图。
+持久化 UI dump（review round 2 MINOR-1）：**五份** `evidence/dump-home-{empty,balance-vitalik,balance-anchor1,balance-sepolia,invalid}.xml`；本轮截图**键盘已收起**，Tokens 行在 PNG 与 dump 中**均可见**（10-20 首轮截图被软键盘遮挡的问题已消除）。loading 骨架为瞬时态、em-dash 错误态需断网注入（会切断 adb-over-TCP），两者仍以代码路径 + invalid 态 dump 佐证。
 
-一致性（review N2 复算）：设备显示值 == curl wei 交叉计算值（5.7732）；主网 transcripts `0x1904a56` = **26,233,430** @19:14:50 → 设备 anchor2 **#26233430**（同块）→ anchor1 **#26233433**（+3 块 ≈ 36 s，~12 s/块 ✓）；Sepolia transcripts `0xb66af3` = **11,954,931** @19:15:23 → 设备 **#11954933**（+2 块 ≈ 24 s ✓）。
+一致性（review N2 复算）：设备显示值 == curl wei 交叉计算值（5.7732）；主网 walk2 transcripts `0x1904a56` = **26,240,727** @19:38:59 → 设备 anchor2 **#26240838**（+111 块 / ~22 min ≈ 5.05 块/分钟 ✓）→ anchor1 **#26240840**（+2 块）；Sepolia 设备 **#11962283** 相对 10-20 19:15 的 `0xb66af3` = 11,954,931 累计 +7,352 块 / ~24.8 h ≈ 4.9 块/分钟 ✓。（10-20 首轮复走数值 26,233,430/433、11,954,933 保留在 §Closure 历史记录中。）
 
 ### 6.5 设备输入方法注记（复走期间）
 
