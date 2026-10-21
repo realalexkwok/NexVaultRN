@@ -171,7 +171,17 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ## Task 8 — 收尾
 
+## Status correction（2026-10-21，owner 裁定 Option B）
+
+- **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
+- **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = review round 3 通过**；通过后恢复「已关闭」board 行。
+- **保留不变**：合并 `82addd0`；round 1–2 修复 `3943f28` / `f198711`；MAN-017 真实通过 `c90bf08`（真实 Chrome 155/macOS via CDP 五态）与键盘收起复走 `0099af9`（Tokens 行 PNG+dump 均可见）。
+- **治理教训（本条记录）**：关闭必须晚于评审验收；手工用例的「通过」只能来自真机/真实浏览器走查（B.4-2），不得由 agent 自证替代。
+
 ## Closure（2026-10-20）
+
+> **2026-10-21 状态更正**：本节降级为「关闭候选记录」——T2.2 现处「复核中」，直至 review round 3 通过（见上节）。
+
 
 - **关闭依据**：owner 指令「Plan + implement T2.2 … close with Part A board line + git per B.3」（2026-10-20）；plan 经 `exit_plan_mode` `approved: true`；Q/A 推荐答案随批准生效（无 override）。
 - **关闭门禁复跑（2026-10-20 15:0x 首轮 + 19:0x review 修复后复跑）**：`pnpm --filter mobile exec tsc --noEmit` exit 0；`pnpm -r --if-present run typecheck` exit 0；`npx expo export --platform web --output-dir /tmp/t22-web` exit 0（**15 静态路由**；终态 entry `entry-fd1422cf11f7ad4bf46cc42d28d8e2b4.js` = **1,972,693 B**）；R1 / R5 / R7 grep exit 1（零命中）；`expo-doctor` **21/21**。
