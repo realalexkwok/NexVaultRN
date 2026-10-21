@@ -177,6 +177,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 - **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = review round 3 通过**；通过后恢复「已关闭」board 行。
 - **保留不变**：合并 `82addd0`；round 1–2 修复 `3943f28` / `f198711`；MAN-017 真实通过 `c90bf08`（真实 Chrome 155/macOS via CDP 五态）与键盘收起复走 `0099af9`（Tokens 行 PNG+dump 均可见）。
 - **治理教训（本条记录）**：关闭必须晚于评审验收；手工用例的「通过」只能来自真机/真实浏览器走查（B.4-2），不得由 agent 自证替代。
+- **分支恢复（2026-10-21，owner 裁定 Option A）**：`feature/T2.2-web3-readonly` 已恢复到 **`d3f773f`**（合并前尖端；`git branch feature/T2.2-web3-readonly d3f773f`）；评审修复（`3943f28`/`f198711`）与全部记录仍在 `main`，`git diff feature/T2.2-web3-readonly..main` 即评审轮的全部改动。分支为**本地 ref**，未推送 origin（需要时 `git push -u origin feature/T2.2-web3-readonly`）。
 
 ## Closure（2026-10-20）
 
