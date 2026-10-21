@@ -194,7 +194,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-2** | 「MAN-017 未通过」可被读成失败 | 改为「MAN-017 未完成」 | §Task 7 |
 | **NIT-3** | Web route-smoke 证据引用修复前 bundle（`entry-a8f1…` / 1,971,473 B / 06:52Z） | 以 post-3943f28 导出复跑（`entry-fd1422…` / **1,972,693 B** / 六路由 200 / 2026-10-21 14:18 +08），`evidence/web-serve-smoke.txt` 覆盖 | §6.3；`evidence/web-serve-smoke.txt` |
 
-修复提交：`<pending2>`。
+修复提交：**`f198711`**（main）。
 ## 记录偏差与观察
 
 | # | 事项 | 处置 |
