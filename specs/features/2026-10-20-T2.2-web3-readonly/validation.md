@@ -126,7 +126,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.3 Web 静态导出路由 smoke（`evidence/web-serve-smoke.txt`）
 
-`npx expo serve --port 8080`（dist = /tmp/t22-web 副本）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-a8f1…js` 200 / 1,971,473 B。
+`npx expo serve --port 8080`（dist = /tmp/t22-web 副本，**post-3943f28 导出**，2026-10-21T06:18:55Z = 14:18 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-fd1422cf…js` 200 / **1,972,693 B**（review NIT-3 更正——此前引用的是修复前 bundle）。
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
@@ -141,6 +141,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 4 | 点按链 pill → Sepolia | pill `Chain · Sepolia`；**`0 ETH`**；**`Sepolia · Block #11954933`** | `shell-home-balance-sepolia.png` |
 | 5 | 输入 `0x123` 并失焦（N3/N4 回归） | 输入框 **`Invalid address`**；Total Balance **`Not configured`**；Tokens **`Not configured`**（错误输入不再冒充已配置） | `shell-home-invalid.png` |
 
+持久化 UI dump（review round 2 MINOR-1）：`evidence/dump-home-balance-vitalik.xml`（含 `Ξ / Ethereum / ETH / 5.7732` 与 `Ethereum · Block #26233430`）、`dump-home-balance-anchor1.xml`（`ETH / 0`）、`dump-home-balance-sepolia.xml`（`Sepolia / ETH / 0`）、`dump-home-invalid.xml`（`Invalid address` + `Not configured`）。PNG 中软键盘覆盖 Tokens 区，故 **Tokens 行可见性以 dump 文本为准**；loading 骨架为瞬时态、em-dash 错误态需断网注入（会切断 adb-over-TCP），两者以代码路径 + invalid 态 dump 佐证，未单独截图。
+
 一致性（review N2 复算）：设备显示值 == curl wei 交叉计算值（5.7732）；主网 transcripts `0x1904a56` = **26,233,430** @19:14:50 → 设备 anchor2 **#26233430**（同块）→ anchor1 **#26233433**（+3 块 ≈ 36 s，~12 s/块 ✓）；Sepolia transcripts `0xb66af3` = **11,954,931** @19:15:23 → 设备 **#11954933**（+2 块 ≈ 24 s ✓）。
 
 ### 6.5 设备输入方法注记（复走期间）
@@ -149,9 +151,9 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ## Task 7 — MAN-017 走查（review round 1 M1 更正）
 
-- **状态：☐ 待走查**（MAN-017 未通过）。`plan.md` Task 7 明示「owner 走查后回填；若 owner 未即时走查：MAN-017 保持 ☐ 待走查」——此前记录的「☑ 通过（agent 走查）」**作废**。
+- **状态：☐ 待走查**（MAN-017 未完成）。`plan.md` Task 7 明示「owner 走查后回填；若 owner 未即时走查：MAN-017 保持 ☐ 待走查」——此前记录的「☑ 通过（agent 走查）」**作废**。
 - **已完成的自动侧**：RPC curl 转录（drpc/publicnode）+ `expo serve` 六路由 200。
-- **已完成的 Android 真机侧（agent）**：review 修复后重构建 APK 的**五态**截图 + UI dump（§6.4，2026-10-20 19:14–19:16 +08 复走，含 N3/N4 错误态回归）。
+- **已完成的 Android 真机侧（agent）**：review 修复后重构建 APK 的**五态**截图 + **四份持久化 UI dump**（`evidence/dump-home-balance-{vitalik,anchor1,sepolia}.xml`、`dump-home-invalid.xml`；§6.4，2026-10-20 19:14–19:16 +08 复走，含 N3/N4 错误态回归与 Tokens 行文本——review MINOR-1）。
 - **未完成的手工侧**：**Web 桌面浏览器**输入地址并截图/UI dump（MAN-017 与 reviewer M1 要求）——待 owner 走查后回填并通过。
 - 同步更正：`requirements.md` AC-7 的验证方式列（自动侧/手工侧分列，消除与 MAN-017 的口径矛盾）。
 
@@ -183,6 +185,16 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **N7** | merge parents 引用错误 | 更正为 **`9118080` + `d3f773f`**（`git show -s --format=%P 82addd0` 实测） | §Closure |
 
 修复后复跑：tsc 双形态 0 / export 0（15 路由，`entry-fd1422cf…` 1,972,693 B）/ R1·R5·R7 exit 1 / doctor 21/21 / Android 真机复走五态通过（§6.4）。修复提交：**`3943f28`**（main）。
+## Review round 2（2026-10-21，独立评审 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | post-fix Tokens 行的 dump 未持久化（截图被软键盘遮挡）；MAN 行写「四截图 + UI dump」与实际（五 PNG、无 dump）不符 | 四份 UI dump 持久化到 `evidence/dump-home-*.xml`（含 Tokens 行文本与 balance/block）；截图软键盘遮挡说明入 §6.4；MAN-017 行措辞更正为「五张截图 + 四份 UI dump」；loading 骨架 / em-dash 错误态标注为代码路径 + invalid dump 佐证 | `evidence/dump-home-*.xml`；§6.4；MAN-017 |
+| **NIT-1** | requirements 未随 O-6 同步（FR-2 main/types；FR-5 bigint 理由；AC-4 过宽措辞） | 三处更正：FR-2 `main = src/index` + `types = src/index.ts`；FR-5 改为防御性理由（replaceEqualDeep，不 JSON 序列化）；AC-4 收窄为「无 vault-core / 密钥材料导出」 | `requirements.md:49/52/68` |
+| **NIT-2** | 「MAN-017 未通过」可被读成失败 | 改为「MAN-017 未完成」 | §Task 7 |
+| **NIT-3** | Web route-smoke 证据引用修复前 bundle（`entry-a8f1…` / 1,971,473 B / 06:52Z） | 以 post-3943f28 导出复跑（`entry-fd1422…` / **1,972,693 B** / 六路由 200 / 2026-10-21 14:18 +08），`evidence/web-serve-smoke.txt` 覆盖 | §6.3；`evidence/web-serve-smoke.txt` |
+
+修复提交：`<pending2>`。
 ## 记录偏差与观察
 
 | # | 事项 | 处置 |
