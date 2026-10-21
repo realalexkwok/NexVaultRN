@@ -1,8 +1,11 @@
-# MAN-017 Web walk — real Chrome via CDP (:9222), 2026-10-21
+# MAN-017 Web walk — real Chrome via CDP (:9222), 2026-10-21T12:26:09.884Z
+# browser: Chrome/155.0.8059.85 | UA: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+# viewport: 1280x900 @dpr 1 | tz: Asia/Hong_Kong
 # target: http://127.0.0.1:8080/home (post-fix static export)
+# identity file: web-walk-browser.txt
 # steps:
 
-PASS — empty state (no address) @ 2026-10-21T11:59:10.402Z
+PASS — empty state (no address) @ 2026-10-21T12:26:07.671Z
 Chain · Ethereum
 ▾
 Total Balance
@@ -34,13 +37,13 @@ NFT
 ⚙
 Settings
 
-PASS — anchor1 -> 0 ETH + block caption @ 2026-10-21T11:59:11.079Z
+PASS — anchor1 -> 0 ETH + block caption @ 2026-10-21T12:26:08.416Z
 Chain · Ethereum
 ▾
 Watch address
 Total Balance
 0 ETH
-Ethereum · Block #26240827
+Ethereum · Block #26240962
 Not configured
 1D
 7D
@@ -70,13 +73,13 @@ NFT
 ⚙
 Settings
 
-PASS — anchor2 -> 5.77xx ETH + block caption @ 2026-10-21T11:59:11.750Z
+PASS — anchor2 -> 5.77xx ETH + block caption @ 2026-10-21T12:26:09.052Z
 Chain · Ethereum
 ▾
 Watch address
 Total Balance
 5.7732 ETH
-Ethereum · Block #26240827
+Ethereum · Block #26240962
 Not configured
 1D
 7D
@@ -106,13 +109,13 @@ NFT
 ⚙
 Settings
 
-PASS — chain pill -> Sepolia + block caption @ 2026-10-21T11:59:12.423Z
+PASS — chain pill -> Sepolia + block caption @ 2026-10-21T12:26:09.681Z
 Chain · Sepolia
 ▾
 Watch address
 Total Balance
 61.095 ETH
-Sepolia · Block #11962269
+Sepolia · Block #11962401
 Not configured
 1D
 7D
@@ -142,7 +145,7 @@ NFT
 ⚙
 Settings
 
-PASS — cleared -> Not configured (no fake data) @ 2026-10-21T11:59:12.806Z
+PASS — cleared -> Not configured (no fake data) @ 2026-10-21T12:26:09.806Z
 Chain · Sepolia
 ▾
 Watch address

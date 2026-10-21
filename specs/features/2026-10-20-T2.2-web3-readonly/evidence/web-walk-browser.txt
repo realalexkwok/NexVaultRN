@@ -1,0 +1,15 @@
+# Browser identity captured over CDP :9222 during the MAN-017 walk
+captured_at_utc: 2026-10-21T12:26:07.653Z
+cdp_endpoint: http://localhost:9222 (Target.createTarget /json/new, then Page/Runtime)
+target_id: 649D4DB5018AC6AD4114CAE720923D48
+Browser.getVersion.product: Chrome/155.0.8059.85
+Browser.getVersion.userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+Browser.getVersion.protocolVersion: 1.3
+navigator.userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
+navigator.platform: MacIntel
+navigator.language: zh-HK
+timezone: Asia/Hong_Kong
+viewport: 1280x900 (devicePixelRatio 1)
+screen: 1440x900
+page: http://127.0.0.1:8080/home
+note: viewport was set explicitly via Emulation.setDeviceMetricsOverride 1280x900; screenshots are 1280x900 PNGs.

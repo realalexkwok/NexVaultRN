@@ -82,7 +82,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；终态 entry `entry-fd1422cf11f7ad4bf46cc42d28d8e2b4.js` = **1,972,693 B**（review 修复前为 `entry-a8f1f27a…` = 1,971,473 B） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积 = **1,972,693 B**（review 修复前 1,971,473 B）。**filename hash 是构建快照**：同一 main 代码 clean rebuild 得 `entry-160b032e…js`（与 `entry-fd1422cf…js` 同体积；差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -100,10 +100,10 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；`entry-fd1422cf…js` = 1,972,693 B |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry **1,972,693 B**（filename hash 为构建快照：`entry-fd1422…` = `entry-160b…` 同体积，NIT-5） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
-| 6 | **M2 平台 barrel 实证** | `npx expo export --platform web --dev` → dev bundle `entry-387a433f27736775868d30a7f5717939.js` 模块路径：`packages/web3-adapter/src/index.web.ts` ×1、`index.ts` ×0（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）——证据 `evidence/m2-web-barrel-proof.txt`；SDK 57 `expo export` 无 `--dump-sourcemap`，故以 dev bundle 的模块路径代替 source map |
+| 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
 | 7 | **M4 符号矩阵** | 见 O-4（`createWalletClient` 3 / `signMessage` 10 / `signTransaction` 10 / `signTypedData` 7 / 密钥材料符号 0） |
 
 ## Task 6 — balance walk（自动化侧）
@@ -126,7 +126,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.3 Web 静态导出路由 smoke（`evidence/web-serve-smoke.txt`）
 
-`npx expo serve --port 8080`（dist = /tmp/t22-web 副本，**post-3943f28 导出**，2026-10-21T06:18:55Z = 14:18 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-fd1422cf…js` 200 / **1,972,693 B**（review NIT-3 更正——此前引用的是修复前 bundle）。
+`npx expo serve --port 8080`（dist = /tmp/t22-web 副本，**post-3943f28 导出**，2026-10-21T06:18:55Z = 14:18 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle 200 / **1,972,693 B**（review NIT-3 更正——此前引用的是修复前 bundle；filename hash 为构建快照，clean rebuild 得 `entry-160b…js` 同体积，NIT-5）。
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
@@ -153,31 +153,43 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 - **状态：☐ 待走查**（MAN-017 未完成）。`plan.md` Task 7 明示「owner 走查后回填；若 owner 未即时走查：MAN-017 保持 ☐ 待走查」——此前记录的「☑ 通过（agent 走查）」**作废**。
 - **已完成的自动侧**：RPC curl 转录（drpc/publicnode）+ `expo serve` 六路由 200。
-- **已完成的 Android 真机侧（agent）**：review 修复后重构建 APK 的**五态**截图 + **四份持久化 UI dump**（`evidence/dump-home-balance-{vitalik,anchor1,sepolia}.xml`、`dump-home-invalid.xml`；§6.4，2026-10-20 19:14–19:16 +08 复走，含 N3/N4 错误态回归与 Tokens 行文本——review MINOR-1）。
+- **已完成的 Android 真机侧（agent）**：review 修复后重构建 APK 的**五态**截图 + **五份持久化 UI dump**（`evidence/dump-home-{empty,balance-vitalik,balance-anchor1,balance-sepolia,invalid}.xml`；§6.4，2026-10-20 19:14–19:16 +08 复走 + 2026-10-21 20:00 键盘收起复走，含 N3/N4 错误态回归与 Tokens 行文本——review MINOR-1 / round 3 NIT-3 计数对齐）。
 - **未完成的手工侧**：**Web 桌面浏览器**输入地址并截图/UI dump（MAN-017 与 reviewer M1 要求）——待 owner 走查后回填并通过。
 - 同步更正：`requirements.md` AC-7 的验证方式列（自动侧/手工侧分列，消除与 MAN-017 的口径矛盾）。
 - **owner 走查邀请与 deferral（2026-10-21 19:38–19:49 +08）**：按已批准 continuation plan 起 `npx expo serve --port 8080`（dist = post-fix 导出副本；`/`、`/home`、`/history`、`/settings`、`/receive`、`/send` 全 200；bundle `entry-fd1422cf…js` 1,972,693 B），并采集**同轮次**交叉核对 transcripts：`evidence/curl-mainnet-walk2-{drpc,publicnode}.json`（2026-10-21T11:38:59Z；block `0x19066d7` = **26,240,727**；anchor1 `0x0`；anchor2 `0x501eb617f2372aeb` = `5,773,251,986,299,759,339` wei → 显示 **5.7732**）。已向 owner 发起 10 分钟走查确认窗口，**未收到结论** → 按 plan 记录 **deferral**：MAN-017 保持 ☐、H9 保持 open；服务可由 `cd apps/mobile && npx expo serve --port 8080` 复起，owner 完成后回填。**未以任何形式把走查记为通过。**
-- **走查完成（2026-10-21 19:59 +08，owner 指示 agent 代为执行）**：真实桌面浏览器 **Chrome 155（macOS）** 经 **CDP :9222** + 8080 端口转发驱动（真实渲染，非模拟器），五步全 PASS：
+- **走查完成（2026-10-21 19:59 +08 首跑；20:26 +08 复跑并持久化浏览器身份；owner 指示 agent 代为执行）**：真实桌面浏览器 **Chrome/155.0.8059.85（macOS；UA 含 `Macintosh; Intel Mac OS X 10_15_7`）** 经 **CDP :9222** + 8080 端口转发驱动（真实渲染，非模拟器）。**身份证据**：`evidence/web-walk-browser.txt`——`Browser.getVersion`（product/UA/protocolVersion 1.3）、`navigator.userAgent/platform/language`、viewport **1280×900** @dpr 1、timezone Asia/Hong_Kong、CDP target id（review round 3 MINOR-1）。五步全 PASS：
 
 | 步骤 | 观察（body text） | 证据 |
 |---|---|---|
 | 空态（无地址） | `Not configured` + `— (24h)`，无 ETH | `web-walk-empty.png` |
-| 锚点1 `0x9858…Eda94` | **0 ETH** · `Ethereum · Block #26240827` | `web-walk-anchor1.png` |
-| 锚点2 `0xd8dA…6045` | **5.7732 ETH** · `Ethereum · Block #26240827`（curl 交叉值 5.7732 ✓） | `web-walk-anchor2.png` |
-| 链 pill → Sepolia（字段内仍为 `0xd8dA…`） | `Chain · Sepolia` · **61.095 ETH** · `Sepolia · Block #11962269` | `web-walk-sepolia.png` |
+| 锚点1 `0x9858…Eda94` | **0 ETH** · `Ethereum · Block #26240962` | `web-walk-anchor1.png` |
+| 锚点2 `0xd8dA…6045` | **5.7732 ETH** · `Ethereum · Block #26240962`（curl 交叉值 5.7732 ✓） | `web-walk-anchor2.png` |
+| 链 pill → Sepolia（字段内仍为 `0xd8dA…`） | `Chain · Sepolia` · **61.095 ETH** · `Sepolia · Block #11962401` | `web-walk-sepolia.png` |
 | 清空字段 | `Not configured`（无假数据） | `web-walk-cleared.png` |
 
-  转录：`evidence/web-walk-transcript.txt`（五步全文 + 时间戳）；同轮次 RPC 基线 `evidence/curl-mainnet-walk2-*.json`（19:38 采集 block 26,240,727 → 走查 26,240,827，+100 块 ≈ 20 分钟 ×5 块/分钟 ✓）。**MAN-017 判定：通过**；**H9 关闭**。（注：Sepolia 步骤余额属于当时仍在输入框内的 `0xd8dA…6045`，如实记录。）
+  转录：`evidence/web-walk-transcript.txt`（头含 browser/UA/viewport；五步全文 + 时间戳）。上表数值为 **20:26 复跑**：`#26,240,962` / Sepolia `#11,962,401`，相对 19:38 基线 26,240,727 为 +235 块 / ~48 分钟 ≈ 4.9 块/分钟 ✓。**MAN-017 判定：通过**；**H9 关闭**。（注：Sepolia 步骤余额属于当时仍在输入框内的 `0xd8dA…6045` → `61.095 ETH`，如实记录。）
 
 ## Task 8 — 收尾
 
+## Review round 3（2026-10-21，独立评审 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | MAN-017 的 owner 委托与浏览器身份仅口头断言，未持久化（transcript 头只写 “real Chrome via CDP”） | 复跑走查并**持久化身份**：`evidence/web-walk-browser.txt`（`Browser.getVersion` product/UA/protocol、`navigator.userAgent/platform/language`、viewport 1280×900 @dpr 1、tz、target id）；transcript 头内嵌 browser/UA/viewport；五步复跑全 PASS（§Task 7 表已更新） | `evidence/web-walk-browser.txt`；`web-walk-transcript.txt`；§Task 7 |
+| **NIT-1** | M2 证明沿用了「`expo export` 无 source-map 旗标」的错误理由 | 更正：`expo export` 有 `-s, --source-maps external`；**已产出生产 source map**（`/tmp/t22-web-map`，exit 0）并验证 `index.web.ts` 在、`index.ts` 不在；`m2-web-barrel-proof.txt` 重写 | `evidence/m2-web-barrel-proof.txt`；§5.1 #6 |
+| **NIT-2** | O-7 的「展示余额不可能对应不同地址」过于绝对 | 措辞更正：提交时刻语义正确；**编辑过程中**非法片段存在时，余额可短时显示上一个已提交地址直至 blur/submit | O-7 |
+| **NIT-3** | UI dump 计数不一致（四处写四份，另一处与 MAN 行写五份） | 统一为**五份**（`dump-home-{empty,balance-vitalik,balance-anchor1,balance-sepolia,invalid}.xml`） | §Task 7；§6.4 |
+| **NIT-4** | 分支/记录不一致：validation 写「本地 ref 未推送」，且分支内嵌记录仍称 MAN-017 通过/T2.2 已关闭 | 分支已推送 origin（`d3f773f`）+ 注释 tag `T2.2-pre-review`；记录标注分支为 **pre-review snapshot**，以 `main` 为准 | §Status correction |
+| **NIT-5** | entry 文件名 hash 不可复现（`entry-fd1422…` vs clean rebuild `entry-160b…`，同体积 1,972,693 B） | 记录改为**以体积为准**并注明 filename hash 是构建快照（差异限于 Expo Router NativeTabs CSS 类图键序）；§5.1/§6.3/§Task 5 同步 | §5.1 #3/#6；§6.3；§Task 5 #3 |
+
+修复后复跑：走查五步 PASS（20:26 +08）、生产 source map 导出 exit 0、按体积核对 entry 1,972,693 B。修复提交：`<pending3>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
 - **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = review round 3 通过**；通过后恢复「已关闭」board 行。
 - **保留不变**：合并 `82addd0`；round 1–2 修复 `3943f28` / `f198711`；MAN-017 真实通过 `c90bf08`（真实 Chrome 155/macOS via CDP 五态）与键盘收起复走 `0099af9`（Tokens 行 PNG+dump 均可见）。
 - **治理教训（本条记录）**：关闭必须晚于评审验收；手工用例的「通过」只能来自真机/真实浏览器走查（B.4-2），不得由 agent 自证替代。
-- **分支恢复（2026-10-21，owner 裁定 Option A）**：`feature/T2.2-web3-readonly` 已恢复到 **`d3f773f`**（合并前尖端；`git branch feature/T2.2-web3-readonly d3f773f`）；评审修复（`3943f28`/`f198711`）与全部记录仍在 `main`，`git diff feature/T2.2-web3-readonly..main` 即评审轮的全部改动。分支为**本地 ref**，未推送 origin（需要时 `git push -u origin feature/T2.2-web3-readonly`）。
+- **分支恢复（2026-10-21，owner 裁定 Option A；同日推送）**：`feature/T2.2-web3-readonly` 恢复到 **`d3f773f`**（合并前尖端），并已**推送 origin**（`origin/feature/T2.2-web3-readonly` = `d3f773f`），另在 `d3f773f` 打注释 tag **`T2.2-pre-review`** 标名 pre-review snapshot；评审修复（`3943f28`/`f198711`）与全部记录在 `main`，`git diff feature/T2.2-web3-readonly..main` 即评审轮改动。**快照注记（review round 3 NIT-4）**：该分支内嵌的 `validation.md`/`AGENTS.md` 是评审前版本（仍写 MAN-017 通过 / T2.2 已关闭），以 `main` 的记录为准。
 
 ## Closure（2026-10-20）
 
@@ -230,7 +242,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | O-4 | viem root-barrel wallet surface 入 web bundle（`createWalletClient` 3 / `signMessage` 10 / `signTransaction` 10 / `signTypedData` 7；**密钥材料符号 0**） | 接受（无账户对象不可签名）；AC-11 措辞已收窄；T4.x AC-6 再评估子路径收敛 |
 | O-5 | polyfills 位置（spec 文本 vs `import '../polyfills'` 相对路径） | 取 `src/polyfills.ts`，契约顺序不变 |
 | O-6 | `structuralSharing` 理由表述错误（v5 用 `replaceEqualDeep`，缓存不经 JSON；bigint 本安全） | 注释 + validation + requirements 已更正（review N1）；配置保留为防御性 |
-| O-7 | 地址提交语义与 Tokens 状态：空输入曾报 "Invalid address" 且保留旧地址；loading/error 时 Tokens 恒显示 "Not configured" | 已修（N3/N4）：空输入清空；非法输入清空 + 报错；输入即校验提交；Tokens 四态（无地址=Not configured / loading=骨架 / error=— / data=行） |
+| O-7 | 地址提交语义与 Tokens 状态：空输入曾报 "Invalid address" 且保留旧地址；loading/error 时 Tokens 恒显示 "Not configured" | 已修（N3/N4）：空输入清空；非法输入清空 + 报错；输入即校验提交；Tokens 四态（无地址=Not configured / loading=骨架 / error=— / data=行）。**措辞更正（review round 3 NIT-2）**：提交时刻保证「展示余额 = 已提交地址」；**编辑过程中**字段持有非法片段时，余额仍可能短时显示上一个已提交地址，直到 blur/submit 清空——非「任何时候都不可能对应不同地址」 |
 | O-8 | 包 `main` 带扩展名（`src/index.ts`）使 web 永不解析 `index.web.ts`（M2） | 已修：`main: src/index`；`types: src/index.ts`；dev bundle 模块路径实证（§5.1） |
 | O-9 | `formatNativeBalance` 未传链 decimals（两链均 18，暂无可见缺陷） | 已修（N5）：两处调用传入 `chain.nativeCurrency.decimals` |
 

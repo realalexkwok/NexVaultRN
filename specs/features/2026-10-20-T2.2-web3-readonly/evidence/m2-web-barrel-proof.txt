@@ -1,12 +1,23 @@
-# M2 — platform barrel proof (dev bundle module paths)
-# date: 2026-10-20 19:05 +08:00; command: npx expo export --platform web --dev --output-dir /tmp/t22-web-dev
-# bundle: /tmp/t22-web-dev/_expo/static/js/web/entry-387a433f27736775868d30a7f5717939.js
-# grep -o 'packages/web3-adapter/src/[a-zA-Z.]*' $JS | sort | uniq -c
+# M2 — platform barrel proof (production source map + dev bundle module paths)
+#
+# 1) Production source map (review round 3 NIT-1: `expo export` DOES support `-s, --source-maps external`)
+#    command: npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external   (exit 0)
+#    artifact: /tmp/t22-web-map/_expo/static/js/web/entry-160b032e7b49f6be9cc48dc0e8855d9f.js.map
+#    grep -o 'packages/web3-adapter/src/[a-zA-Z.]*' entry-160b032e7b49f6be9cc48dc0e8855d9f.js.map | sort | uniq -c
       1 packages/web3-adapter/src/balance.ts
       1 packages/web3-adapter/src/chains.ts
       1 packages/web3-adapter/src/errors.ts
       1 packages/web3-adapter/src/index.web.ts
-
-# index.ts is absent from the web graph -> Metro platform resolution applies (package main = 'src/index').
-# SDK 57 `expo export` has no --dump-sourcemap, so this dev-bundle path list stands in for the source map
-# (review M2 used the 19:02 source map; same conclusion, fixed by the extensionless main field).
+#    -> index.web.ts present, index.ts absent (web graph uses the platform barrel).
+#
+# 2) Dev bundle module paths (same conclusion, 2026-10-20 19:05 +08:00)
+#    command: npx expo export --platform web --dev --output-dir /tmp/t22-web-dev
+#    bundle: /tmp/t22-web-dev/_expo/static/js/web/entry-387a433f27736775868d30a7f5717939.js
+      1 packages/web3-adapter/src/balance.ts
+      1 packages/web3-adapter/src/chains.ts
+      1 packages/web3-adapter/src/errors.ts
+      1 packages/web3-adapter/src/index.web.ts
+#
+# Conclusion: with package `main` = extensionless `src/index`, Metro platform resolution selects
+# `src/index.web.ts` for the web build and `src/index.ts` for native. The earlier rationale
+# ('expo export has no source-map flag') was wrong; corrected per review NIT-1.
