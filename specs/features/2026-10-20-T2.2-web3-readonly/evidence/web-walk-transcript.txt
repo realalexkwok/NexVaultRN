@@ -1,0 +1,176 @@
+# MAN-017 Web walk — real Chrome via CDP (:9222), 2026-10-21
+# target: http://127.0.0.1:8080/home (post-fix static export)
+# steps:
+
+PASS — empty state (no address) @ 2026-10-21T11:59:10.402Z
+Chain · Ethereum
+▾
+Total Balance
+Not configured
+— (24h)
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+Not configured
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings
+
+PASS — anchor1 -> 0 ETH + block caption @ 2026-10-21T11:59:11.079Z
+Chain · Ethereum
+▾
+Watch address
+Total Balance
+0 ETH
+Ethereum · Block #26240827
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+Ξ
+Ethereum
+ETH
+0
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings
+
+PASS — anchor2 -> 5.77xx ETH + block caption @ 2026-10-21T11:59:11.750Z
+Chain · Ethereum
+▾
+Watch address
+Total Balance
+5.7732 ETH
+Ethereum · Block #26240827
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+Ξ
+Ethereum
+ETH
+5.7732
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings
+
+PASS — chain pill -> Sepolia + block caption @ 2026-10-21T11:59:12.423Z
+Chain · Sepolia
+▾
+Watch address
+Total Balance
+61.095 ETH
+Sepolia · Block #11962269
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+Ξ
+Sepolia
+ETH
+61.095
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings
+
+PASS — cleared -> Not configured (no fake data) @ 2026-10-21T11:59:12.806Z
+Chain · Sepolia
+▾
+Watch address
+Total Balance
+Not configured
+— (24h)
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+Not configured
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings

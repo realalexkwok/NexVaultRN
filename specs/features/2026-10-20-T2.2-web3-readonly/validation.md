@@ -157,6 +157,17 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 - **未完成的手工侧**：**Web 桌面浏览器**输入地址并截图/UI dump（MAN-017 与 reviewer M1 要求）——待 owner 走查后回填并通过。
 - 同步更正：`requirements.md` AC-7 的验证方式列（自动侧/手工侧分列，消除与 MAN-017 的口径矛盾）。
 - **owner 走查邀请与 deferral（2026-10-21 19:38–19:49 +08）**：按已批准 continuation plan 起 `npx expo serve --port 8080`（dist = post-fix 导出副本；`/`、`/home`、`/history`、`/settings`、`/receive`、`/send` 全 200；bundle `entry-fd1422cf…js` 1,972,693 B），并采集**同轮次**交叉核对 transcripts：`evidence/curl-mainnet-walk2-{drpc,publicnode}.json`（2026-10-21T11:38:59Z；block `0x19066d7` = **26,240,727**；anchor1 `0x0`；anchor2 `0x501eb617f2372aeb` = `5,773,251,986,299,759,339` wei → 显示 **5.7732**）。已向 owner 发起 10 分钟走查确认窗口，**未收到结论** → 按 plan 记录 **deferral**：MAN-017 保持 ☐、H9 保持 open；服务可由 `cd apps/mobile && npx expo serve --port 8080` 复起，owner 完成后回填。**未以任何形式把走查记为通过。**
+- **走查完成（2026-10-21 19:59 +08，owner 指示 agent 代为执行）**：真实桌面浏览器 **Chrome 155（macOS）** 经 **CDP :9222** + 8080 端口转发驱动（真实渲染，非模拟器），五步全 PASS：
+
+| 步骤 | 观察（body text） | 证据 |
+|---|---|---|
+| 空态（无地址） | `Not configured` + `— (24h)`，无 ETH | `web-walk-empty.png` |
+| 锚点1 `0x9858…Eda94` | **0 ETH** · `Ethereum · Block #26240827` | `web-walk-anchor1.png` |
+| 锚点2 `0xd8dA…6045` | **5.7732 ETH** · `Ethereum · Block #26240827`（curl 交叉值 5.7732 ✓） | `web-walk-anchor2.png` |
+| 链 pill → Sepolia（字段内仍为 `0xd8dA…`） | `Chain · Sepolia` · **61.095 ETH** · `Sepolia · Block #11962269` | `web-walk-sepolia.png` |
+| 清空字段 | `Not configured`（无假数据） | `web-walk-cleared.png` |
+
+  转录：`evidence/web-walk-transcript.txt`（五步全文 + 时间戳）；同轮次 RPC 基线 `evidence/curl-mainnet-walk2-*.json`（19:38 采集 block 26,240,727 → 走查 26,240,827，+100 块 ≈ 20 分钟 ×5 块/分钟 ✓）。**MAN-017 判定：通过**；**H9 关闭**。（注：Sepolia 步骤余额属于当时仍在输入框内的 `0xd8dA…6045`，如实记录。）
 
 ## Task 8 — 收尾
 
@@ -164,7 +175,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 - **关闭依据**：owner 指令「Plan + implement T2.2 … close with Part A board line + git per B.3」（2026-10-20）；plan 经 `exit_plan_mode` `approved: true`；Q/A 推荐答案随批准生效（无 override）。
 - **关闭门禁复跑（2026-10-20 15:0x 首轮 + 19:0x review 修复后复跑）**：`pnpm --filter mobile exec tsc --noEmit` exit 0；`pnpm -r --if-present run typecheck` exit 0；`npx expo export --platform web --output-dir /tmp/t22-web` exit 0（**15 静态路由**；终态 entry `entry-fd1422cf11f7ad4bf46cc42d28d8e2b4.js` = **1,972,693 B**）；R1 / R5 / R7 grep exit 1（零命中）；`expo-doctor` **21/21**。
-- **balance walk（AC-7）**：review 修复后重构建 release APK `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle 4,129,056 B；arm64；`BUILD SUCCESSFUL in 1m 37s`；零 Metro）——复走 19:14–19:16 +08：anchor2 **`5.7732 ETH`** / **`Ethereum · Block #26233430`**；anchor1 **`0 ETH`** / `#26233433`；Sepolia **`Block #11954933`**；错误输入态 **`Invalid address` + `Not configured`**；Web 侧同轮次 curl 转录（drpc/publicnode `0x1904a56` = 26,233,430）+ `expo serve` 六路由 200。**MAN-017 ☐ 待 owner 浏览器走查**（Android 真机侧 + Web 自动侧已完成；review round 1 M1 更正——原「通过」记录作废）。
+- **balance walk（AC-7）**：review 修复后重构建 release APK `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle 4,129,056 B；arm64；`BUILD SUCCESSFUL in 1m 37s`；零 Metro）——复走 19:14–19:16 +08：anchor2 **`5.7732 ETH`** / **`Ethereum · Block #26233430`**；anchor1 **`0 ETH`** / `#26233433`；Sepolia **`Block #11954933`**；错误输入态 **`Invalid address` + `Not configured`**；Web 侧同轮次 curl 转录（drpc/publicnode `0x1904a56` = 26,233,430）+ `expo serve` 六路由 200。**MAN-017 通过（2026-10-21，真实 Chrome 155/macOS 经 CDP 走查五态；H9 关闭）**。
 - **规格修订**：`specs/web3-adapter.md`（§2.2/§2.5 注记 + 附录 AC-9..AC-12 / TC-W3A-009..013）；`specs/ui-wallet.md`（§2.1 home 行 + §5 TC-UI-010）；`specs/pending-manual-test-cases.md`（MAN-017）；`AGENTS.md`（B.5 R7 `--output-dir`，T2.1a-H4；Part A 阶段 cell + 关闭行）。
 - **合并/推送**：feature commit **`d3f773f`**；`git merge --no-ff feature/T2.2-web3-readonly` → **`82addd0`**（parents **`9118080` + `d3f773f`**——review N7 更正，`git show -s --format=%P 82addd0` 实测；合并时 main 位于 skill 提交）；分支已删除（was `d3f773f`）；`git push origin main` → **`e00b7ee..82addd0 main -> main`**；`origin/main` == 本地 HEAD（本记录提交另行追加）。
 
@@ -224,4 +235,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H6 | adapter jest 单测接线（纯函数格式化/未知链） | B.6-3 当前目标 = vault-core；本期以门禁 + 走查取材 | 未来 | B.6-3 |
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
-| H9 | **MAN-017 的 Web 浏览器走查**（owner 人工侧） | 本期仅完成自动侧（curl/serve）与 Android 真机侧；plan 明示 owner 未走查时保持 ☐ | owner 在桌面浏览器走查两锚点 + 链切换后回填 ☑ | MAN-017 |
+| H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
