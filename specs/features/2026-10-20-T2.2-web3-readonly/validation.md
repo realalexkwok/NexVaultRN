@@ -263,7 +263,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-4** | 证据不一致：交叉引用错、§5.1 历史表被回填 round-7 数值、体积稳定断言不可复现 | 交叉引用改为 round 6 MINOR-2/round 8；§5.1 恢复该轮 1,972,693 B；撤回「体积相同」断言，改记 **hash+bytes**（clean rebuild 1,973,512 B） | validation §Task 5 / §5.1 |
 | **NIT-5** | MAN-018 插在 MAN-017 前、表格被空行切断 | MAN-018 移到 MAN-017 之后；清除该段空行，表格连续 | registry |
 
-复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；entry **1,973,161 B** / `entry-9ea97df9a1a269a8c5239ee55d900b4b.js`）、R1/R5/R7 exit 1。修复提交：`<pending8>`。
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；entry **1,973,161 B** / `entry-9ea97df9a1a269a8c5239ee55d900b4b.js`）、R1/R5/R7 exit 1。修复提交：**`a8db6eb`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
