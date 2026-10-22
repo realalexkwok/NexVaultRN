@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { SUPPORTED_CHAINS } from 'web3-adapter';
+import { SUPPORTED_CHAINS, normalizeAddress } from 'web3-adapter';
 
 // Observed-wallet store (T2.2). Public data only: a chain id and watched addresses (R1 — no key
 // material ever enters the store; nothing here is sensitive). Session-only by design: no
@@ -24,5 +24,15 @@ export const useObserverStore = create<ObserverState>()((set) => ({
     if (!SUPPORTED_CHAINS.some((candidate) => candidate.chainId === chainId)) return;
     set({ selectedChainId: chainId });
   },
-  setWatchedAddress: (address) => set({ watchedAddresses: address ? [address] : [] }),
+  setWatchedAddress: (address) => {
+    // Same boundary as the chain guard: only canonical addresses enter the store, so a future
+    // writer (address book, deep link, test) cannot hand an invalid string to the RPC queryFn
+    // (review round 1 NIT-9). Empty/null clears; an invalid non-empty value is ignored.
+    if (!address) {
+      set({ watchedAddresses: [] });
+      return;
+    }
+    const normalized = normalizeAddress(address);
+    if (normalized) set({ watchedAddresses: [normalized] });
+  },
 }));

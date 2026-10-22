@@ -69,21 +69,22 @@ export default function HomeScreen() {
     setSelectedChain(next.chainId);
   };
 
-  const commitAddress = () => {
-    const trimmed = input.trim();
+  // Single commit path for both typing and blur/submit (review round 1 NIT-8): typing commits
+  // valid text silently, blur/submit additionally clears the watch and shows the inline error
+  // for invalid input (R5: no fake data; O-7 / NIT-2 keep the commit-time guarantee).
+  const commitAddress = (value: string, showError: boolean) => {
+    const trimmed = value.trim();
     if (trimmed.length === 0) {
-      // Empty field = stop watching; the balance section returns to "Not configured" (R5).
       setInputError(undefined);
       setWatchedAddress(null);
       return;
     }
     const normalized = normalizeAddress(trimmed);
     if (!normalized) {
-      // Invalid input clears the committed watch and shows the inline error (R5: no fake data).
-      // Guarantee is commit-time only: while the user edits an invalid fragment the previous
-      // balance stays visible until blur/submit clears it (O-7 / review NIT-2).
-      setInputError('Invalid address');
-      setWatchedAddress(null);
+      if (showError) {
+        setInputError('Invalid address');
+        setWatchedAddress(null);
+      }
       return;
     }
     setInputError(undefined);
@@ -100,6 +101,7 @@ export default function HomeScreen() {
         accessibilityRole="button"
         accessibilityLabel={`Chain ${chain.name}. Activate to switch chain`}
         onPress={toggleChain}
+        hitSlop={tokens.spacing.sm}
         className="mb-sm flex-row items-center gap-xs self-start rounded-chip border border-outline-variant bg-surface px-md py-xs"
       >
         <Text className="text-body-medium font-inter-medium text-text-high">Chain · {chain.name}</Text>
@@ -116,19 +118,10 @@ export default function HomeScreen() {
           onChangeText={(value) => {
             setInput(value);
             if (inputError) setInputError(undefined);
-            // Commit as soon as the text parses (N3); while editing, an invalid fragment leaves
-            // the previous committed address in place until blur/submit (O-7 / NIT-2). Empty text
-            // clears the watch.
-            const trimmed = value.trim();
-            if (trimmed.length === 0) {
-              setWatchedAddress(null);
-            } else {
-              const normalized = normalizeAddress(trimmed);
-              if (normalized) setWatchedAddress(normalized);
-            }
+            commitAddress(value, false);
           }}
-          onBlur={commitAddress}
-          onSubmitEditing={commitAddress}
+          onBlur={() => commitAddress(input, true)}
+          onSubmitEditing={() => commitAddress(input, true)}
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
@@ -166,6 +159,7 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => balanceQuery.refetch()}
+              hitSlop={tokens.spacing.sm}
               className="mt-sm rounded-chip border border-outline-variant px-md py-xs"
             >
               <Text className="text-label-large font-inter-medium text-primary">Retry</Text>

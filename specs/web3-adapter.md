@@ -20,10 +20,10 @@ Out of scope：
 
 ## 2. 接口定义
 
-### 2.1 Polyfill 入口（`apps/mobile/polyfills.ts`）——加载顺序为硬性契约
+### 2.1 Polyfill 入口（`apps/mobile/src/polyfills.ts`）——加载顺序为硬性契约
 
 ```ts
-// polyfills.ts —— 必须是 App 入口第一行 import（expo-router/entry 之前）[^2^]
+// src/polyfills.ts —— 必须是 App 根 _layout.tsx 的第一条 import（先于任何 app 模块）[^2^]
 import 'react-native-get-random-values';      // 1. crypto.getRandomValues（native CSPRNG）
 import 'fastestsmallesttextencoderdecoder';   // 2. TextEncoder 防御性 polyfill（RN≥0.74 已有原生实现）
 // 3.（v2 引入 WalletConnect 时）import '@walletconnect/react-native-compat';
@@ -104,7 +104,7 @@ export function buildUnsignedTxQrPayload(intent: UnsignedTxIntent, from: `0x${st
 // 明确不导出：prepareTransaction 的签名后续步骤、signPrepared、signAndBroadcast、任何 VaultHandle 引用
 ```
 
-> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 均 `export * from './public-api'`（**单一导出面**，两平台 barrel 不会漂移——review round 4 MINOR-6；自身导出零签名符号）。**Metro 平台解析（review M2 修复）**：包 `main` 为**无扩展名** `src/index`，web 构建解析到 `index.web.ts`、原生构建解析到 `index.ts`（dev bundle 模块路径实证：`packages/web3-adapter/src/index.web.ts` 在 web 图内、`index.ts` 不在；见 T2.2 validation §5.1）；`types` 仍指向 `src/index.ts` 供 tsc。
+> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 均 `export * from './public-api'`（**web 读路径拆分（2026-10-22 review-fix）：`balance.web.ts` 用 `fetch` JSON-RPC + `chains.web.ts` 纯注册表，web chunk 不含 viem/@noble/@scure/钱包动作；原生仍用 viem**）；**单一导出面**，两平台 barrel 不会漂移——review round 4 MINOR-6；自身导出零签名符号）。**Metro 平台解析（review M2 修复）**：包 `main` 为**无扩展名** `src/index`，web 构建解析到 `index.web.ts`、原生构建解析到 `index.ts`（dev bundle 模块路径实证：`packages/web3-adapter/src/index.web.ts` 在 web 图内、`index.ts` 不在；见 T2.2 validation §5.1）；`types` 仍指向 `src/index.ts` 供 tsc。
 
 ### 2.6 错误码表
 
@@ -137,12 +137,12 @@ export function buildUnsignedTxQrPayload(intent: UnsignedTxIntent, from: `0x${st
 
 | AC | 内容 | 绑定用例 | 验证方式 |
 |---|---|---|---|
-| AC-1 | polyfill 顺序：App 入口第一行为 polyfills.ts，且其内顺序为 get-random-values → textencoder | TC-W3A-001 | CI grep（入口文件断言） |
+| AC-1 | polyfill 顺序：根 `_layout.tsx` 第一条 import 为 `../polyfills`，且 `src/polyfills.ts` 内顺序为 get-random-values → textencoder | TC-W3A-001 | CI grep（入口文件断言：`head -1` / `head -2` + 退出码） |
 | AC-2 | 完整签名闭环在 sepolia 跑通：prepare→digest→native sign→broadcast→链上确认；digest 恰为 keccak256(unsignedSerialized) 的 32 字节 | TC-W3A-002 | detox E2E（dev build 真机）+ 链上 txHash 证据 |
 | AC-3 | EIP-155：签名解析回读的 chainId 恒等于 intent.chainId；1559 交易 yParity∈{0,1}；未注册 chainId 抛错 | TC-W3A-003 | jest（parseTransaction 断言） |
 | AC-4 | 广播前自检：`parseTransaction(signedRaw)` 逐字段等于 prepared.request；不等则拒绝广播 | TC-W3A-004 | jest（含篡改负例） |
 | AC-5 | 恶意 RPC：mock RPC 返回错 chainId/错 txHash/分歧余额时分别抛 E_W3A_CHAIN_MISMATCH / E_W3A_TXHASH_MISMATCH / E_W3A_RPC_DIVERGENCE，且不发起签名 | TC-W3A-005 | jest（mock transport） |
-| AC-6 | Web 裁剪：web 构建产物不含 signPrepared/signAndBroadcast/VaultHandle 符号与 secp256k1 签名路径 | TC-W3A-006 | CI grep（`expo export --platform web` 产物） |
+| AC-6 | Web 裁剪：web 构建产物不含 viem 根、`@noble/curves`、`@scure/bip32`、`@scure/bip39`、钱包动作（`createWalletClient`/`signMessage`/`signTransaction`）与 `secp256k1`/`HDKey`/`mnemonicToSeedSync`；Web 读路径为自写 `fetch` JSON-RPC（`balance.web.ts`），不引 viem | TC-W3A-006 | CI grep（`expo export --platform web` 产物，全符号矩阵） |
 | AC-7 | 三端一致：同一 intent 在 Android/iOS/Web（只读部分）产生相同 unsignedSerialized | TC-W3A-007 | jest 跨端对拍 |
 | AC-8 | 首屏零 RPC 阻塞：首帧渲染不 await 任何 RPC；余额异步合并 | TC-W3A-008 | 真机走查 + trace |
 
@@ -195,7 +195,8 @@ When 主 RPC 余额=10 ETH、备 RPC=0.5 ETH → 抛 E_W3A_RPC_DIVERGENCE 且 UI
 ```gherkin
 Given npx expo export --platform web 产物
 When 扫描符号与依赖图
-Then 不含 signPrepared/signAndBroadcast；不含 vault-core 绑定；不含 @noble/curves 签名路径入 chunk
+Then 不含 signPrepared/signAndBroadcast；不含 vault-core 绑定
+And 不含 @noble/curves、@scure/bip32、@scure/bip39、secp256k1、HDKey、mnemonicToSeedSync、createWalletClient、signMessage、signTransaction（T2.2 web split 实测：全 0）
 ```
 
 ### TC-W3A-007 三端序列化一致性

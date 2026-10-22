@@ -29,4 +29,13 @@ describe('observer store', () => {
     useObserverStore.getState().setWatchedAddress(null);
     expect(useObserverStore.getState().watchedAddresses).toEqual([]);
   });
+
+  it('ignores invalid addresses and canonicalizes valid ones', () => {
+    const address = '0x9858EfFD232B4033E47d90003D41EC34EcaEda94';
+    useObserverStore.getState().setWatchedAddress(address);
+    useObserverStore.getState().setWatchedAddress('0x123');
+    expect(useObserverStore.getState().watchedAddresses).toEqual([address]);
+    useObserverStore.getState().setWatchedAddress(address.toLowerCase());
+    expect(useObserverStore.getState().watchedAddresses).toEqual([address]);
+  });
 });
