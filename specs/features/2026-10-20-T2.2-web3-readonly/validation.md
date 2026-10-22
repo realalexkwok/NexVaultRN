@@ -357,6 +357,14 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-1** | `ff80939` 改动了 native `balance.ts`（`RpcOptions`/`http(timeout)`），但 APK 与五态走查仍来自 `87e6d8e`，H10/§6.4b/MAN-017/AGENTS 却称「当前代码」 | **按 `ff80939` 代码重建 release APK**（46,779,132 B / sha256 `26c98930…`，15:19）并复走五态 + invalid（`#26246622` / `#26246623` / `#11968019`）；§6.4b、H10、MAN-017、AGENTS 同步为 `ff80939` | §6.4b；MAN-017；H10；AGENTS |
 
 复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（`entry-828c830c…js` 1,331,901 B）、矩阵 0、smoke 200、Android 五态+invalid（`ff80939` 代码）通过、R1/R5/R7 exit 1。修复提交：**`78c85bb`**（main）。
+## Review round 14（2026-10-22，持久 reviewer 轮 5 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | §6.4b 首轮（87e6d8e）声称「保留为历史证据」，但表格与证据文件已被 15:19 复走覆盖 | 改为「已被本表替换，`#26246506`/`#26246508`/`#11967905` 仅存于 git 历史」；§6.4 的 `3943f28` 表仍保留 | §6.4b |
+| **NIT-2** | §6.4b 标题仍写「审核轮 2 MINOR-6」，与当前 ff80939 复走不符 | 标题改为「审核轮 2 MINOR-6 / 审核轮 4 复走」 | §6.4b 标题 |
+
+仅文档修订（无 app 代码变更），门禁沿用审核轮 13 复跑结果（tsc 0/0、jest 25、canon4 1,331,901 B、矩阵 0）。修复提交：**`78bf133`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
