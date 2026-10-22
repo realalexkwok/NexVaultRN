@@ -200,7 +200,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-9** | `formatNativeBalance` 把 1–9999 wei 显示为 `0` | **owner 裁定**：非零低于精度 → `<0.0001`；AC-12/TC-W3A-013 更新；jest 覆盖 1/9999/阈值边界 | `balance.ts`；spec AC-12/TC-W3A-013；test |
 | **NIT-10** | AGENTS「手工验证」cell 仍写 MAN-001…011 | 更新为 MAN-001…017，列 MAN-011/014/015/016/017 通过日期与证据 | AGENTS.md |
 
-复跑：tsc 双形态 0、jest 10/10、export 0（15 路由）、R1/R5/R7 exit 1。修复提交：`<pending4>`。
+复跑：tsc 双形态 0、jest 10/10、export 0（15 路由，entry 1,973,116 B）、R1/R5/R7 exit 1、web smoke 六路由 200。修复提交：**`a239aeb`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
