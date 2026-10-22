@@ -83,7 +83,7 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 
 观察（2026-10-22 19:47）：`Performing Streamed Install / Success`；`OK (4 tests)`（keyLifecycleIsHardwareBackedAndIdempotent / capabilitiesReportDeviceState / deletedKeyFailsClosedWithTypedError / errorTemplatesCarryNoMaterial）。
 
-**复跑（review round 1 m2，2026-10-22 21:00，修订 `309cc3d`）**：修复后 test APK 重新构建（sha256 `5b7da988…`，见 Task 5）并重装（`Performing Streamed Install / Success`）→ `WrapKeyManagerDeviceTest` **OK (4 tests)**；转录归档 `evidence/device-install-r309cc3d.txt` + `evidence/device-lifecycle-r309cc3d.txt`。设备 = Pixel 6a（无线 adb，mDNS `adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`）。
+**复跑（review round 1 m2，2026-10-22 21:00，修订 `309cc3d`）**：修复后 test APK 重新构建（sha256 `5b7da988…`，见 Task 5）并重装（`Performing Streamed Install / Success`）→ `WrapKeyManagerDeviceTest` **OK (4 tests)**；转录归档 `evidence/device-install-r309cc3d.txt` + `evidence/device-lifecycle-r309cc3d.txt`（round 1）；**round 2 复核（修订 `a92e759`，21:30）**：`OK (4 tests)`，转录取 `evidence/device-install-final.txt` + `evidence/device-lifecycle-final.txt`。设备 = Pixel 6a（无线 adb，mDNS `adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`；无线连接间歇掉线，脚本会自动重连重试）。
 
 MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual 1` 门控，默认 androidTest 集合会跳过而非挂起）。
 
@@ -128,7 +128,7 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 | androidx 传递版本 | `:security-android:dependencies`（debugCompileClasspath） | biometric 1.1.0 → `androidx.fragment:fragment:1.2.5` / `androidx.core:core:1.3.2`（模块内解析）；`:app:debugRuntimeClasspath` 实际解析 `androidx.core:core 1.18.0`（**无降级**） |
 | OSV 复核 | `curl -X POST https://api.osv.dev/v1/query -d '{"package":{"name":"androidx.biometric:biometric","ecosystem":"Maven"},"version":"1.1.0"}'` | 响应 `{}`（2026-10-22；0 条已知漏洞） |
 | app 级构建（m8） | `cd apps/mobile/android && ./gradlew :app:assembleDebug` | **BUILD SUCCESSFUL in 4m 38s**（416 tasks）；构件 `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` **237,537,841 B**，sha256 `982cf4ec7cdd6c8067668f12cf5f4d8c6a7f58648aa28345b7e00b405c1589d2`（20:38）——验证新模块 autolinking、manifest 合并与 expo-secure-store config plugin 在 app 级生效 |
-| JVM 证据归档（m2） | 修复后重跑 `:security-android:testDebugUnitTest --rerun` | BUILD SUCCESSFUL（20:46）；XML 归档至 `evidence/jvm-TEST-expo.modules.securityandroid.{AesGcmEnvelopeTest,SecurityErrorCodesTest}.xml`（修订号随提交后重命名）；test APK sha256 `5b7da988343ddaf6b62508afa6c26636bfc6663775d241e6744540a44ad09d21` |
+| JVM 证据归档（m2） | 修复后重跑 `:security-android:testDebugUnitTest --rerun` | BUILD SUCCESSFUL；XML 归档 `evidence/jvm-TEST-expo.modules.securityandroid.{AesGcmEnvelopeTest,SecurityErrorCodesTest}-ra92e759.xml`（**10/10**，round 2 复核）；test APK sha256 `708da4df8fc941755bc1e0ab5ca29ca120a1fc2a22f44ca9d18400358e95a37b`（`evidence/test-apk-sha256-a92e759.txt`） |
 
 `dist-web` 为构建产物（未入 git；已删除，保留命令与输出为证据）。
 
