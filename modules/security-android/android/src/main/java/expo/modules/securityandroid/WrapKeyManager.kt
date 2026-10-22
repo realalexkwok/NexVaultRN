@@ -15,7 +15,6 @@ import androidx.fragment.app.FragmentActivity
 import expo.modules.kotlin.exception.CodedException
 import java.security.KeyStore
 import java.security.KeyStoreException
-import java.security.ProviderException
 import java.security.UnrecoverableKeyException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -176,19 +175,19 @@ internal class WrapKeyManager(private val context: Context) {
     }
   }
 
-  /** Generation path provenance: StrongBox -> TEE -> SOFTWARE_DEBUG on emulators. */
+  /**
+   * Generation path provenance for the auth-bound wrap key.
+   *
+   * 2026-10-22 device finding (Pixel 6a / Android 17): a StrongBox-backed auth-per-use AES key is
+   * created successfully, but every authenticated use fails inside the Titan M2 KeyMint instance
+   * (citadel) with KEY_USER_NOT_AUTHENTICATED -- StrongBox requires a hardware auth token for
+   * per-use keys, and the biometric prompt's token is not accepted there. The wrap key therefore
+   * takes the TEE path; StrongBox support is a T5.x investigation (recorded Handoff).
+   */
   private fun generateKey(): SecurityLevel {
     if (isEmulator()) {
       generateWithSpec(buildSpec(strongBox = false))
       return SecurityLevel.SOFTWARE_DEBUG
-    }
-    if (Build.VERSION.SDK_INT >= 28 && hasStrongBox()) {
-      try {
-        generateWithSpec(buildSpec(strongBox = true))
-        return SecurityLevel.STRONGBOX
-      } catch (e: ProviderException) {
-        // StrongBoxUnavailableException (API 28+) extends ProviderException: retry on TEE once.
-      }
     }
     generateWithSpec(buildSpec(strongBox = false))
     return SecurityLevel.TRUSTED_ENVIRONMENT
@@ -215,10 +214,11 @@ internal class WrapKeyManager(private val context: Context) {
       builder.setIsStrongBoxBacked(true)
     }
     if (Build.VERSION.SDK_INT >= 30) {
-      builder.setUserAuthenticationParameters(
-        0,
-        KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
-      )
+      // D6 (owner 2026-10-22): biometric-only. The per-use CryptoObject flow cannot be authorised
+      // by the device credential (androidx 1.1.0 delivers a null crypto object for a correct PIN),
+      // so advertising the PIN fallback would be a dead path; per-use BIOMETRIC_STRONG is the
+      // strongest binding and matches the demo gate.
+      builder.setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
     }
     if (Build.VERSION.SDK_INT >= 35) {
       builder.setUnlockedDeviceRequired(true)
@@ -352,23 +352,15 @@ internal class WrapKeyManager(private val context: Context) {
   }
 
   private fun promptInfo(): BiometricPrompt.PromptInfo {
-    val builder = BiometricPrompt.PromptInfo.Builder()
+    // D6 (owner 2026-10-22): biometric-only on every API level; the negative button is always
+    // required when no device-credential fallback is allowed.
+    return BiometricPrompt.PromptInfo.Builder()
       .setTitle("Unlock wallet key")
       .setSubtitle("Confirm it is you")
+      .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+      .setNegativeButtonText("Cancel")
       .setConfirmationRequired(false)
-
-    if (Build.VERSION.SDK_INT >= 30) {
-      builder.setAllowedAuthenticators(
-        BiometricManager.Authenticators.BIOMETRIC_STRONG or
-          BiometricManager.Authenticators.DEVICE_CREDENTIAL
-      )
-    } else {
-      // CryptoObject + device credential is unsupported before API 30; biometric only, and the
-      // negative button is mandatory when the credential fallback is absent.
-      builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-      builder.setNegativeButtonText("Cancel")
-    }
-    return builder.build()
+      .build()
   }
 
   private fun mapError(errorCode: Int): CodedException = when (errorCode) {

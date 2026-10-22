@@ -20,10 +20,10 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 | D3 | T2.2 H10 裁定（B.7-2） | **Android 腿在 T3.1 真机轮顺带实施**（MAN-018 TalkBack 走查）；iOS 腿 replan → T4.x | 其余 H1–H9 维持 T2.2 记录（见 §3） |
 | D4 | 附加真机走查 | **纳入 MAN-020**（新增指纹 → E_SEC_KEY_INVALIDATED） | 证明 setInvalidatedByBiometricEnrollment(true) |
 | D5 | plans 行 61 措辞 | **追加 v1.4 追记**：T3.1 = native-internal wrap/unwrap + 最小 JS 面；原「锁屏后调 signDigest 弹生物识别」门禁措辞与 E_VAULT_SECURITY_GATE 耦合移入 T3.2 | plans 只增不改 |
-| D6（review M1） | 设备凭据成功路径回传 null cryptoObject | **待裁定**（a 生物识别-only，推荐 / b 保留 flags + 专门错误并声明 PIN 不可 unwrap / c 非零窗口） | 2026-10-22 两轮 ask-user 超时；review round 1/2 记为 deferred |
-| D7（review M4） | 新 TS 面不在 tsc 门禁 | **待裁定**（a 每模块 package.json+typecheck / b 顶层模块 tsconfig+paths，推荐 / c Handoff 至 T4.1） | 同上 |
-| D8（review M6） | TC-SI-009 无 harness | **待裁定**（a DEBUG seam / b app-hosted Keychain test / c 随 T3.2 JS 面，推荐） | 同上 |
-| D9（review M7） | 安全级别语义（来源 vs 验证） | **待裁定**（a 接受来源模型 + 措辞修正，推荐 / b 增加 UNVERIFIED / c 改 AC-2） | 同上 |
+| D6（review M1） | 设备凭据成功路径回传 null cryptoObject | **裁定 a（owner 2026-10-22「all recommended」）：生物识别-only** | key spec 与 prompt 均移除 DEVICE_CREDENTIAL；spec §2.4 偏差注已加；实现 `setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)` + 提示仅 BIOMETRIC_STRONG（negative button 常驻） |
+| D7（review M4） | 新 TS 面不在 tsc 门禁 | **裁定 b：顶层模块 tsconfig** | 新增 `apps/mobile/tsconfig.modules.json`（extends app config；include `modules/*/src` + `modules/security-android/index.ts`；paths expo/expo-secure-store）+ `package.json` script `typecheck:modules`；门禁命令 `pnpm --filter mobile exec tsc -p tsconfig.modules.json` → **exit 0** |
+| D8（review M6） | TC-SI-009 无 harness | **裁定 c：随 T3.2 JS 面** | AC-10 仅绑定 TC-SI-010/011；TC-SI-009 入 Handoff（H-T3.1-1，T3.2） |
+| D9（review M7） | 安全级别语义（来源 vs 验证） | **裁定 a：接受生成路径来源模型 + 措辞修正** | KDoc/validation/spec 统一为「未验证下限（unverified floor），非 attestation」；真实软件后端设备的误标风险记录为 T5.x attestation Handoff |
 
 ## 3. Handoff re-read（B.7-2；上一条目 T2.2 的 H1–H10 逐条裁定）
 
@@ -65,7 +65,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 | AC | 内容 | 绑定用例 | 验证 |
 |---|---|---|---|
 | AC-1 | minSdk 预检记录（=24）且 R4 门禁裁定落行（D1：tech-stack + dependencies §6e） | — | grep/评审 |
-| AC-2 | flag 集密钥生成：设备 securityLevel ∈ {STRONGBOX, TRUSTED_ENVIRONMENT}；模拟器 SOFTWARE_DEBUG 显式；API 分支正确（≥30 参数化 / 24–29 per-use） | TC-SA-014 | 真机 instrumentation |
+| AC-2 | flag 集密钥生成：securityLevel = **生成路径来源**（TEE 为未验证下限，非 attestation；D9）；模拟器 SOFTWARE_DEBUG 显式；API 分支正确（≥30 参数化 / 24–29 per-use）。**2026-10-22 设备发现**：Pixel 6a 的 StrongBox per-use 认证在 Titan M2 上不可用（KEY_USER_NOT_AUTHENTICATED），wrap key 走 TEE 路径（TRUSTED_ENVIRONMENT） | TC-SA-014 | 真机 instrumentation |
 | AC-3 | blob 格式 + roundtrip 字节相等 + IV 唯一 + 错误 AAD/篡改 → E_SEC_BLOB_CORRUPT | TC-SA-010/011 | JVM + instrumentation |
 | AC-4 | per-use：每次 unwrap 触发 BiometricPrompt；3 次错误指纹 fail-closed（无成功回调、无明文、缓冲清零、下次需重新弹窗） | MAN-019（+ TC-SA-014） | 真机走查（B.4-5） |
 | AC-5 | 生物特征变更 → E_SEC_KEY_INVALIDATED | MAN-020 | 真机走查 |
@@ -78,7 +78,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 
 ## 7. 测试编号登记
 
-- 自动用例（新增）：TC-SA-010（pack/unpack roundtrip + version 字节 + 截断负例，JVM）、TC-SA-011（roundtrip 字节相等 + IV 唯一 + AAD 绑定 + 篡改 tag/ct + 空明文 parity 负例，JVM）、TC-SA-012（零化断言，JVM）、TC-SA-013（错误模板白名单：不含密钥/AAD/密文片段，JVM）、TC-SA-014（设备：安全级别 / roundtrip / 删除 / 幂等 / per-use 弹窗，instrumentation）、TC-SA-015（设备：生物特征变更失效，MAN-020 自动侧）、TC-SI-010（跨平台 blob 结构 parity 共享向量 + 空明文 parity，Mac/simulator）、TC-SI-011（KEK 坐标契约：字面量 `service="app:auth"` + `Data` account 断言 + test-only 坐标 roundtrip，Mac/simulator）、TC-SI-009（iOS KEK 完整生命周期 roundtrip——**D8 待裁定**，当前无 harness）。
+- 自动用例（新增）：TC-SA-010（pack/unpack roundtrip + version 字节 + 截断负例，JVM）、TC-SA-011（roundtrip 字节相等 + IV 唯一 + AAD 绑定 + 篡改 tag/ct + 空明文 parity 负例，JVM）、TC-SA-012（零化断言，JVM）、TC-SA-013（错误模板白名单：不含密钥/AAD/密文片段，JVM）、TC-SA-014（设备：安全级别 / roundtrip / 删除 / 幂等 / per-use 弹窗，instrumentation）、TC-SA-015（设备：生物特征变更失效，MAN-020 自动侧）、TC-SI-010（跨平台 blob 结构 parity 共享向量 + 空明文 parity，Mac/simulator）、TC-SI-011（KEK 坐标契约：字面量 `service="app:auth"` + `Data` account 断言 + test-only 坐标 roundtrip，Mac/simulator）；TC-SI-009（iOS KEK 完整生命周期 roundtrip）**D8 裁定：随 T3.2 JS 面**（Handoff H-T3.1-1）。
 - 手工用例（新增）：MAN-019（弹窗 + 3 错 fail-closed + 正确指纹成功）、MAN-020（新增指纹 → E_SEC_KEY_INVALIDATED）；MAN-018 Android 腿本期核销（D3），iOS 腿随 H10 → T4.x。
 - 既有：MAN-002 保持开放（更宽生物识别走查 → T3.2）。
 

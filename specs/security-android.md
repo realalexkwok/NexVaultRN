@@ -40,7 +40,7 @@ export function unwrapKey(blob: ArrayBuffer, aad: ArrayBuffer): Promise<ArrayBuf
 export function deleteWrapKey(): Promise<void>;
 ```
 
-> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（owner 决策 D9 待裁定），验证属 T5.x attestation。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
+> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（D9 裁定 a：接受来源模型），验证属 T5.x attestation。**2026-10-22 设备发现**：Pixel 6a / Android 17 的 StrongBox per-use AES 密钥可生成，但每次带认证的使用都在 Titan M2 KeyMint（citadel）失败（`KEY_USER_NOT_AUTHENTICATED`，StrongBox 要求硬件 auth token）；T3.1 的 wrap key 因此走 **TEE** 路径（§2.4「StrongBox 优先」的偏差，StrongBox 复测入 T5.x Handoff）。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
 
 ### 2.2 完整性/环境检测子模块（TS 面，全部异步、结果入 SecurityStateCache）
 
@@ -80,7 +80,8 @@ object WrapKeyManager {
 }
 // KeyGenParameterSpec 四联 flag：
 // setUserAuthenticationRequired(true)
-// setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG or AUTH_DEVICE_CREDENTIAL)  // 窗口=0，per-use
+// setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)  // 窗口=0，per-use；D6 裁定生物识别-only
+//   （2026-10-22：设备凭据成功的 cryptoObject 为 null，PIN 回退无法 unwrap，故不纳入）
 // setInvalidatedByBiometricEnrollment(true)
 // setIsStrongBoxBacked(true)  // 失败降级 TEE
 // setUnlockedDeviceRequired(true) 仅 API ≥35；API 28–34 因官方明示 bug 默认关 [^2^]

@@ -1,0 +1,81 @@
+
+expo.modules.securityandroid.ManualBiometricGateTest:
+Error in promptThreeWrongFingerprintsFailClosedThenCorrectSucceeds(expo.modules.securityandroid.ManualBiometricGateTest):
+javax.crypto.IllegalBlockSizeException
+	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineDoFinal(AndroidKeyStoreCipherSpiBase.java:611)
+	at javax.crypto.Cipher.doFinal(Cipher.java:2074)
+	at expo.modules.securityandroid.AesGcmEnvelope.seal(AesGcmEnvelope.kt:41)
+	at expo.modules.securityandroid.WrapKeyManager.wrap(WrapKeyManager.kt:154)
+	at expo.modules.securityandroid.WrapKeyManager$wrap$1.invokeSuspend(WrapKeyManager.kt:15)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:46)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at expo.modules.securityandroid.ManualBiometricGateTest.promptThreeWrongFingerprintsFailClosedThenCorrectSucceeds(ManualBiometricGateTest.kt:34)
+	... 32 trimmed
+Caused by: android.security.KeyStoreException: Key user not authenticated (internal Keystore code: -26 message: system/security/keystore2/src/operation.rs:882: KeystoreOperation::updateAad
+
+Caused by:
+    0: system/security/keystore2/src/operation.rs:391: Update failed for AppUid(10551)
+    1: Error::Km(r#KEY_USER_NOT_AUTHENTICATED)) (public error code: 2 internal Keystore code: -26)
+	at android.security.KeyStore2.getKeyStoreException(KeyStore2.java:429)
+	at android.security.KeyStoreOperation.handleExceptions(KeyStoreOperation.java:79)
+	at android.security.KeyStoreOperation.updateAad(KeyStoreOperation.java:102)
+	at android.security.keystore2.AndroidKeyStoreAuthenticatedAESCipherSpi$AdditionalAuthenticationDataStream.update(AndroidKeyStoreAuthenticatedAESCipherSpi.java:435)
+	at android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer.update(KeyStoreCryptoOperationChunkedStreamer.java:156)
+	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineUpdateAAD(AndroidKeyStoreCipherSpiBase.java:555)
+	at javax.crypto.Cipher.updateAAD(Cipher.java:2634)
+	at javax.crypto.Cipher.updateAAD(Cipher.java:2588)
+	at expo.modules.securityandroid.AesGcmEnvelope.seal(AesGcmEnvelope.kt:40)
+	... 47 more
+
+
+Time: 100.278
+There was 1 failure:
+1) promptThreeWrongFingerprintsFailClosedThenCorrectSucceeds(expo.modules.securityandroid.ManualBiometricGateTest)
+javax.crypto.IllegalBlockSizeException
+	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineDoFinal(AndroidKeyStoreCipherSpiBase.java:611)
+	at javax.crypto.Cipher.doFinal(Cipher.java:2074)
+	at expo.modules.securityandroid.AesGcmEnvelope.seal(AesGcmEnvelope.kt:41)
+	at expo.modules.securityandroid.WrapKeyManager.wrap(WrapKeyManager.kt:154)
+	at expo.modules.securityandroid.WrapKeyManager$wrap$1.invokeSuspend(WrapKeyManager.kt:15)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:46)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at expo.modules.securityandroid.ManualBiometricGateTest.promptThreeWrongFingerprintsFailClosedThenCorrectSucceeds(ManualBiometricGateTest.kt:34)
+	... 32 trimmed
+Caused by: android.security.KeyStoreException: Key user not authenticated (internal Keystore code: -26 message: system/security/keystore2/src/operation.rs:882: KeystoreOperation::updateAad
+
+Caused by:
+    0: system/security/keystore2/src/operation.rs:391: Update failed for AppUid(10551)
+    1: Error::Km(r#KEY_USER_NOT_AUTHENTICATED)) (public error code: 2 internal Keystore code: -26)
+	at android.security.KeyStore2.getKeyStoreException(KeyStore2.java:429)
+	at android.security.KeyStoreOperation.handleExceptions(KeyStoreOperation.java:79)
+	at android.security.KeyStoreOperation.updateAad(KeyStoreOperation.java:102)
+	at android.security.keystore2.AndroidKeyStoreAuthenticatedAESCipherSpi$AdditionalAuthenticationDataStream.update(AndroidKeyStoreAuthenticatedAESCipherSpi.java:435)
+	at android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer.update(KeyStoreCryptoOperationChunkedStreamer.java:156)
+	at android.security.keystore2.AndroidKeyStoreCipherSpiBase.engineUpdateAAD(AndroidKeyStoreCipherSpiBase.java:555)
+	at javax.crypto.Cipher.updateAAD(Cipher.java:2634)
+	at javax.crypto.Cipher.updateAAD(Cipher.java:2588)
+	at expo.modules.securityandroid.AesGcmEnvelope.seal(AesGcmEnvelope.kt:40)
+	... 47 more
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+

@@ -91,6 +91,14 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 
 MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual 1` 门控，默认 androidTest 集合会跳过而非挂起）。
 
+### Task 4（续）— MAN-019 真机走查（进行中，2026-10-22 22:26–22:38）
+
+1. **StrongBox 首跑失败（真实缺陷）**：`IllegalBlockSizeException ← KeyStoreException: Key user not authenticated`；citadel 日志 `UpdateOperation: KEY_USER_NOT_AUTHENTICATED`——StrongBox 密钥可生成，但每次带认证的使用都被 Titan M2 KeyMint 拒绝（StrongBox per-use 需要硬件 auth token）。**修复**：wrap key 改走 **TEE**（`TRUSTED_ENVIRONMENT`，仍硬件后端），记录为 spec §2.4 StrongBox-first 的偏差 + T5.x Handoff。
+2. **TEE 复跑**：**STEP 1（wrap）成功**——提示出现、认证通过、blob 产出；日志 22:26:04 STEP 1 → 22:26:17 STEP 2。**STEP 2 的 per-use 提示确实再次创建**（BiometricService 22:27:09.87 新 AuthSession），说明 per-use 门禁链路正常；但操作者按了**已录入手指** → unwrap 成功、无 fail-closed 错误 → 测试在断言处失败（走查序列问题，非代码缺陷）。
+3. 证据：`evidence/man019-run-c.txt` + `man019-logcat-c.txt`（TEE 首跑，STEP 1 通过）；`evidence/man019-run-d.txt` + `man019-logcat-d.txt`（复跑；STEP 2 被正确手指认证）；`man019-prompt-c.png` / `man019-prompt-d.png`（提示截图）。
+4. **待完成**：STEP 2 需用**未录入的手指**连续 3 次（门禁自动取消）→ STEP 3/4/5；MAN-020（phase1 → owner 新增指纹 → phase2）与 MAN-018（TalkBack）同待 owner 在设备旁。
+5. 门禁机制层面验证：每次 wrap/unwrap 均创建新的 AuthSession（per-use），提示/认证/错误链路正常。
+
 ### 设备发现（真实缺陷 → 修复，记录）
 
 首跑 3/4 失败：`java.security.NoSuchAlgorithmException: no such algorithm: AES for provider AndroidKeyStore`（`KeyFactory.getInstance(key.algorithm, "AndroidKeyStore")`，WrapKeyManager.describe）。AOSP `AndroidKeyStoreKeyFactorySpi.java` 证实 keystore2 的 KeyInfo 只对私钥开放，AES 密钥的硬件归属无法事后查询。
@@ -131,6 +139,7 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 | expo-doctor | `npx expo-doctor` | 20/21；唯一失败 = "Check that packages match versions required by installed Expo SDK"：`expo expected ~57.0.31 found 57.0.30`、`expo-router expected ~57.0.29 found 57.0.28`——**既有 patch 建议**（T2.2 时 21/21，SDK 元数据此后更新），升级属 R4 修宪，本 feature 不做 |
 | androidx 传递版本 | `:security-android:dependencies`（debugCompileClasspath） | biometric 1.1.0 → `androidx.fragment:fragment:1.2.5` / `androidx.core:core:1.3.2`（模块内解析）；`:app:debugRuntimeClasspath` 实际解析 `androidx.core:core 1.18.0`（**无降级**） |
 | OSV 复核 | `curl -X POST https://api.osv.dev/v1/query -d '{"package":{"name":"androidx.biometric:biometric","ecosystem":"Maven"},"version":"1.1.0"}'` | 响应 `{}`（2026-10-22；0 条已知漏洞） |
+| modules TS 门禁（D7） | `pnpm --filter mobile exec tsc -p tsconfig.modules.json`（= `pnpm --filter mobile run typecheck:modules`） | **exit 0**（零类型错误；覆盖 modules/security-android 的 `index.ts` + `src/**` 与 modules/security-ios 的 `src/**`） |
 | app 级构建（m8） | `cd apps/mobile/android && ./gradlew :app:assembleDebug` | **BUILD SUCCESSFUL in 4m 38s**（416 tasks）；构件 `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` **237,537,841 B**，sha256 `982cf4ec7cdd6c8067668f12cf5f4d8c6a7f58648aa28345b7e00b405c1589d2`（20:38）——验证新模块 autolinking、manifest 合并与 expo-secure-store config plugin 在 app 级生效 |
 | JVM 证据归档（m2） | 修复后重跑 `:security-android:testDebugUnitTest --rerun` | BUILD SUCCESSFUL；XML 归档 `evidence/jvm-TEST-expo.modules.securityandroid.{AesGcmEnvelopeTest,SecurityErrorCodesTest}-ra92e759.xml`（**10/10**，round 2 复核）；test APK sha256 `708da4df8fc941755bc1e0ab5ca29ca120a1fc2a22f44ca9d18400358e95a37b`（`evidence/test-apk-sha256-a92e759.txt`） |
 
@@ -198,6 +207,29 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 2. **真机走查**：MAN-019（5 步，含取消的 wrap 明文清零）、MAN-020（两阶段）、MAN-018（TalkBack 顺带）——需 owner 在场；`-e t3_1_manual 1` 门控已就位。
 3. **Task 7 收尾**：validation 定稿 → AGENTS Part A 关闭行 → B.3 merge/push/分支清理（待 1、2 完成后执行）。
 
+## Owner decisions D6–D9（2026-10-22 裁定「all recommended」）
+
+| # | 裁定 | 落地 |
+|---|---|---|
+| D6 | 生物识别-only（移除设备凭据回退） | `WrapKeyManager`：`setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)`；`PromptInfo` 仅 BIOMETRIC_STRONG + negative button 常驻；spec §2.4 偏差注 |
+| D7 | 顶层模块 tsconfig 门禁 | `apps/mobile/tsconfig.modules.json` + `typecheck:modules` script；门禁 exit 0（Task 5 行） |
+| D8 | TC-SI-009 随 T3.2 JS 面 | AC-10 仅绑 TC-SI-010/011；Handoff H-T3.1-1 |
+| D9 | 接受生成路径来源模型 + 措辞 | KDoc/validation/spec 统一「unverified floor」；T5.x attestation Handoff |
+
+**D6 迁移注**：D6 之前创建的旧 wrap key 仍带 `AUTH_DEVICE_CREDENTIAL` 认证类型，无法原地改参数（AES 无 KeyInfo 可查）——测试/演示均显式 delete + ensure 重建；T3.2 需在启动流程做一次「旧键检测→重建」迁移（Handoff H-T3.1-7）。
+
 ## Task 7 — 收尾
 
-Status：`[ ]`
+Status：`[ ]`（待 MAN-019/020/018 完成后执行）
+
+**Handoff 清单（T3.1 → T3.2 / T5.x）**
+
+| # | 事项 | 递延理由 | 建议处置 | 关联 |
+|---|---|---|---|---|
+| H-T3.1-1 | iOS JS 面 wrap/unwrap + TC-SI-009 完整 KEK 生命周期 | D8 裁定 c；本机无 Xcode，仅撰写 + 静态验证 | implement @ T3.2 | AC-10 / TC-SI-009 |
+| H-T3.1-2 | Android JS 面 wrapKey/unwrapKey（ArrayBuffer）+ E_VAULT_SECURITY_GATE 耦合 | T3.1 native-internal 裁定 | implement @ T3.2 | FR-2 / FR-4 |
+| H-T3.1-3 | StrongBox per-use AES 复测（Titan M2 拒绝 auth token） | 2026-10-22 设备发现；TEE 为当前路径 | T5.x | AC-2 / spec §2.1 |
+| H-T3.1-4 | attestation 验证安全级别（UNVERIFIED 语义） | D9 裁定 a | T5.x | AC-2 / R6 |
+| H-T3.1-5 | iOS 真机/Mac 验证（MS-1..MS-4） | 无 Xcode/合格 iPhone | 设备到位后 | AC-10 |
+| H-T3.1-6 | MAN-018 Android 腿（TalkBack）+ MAN-019 未录入手指腿 + MAN-020 | 需 owner 在场 | 本轮完成或顺延 | MAN-018/019/020 |
+| H-T3.1-7 | D6 前创建的旧 wrap key（DEVICE_CREDENTIAL auth 类型）迁移 | AES 无 KeyInfo、无法原地改参数 | T3.2 启动时检测并重建 | AC-2 |
