@@ -252,7 +252,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-3** | `pnpm audit` 命令注释仍写「pre-existing toolchain」，与 round 6 更正矛盾 | 改为「1 NEW dev-only（sprintf-js via jest）+ 5 pre-existing」 | validation §Task 1 |
 | **NIT-4** | 注释「Pressable event handlers keep this effect inert on web」不实 | 改写为「显式播报在 iOS/Android 生效；web 为 no-op」 | `home.tsx` |
 
-复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry **1,973,162 B**）、R1/R5/R7 exit 1。修复提交：`<pending7>`。
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry **1,973,162 B**）、R1/R5/R7 exit 1。修复提交：**`94c661f`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
