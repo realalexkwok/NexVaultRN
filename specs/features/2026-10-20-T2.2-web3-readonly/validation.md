@@ -175,19 +175,19 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.4b 2026-10-22 当前代码重建复走（审核轮 2 MINOR-6）
 
-- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,778,748 B**（arm64-only；sha256 前缀 `e6160366…`；`BUILD SUCCESSFUL in 1m 27s`，2026-10-22 14:54 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`87e6d8e`**（构建时为其工作树，提交含相同 app 代码：R7 web split + 审核轮 1/2 修复），零 Metro。
+- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,779,132 B**（arm64-only；sha256 前缀 `26c98930…`；`BUILD SUCCESSFUL in 1m 30s`，2026-10-22 15:19 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`ff80939`**（审核轮 3 修复后的代码修订；构建时工作树仅多出文档提交，app 代码一致），零 Metro。
 - 设备：Pixel 6a / Android 17（adb `10.42.0.139:42409`）；输入法 = Gboard **English** 子类型（本轮中途一度复现中文拼音组合乱码，切回 English 后逐字正确）。
 
-| # | 操作 | 观察（UI dump，2026-10-22 14:55–15:00 +08，键盘收起） | 证据 |
+| # | 操作 | 观察（UI dump，2026-10-22 15:19–15:21 +08，键盘收起） | 证据 |
 |---|---|---|---|
 | 1 | 冷启动 → Shell preview（无地址） | `Chain · Ethereum` / `Total Balance` / **`Not configured`**（无假数据） | `shell-home-empty.png` + `dump-home-empty.xml` |
-| 2 | 输入 `0x9858…Eda94` + ENTER | **`0 ETH`**；`Ethereum · Block #26246506` | `shell-home-balance-anchor1.png` + `dump-home-balance-anchor1.xml` |
-| 3 | 输入 `0xd8dA…6045` + ENTER | **`5.7732 ETH`**；`Ethereum · Block #26246508`；Tokens 行 `ETH / 5.7732` | `shell-home-balance-anchor2.png` + `dump-home-balance-anchor2.xml` |
-| 4 | 点按链 pill → Sepolia（字段仍 `0xd8dA…`） | `Chain · Sepolia`；**`61.595 ETH`**；`Sepolia · Block #11967905` | `shell-home-balance-sepolia.png` + `dump-home-balance-sepolia.xml` |
+| 2 | 输入 `0x9858…Eda94` + ENTER | **`0 ETH`**；`Ethereum · Block #26246622` | `shell-home-balance-anchor1.png` + `dump-home-balance-anchor1.xml` |
+| 3 | 输入 `0xd8dA…6045` + ENTER | **`5.7732 ETH`**；`Ethereum · Block #26246623`；Tokens 行 `ETH / 5.7732` | `shell-home-balance-anchor2.png` + `dump-home-balance-anchor2.xml` |
+| 4 | 点按链 pill → Sepolia（字段仍 `0xd8dA…`） | `Chain · Sepolia`；**`61.595 ETH`**；`Sepolia · Block #11968019` | `shell-home-balance-sepolia.png` + `dump-home-balance-sepolia.xml` |
 | 5 | 清空字段 + ENTER | **`Not configured`**（三处），无残留余额 | `shell-home-cleared.png` + `dump-home-cleared.xml` |
 | 6 | 输入 `0x123` + ENTER | 输入框 **`Invalid address`**；Total Balance / Tokens **`Not configured`** | `shell-home-invalid.png` + `dump-home-invalid.xml` |
 
-上一版 §6.4 表（2026-10-21，源码 `3943f28`）保留为历史证据；本表为审核 HEAD 的当前代码复走。
+上一版 §6.4 表（2026-10-21，源码 `3943f28`）与 §6.4b 首轮（14:55，源码 `87e6d8e`）保留为历史证据；本表为审核 HEAD（`ff80939` 代码）的当前复走，用于回应审核轮 4 MINOR-1。
 ### 6.5 设备输入方法注记（复走期间）
 
 复走首次尝试 `adb shell input text` 产生汉字乱码（Gboard 简体拼音子类型把十六进制串组合为中文，如 `0x`→`0在`）；切换 Gboard 子类型为 **Alphabet** 后同一命令逐字正确（`FIELD=0x9858EfFD232B4033E47d90003D41EC34EcaEda94` 实测）。属设备侧输入法状态，非应用缺陷；§6.4 证据均来自 Alphabet 子类型会话。
@@ -348,7 +348,14 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-4** | H10/MAN-017/AGENTS/§6.4b 仍指向旧 APK/旧走查；§6.4b 未记源码修订 | H10 改为「当前代码 APK 已在设备（46,778,748 B，源码 `87e6d8e`）可跑 MAN-018」；MAN-017/AGENTS 补 2026-10-22 复走；§6.4b 记源码 `87e6d8e` + 构建时间/hash | H10；MAN-017；AGENTS；§6.4b |
 | **NIT-5** | web barrel 测试只是表面 smoke，不证明平台映射 | 测试内注明「surface smoke；映射门禁 = export matrix」，validation 同步 | web test；§Task 5 |
 
-复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-828c830c…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、R1/R5/R7 exit 1。修复提交：**`ff80939`**（main）。
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-828c830c…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、R1/R5/R7 exit 1（**Android 证据的当前化见 §Review round 13：按 `ff80939` 代码重建并复走**）。修复提交：**`ff80939`**（main）。
+## Review round 13（2026-10-22，review-fix 循环轮 10 / 持久 reviewer 轮 4 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | `ff80939` 改动了 native `balance.ts`（`RpcOptions`/`http(timeout)`），但 APK 与五态走查仍来自 `87e6d8e`，H10/§6.4b/MAN-017/AGENTS 却称「当前代码」 | **按 `ff80939` 代码重建 release APK**（46,779,132 B / sha256 `26c98930…`，15:19）并复走五态 + invalid（`#26246622` / `#26246623` / `#11968019`）；§6.4b、H10、MAN-017、AGENTS 同步为 `ff80939` | §6.4b；MAN-017；H10；AGENTS |
+
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（`entry-828c830c…js` 1,331,901 B）、矩阵 0、smoke 200、Android 五态+invalid（`ff80939` 代码）通过、R1/R5/R7 exit 1。修复提交：`<pending13>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -426,4 +433,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
-| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录）。**Android 条件已满足**：当前代码 release APK 已在设备上（**46,778,748 B**，源码 `87e6d8e`，§6.4b），可直接跑 MAN-018（旧 `3943f28` 构建不含 announce，已弃用） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |
+| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录）。**Android 条件已满足**：当前代码 release APK 已在设备上（**46,779,132 B**，源码 `ff80939`，§6.4b），可直接跑 MAN-018（旧 `3943f28`/`87e6d8e` 构建为历史） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |
