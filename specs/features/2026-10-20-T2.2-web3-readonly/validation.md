@@ -173,9 +173,9 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 一致性（review N2 复算）：设备显示值 == curl wei 交叉计算值（5.7732）；主网 walk2 transcripts `0x1904a56` = **26,240,727** @19:38:59 → 设备 anchor2 **#26240838**（+111 块 / ~22 min ≈ 5.05 块/分钟 ✓）→ anchor1 **#26240840**（+2 块）；Sepolia 设备 **#11962283** 相对 10-20 19:15 的 `0xb66af3` = 11,954,931 累计 +7,352 块 / ~24.8 h ≈ 4.9 块/分钟 ✓。（10-20 首轮复走数值 26,233,430/433、11,954,933 保留在 §Closure 历史记录中。）
 
-### 6.4b 2026-10-22 当前代码重建复走（审核轮 2 MINOR-6 / 审核轮 4 复走）
+### 6.4b 2026-10-22 当前代码重建复走（审核轮 2 MINOR-6 / 持久 reviewer 轮 4 复走，review round 13）
 
-- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,779,132 B**（arm64-only；sha256 前缀 `26c98930…`；`BUILD SUCCESSFUL in 1m 30s`，2026-10-22 15:19 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`ff80939`**（审核轮 3 修复后的代码修订；构建时工作树仅多出文档提交，app 代码一致），零 Metro。
+- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,779,132 B**（arm64-only；sha256 前缀 `26c98930…`；`BUILD SUCCESSFUL in 1m 30s`，2026-10-22 15:19 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`ff80939`**（review round 12 / 持久 reviewer 轮 3 修复后的代码修订；构建时工作树仅多出文档提交，app 代码一致），零 Metro。
 - 设备：Pixel 6a / Android 17（adb `10.42.0.139:42409`）；输入法 = Gboard **English** 子类型（本轮中途一度复现中文拼音组合乱码，切回 English 后逐字正确）。
 
 | # | 操作 | 观察（UI dump，2026-10-22 15:19–15:21 +08，键盘收起） | 证据 |
@@ -187,7 +187,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 5 | 清空字段 + ENTER | **`Not configured`**（三处），无残留余额 | `shell-home-cleared.png` + `dump-home-cleared.xml` |
 | 6 | 输入 `0x123` + ENTER | 输入框 **`Invalid address`**；Total Balance / Tokens **`Not configured`** | `shell-home-invalid.png` + `dump-home-invalid.xml` |
 
-§6.4 表（2026-10-21，源码 `3943f28`）仍保留为历史证据。§6.4b 首轮（14:55，源码 `87e6d8e`，数值 `#26246506` / `#26246508` / `#11967905`）**已被本表替换**——对应 `shell-home-*` / `dump-home-*` 文件同样被覆盖，旧值仅存于 git 历史（审核轮 5 MINOR-1）。本表为审核 HEAD（`ff80939` 代码）的当前复走，用于回应审核轮 4 MINOR-1。
+§6.4 表（2026-10-21，源码 `3943f28`）仍保留为历史证据。§6.4b 首轮（14:55，源码 `87e6d8e`，数值 `#26246506` / `#26246508` / `#11967905`）**已被本表替换**——对应 `shell-home-*` / `dump-home-*` 文件同样被覆盖，旧值仅存于 git 历史（review round 14 MINOR-1 / 持久 reviewer 轮 5）。本表为审核 HEAD（`ff80939` 代码）的当前复走，用于回应 review round 13 MINOR-1（持久 reviewer 轮 4）。
 
 ### 6.5 设备输入方法注记（复走期间）
 
