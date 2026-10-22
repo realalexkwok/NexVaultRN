@@ -103,7 +103,10 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
    - 命令：`adb -t <tid> shell am instrument -w -e class expo.modules.securityandroid.BiometricCancelDeviceTest expo.modules.securityandroid.test/androidx.test.runner.AndroidJUnitRunner`
    - 观察（2026-10-22 23:20）：`OK (1 test)`（4.841s）；logcat `CANCEL FAIL-CLOSED OK code=E_SEC_BIOMETRIC_CANCELLED`。
    - 结论：取消路径的 fail-closed + 明文清零已在真机验证；**MAN-019 仍欠「3 次错误指纹」这一条**（需未录入手指），其余（提示、per-use、取消 fail-closed、清零）均已取证。
-7. 走查辅助：`TestBiometricActivity` 顶部红色横幅在每次提示前显示该步动作（1/5…5/5），避免操作者需同时看聊天记录。
+7. 走查辅助：`TestBiometricActivity` 顶部红色横幅在每次提示前显示该步动作（1/5…5/5），避免操作者需同时看聊天记录。曾尝试把提示语写入 BiometricPrompt subtitle（测试 hook），因设备在前台播放视频、提示被顺手按掉而无效，**hook 已回滚**（生产 prompt 恢复固定 subtitle）。
+8. **2026-10-23 07:38–07:50 晨间复跑（3 次自动化 + 1 次带字幕）**：每次 step 1 通过、step 2 的 per-use 提示均出现，但操作者只按 1 次**已录入手指**（日志 `Succeeded(isStrongBiometric=true)`）→ unwrap 认证成功，**「3 次错误指纹」序列从未被执行**；截图 `man019-subtitle.png` 显示设备当时在前台播放 bilibili 视频（提示被顺手按掉）。
+   - 结论：**MAN-019 仍缺这一条**，需要 owner 刻意用**未录入手指连续按 3 次**（每次应被拒）；其余链路（提示、per-use 新 AuthSession、取消 → fail-closed、明文清零）均已取证。
+   - 若 owner 判定无法/不便执行该动作，可由 owner 书面同意改用「取消路径 + JVM 失败计数」替代（该替代证据已在手），届时 MAN-019 按 owner 裁定记录偏差。
 
 ### 设备发现（真实缺陷 → 修复，记录）
 
