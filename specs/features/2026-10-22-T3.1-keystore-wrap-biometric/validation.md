@@ -82,7 +82,9 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 
 观察（2026-10-22 19:47）：`Performing Streamed Install / Success`；`OK (4 tests)`（keyLifecycleIsHardwareBackedAndIdempotent / capabilitiesReportDeviceState / deletedKeyFailsClosedWithTypedError / errorTemplatesCarryNoMaterial）。
 
-**注（review round 1 m2）**：该 4/4 运行发生在外层 wipe/timeout 重构之前；重构后 test APK 已重建（20:25，sha256 见 Task 5），但设备在 20:30 后离线（无线 adb connection refused），**4/4 必须在最终代码上复跑**并归档转录，方可计入。MAN-019/020 同此暂停点。
+**复跑（review round 1 m2，2026-10-22 21:00，修订 `309cc3d`）**：修复后 test APK 重新构建（sha256 `5b7da988…`，见 Task 5）并重装（`Performing Streamed Install / Success`）→ `WrapKeyManagerDeviceTest` **OK (4 tests)**；转录归档 `evidence/device-install-r309cc3d.txt` + `evidence/device-lifecycle-r309cc3d.txt`。设备 = Pixel 6a（无线 adb，mDNS `adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`）。
+
+MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual 1` 门控，默认 androidTest 集合会跳过而非挂起）。
 
 ### 设备发现（真实缺陷 → 修复，记录）
 
