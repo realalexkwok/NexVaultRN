@@ -234,6 +234,7 @@ Given 同一 plaintext 与 AAD
 When 两次 seal（随机 IV）后分别 open
 Then 两次密文不同、roundtrip 字节一致
 And AAD 篡改或 ciphertext/tag 翻转 1 字节均抛 E_SEC_BLOB_CORRUPT 且零明文输出
+And 0 字节明文可 roundtrip（29 字节 blob，与 iOS TC-SI-010 同布局）
 ```
 
 ### TC-SA-012 wrap 输入清零（JVM）

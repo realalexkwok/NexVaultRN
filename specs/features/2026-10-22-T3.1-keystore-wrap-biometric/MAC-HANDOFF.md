@@ -59,7 +59,7 @@ cd apps/mobile/ios
 xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO
 ```
 
-预期：6 个用例全绿（TC-SI-010：布局 + roundtrip + 错误 AAD + 篡改 + 截断；TC-SI-011：Keychain 坐标可执行断言）。记录 simulator/OS 版本与 `xcodebuild` 输出。
+预期：**7 个用例**全绿（TC-SI-010 五例：布局 + roundtrip + 错误 AAD + 篡改 + 截断；空明文 parity 一例；TC-SI-011：KEK 坐标契约 = 字面量断言 + test-only 坐标 roundtrip）。记录 simulator/OS 版本与 `xcodebuild` 输出。
 
 ### MS-3 Keychain 坐标核对（可执行断言，TC-SI-011）
 
@@ -73,7 +73,7 @@ xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -
 
 ```bash
 cd apps/mobile/ios
-xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO -only-testing:SecurityIos-Unit-Tests/SecurityIosTests/testKekReadsEntryWithExpoSecureStoreCoordinates
+xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO -only-testing:SecurityIos-Unit-Tests/SecurityIosTests/testKekCoordinatesMatchExpoSecureStore
 ```
 
 该用例**先断言字面量契约**（`KeychainKek.service == "app:auth"`、`account == "nexvault.kek.v1"`），再在 **test-only 坐标**（`app:auth.t3-1-test`）写入同编码条目并经 `KeychainKek.loadKek(service:account:)` 读回比对——不触碰生产 KEK 条目，且服务名回归会先被字面量断言抓住（不再循环论证）。若 Mac 会话发现 `app.json` 配置了 `keychainService` 或依赖升级改了服务名，改 `KeychainKek.service`/`account` 并记录证据（唯一允许的适配点；blob 格式不变）。

@@ -73,7 +73,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 | AC-7 | 零化：wrap 入参封存后清零、unwrap 输出用后清零 | TC-SA-012 | JVM |
 | AC-8 | R1/R5/R6/R7：grep 干净、web 导出无 wrap-key 符号、标注诚实 | TC-SA-013 + grep | CI 命令 + 评审 |
 | AC-9 | 全部门禁绿：tsc 双形态、JVM、真机、零未批准依赖（lockfile 仅 +expo-secure-store ~57.0.4；gradle 仅 +androidx.biometric 1.1.0）、jest 回归、doctor、web export | — | 命令+退出码 |
-| AC-10 | iOS 代码撰写 + MAC-HANDOFF.md；状态 [~]（Mac 验证前不标 [P]） | TC-SI-009/010（Mac 执行） | 代码评审 + Mac 侧 |
+| AC-10 | iOS 代码撰写 + MAC-HANDOFF.md；状态 [~]（Mac 验证前不标 [P]） | TC-SI-010/011（Mac 执行）；TC-SI-009 完整生命周期属 D8 待裁定 | 代码评审 + Mac 侧 |
 | AC-11 | Handoff 裁定落表（§3）+ plans v1.4 + AGENTS Part A 关闭行 + B.3 git | — | 文档核对 |
 
 ## 7. 测试编号登记

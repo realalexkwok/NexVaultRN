@@ -64,7 +64,7 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :secur
 ```
 
 观察：`BUILD SUCCESSFUL`；XML 计数：
-- `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=8 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×5：roundtrip / wrongAad / 篡改 / IV 唯一 / 密文不同、TC-SA-012 ×1）
+- `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=9 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×6：roundtrip / wrongAad / 篡改 / IV 唯一 / 密文不同 / 空明文 parity、TC-SA-012 ×1）
 - `TEST-expo.modules.securityandroid.SecurityErrorCodesTest.xml`：tests=1 failures=0（TC-SA-013 JVM 半）
 
 合计 **10/10**（AesGcmEnvelopeTest 9：含 N7 空明文 parity 用例；SecurityErrorCodesTest 1）。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
@@ -83,7 +83,7 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 
 观察（2026-10-22 19:47）：`Performing Streamed Install / Success`；`OK (4 tests)`（keyLifecycleIsHardwareBackedAndIdempotent / capabilitiesReportDeviceState / deletedKeyFailsClosedWithTypedError / errorTemplatesCarryNoMaterial）。
 
-**复跑（review round 1 m2，2026-10-22 21:00，修订 `309cc3d`）**：修复后 test APK 重新构建（sha256 `5b7da988…`，见 Task 5）并重装（`Performing Streamed Install / Success`）→ `WrapKeyManagerDeviceTest` **OK (4 tests)**；转录归档 `evidence/device-install-r309cc3d.txt` + `evidence/device-lifecycle-r309cc3d.txt`（round 1）；**round 2 复核（修订 `a92e759`，21:30）**：`OK (4 tests)`，转录取 `evidence/device-install-final.txt` + `evidence/device-lifecycle-final.txt`。设备 = Pixel 6a（无线 adb，mDNS `adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`；无线连接间歇掉线，脚本会自动重连重试）。
+**复跑（review round 1 m2，2026-10-22 21:00，修订 `309cc3d`）**：修复后 test APK 重新构建（sha256 `5b7da988…`，见 Task 5）并重装（`Performing Streamed Install / Success`）→ `WrapKeyManagerDeviceTest` **OK (4 tests)**；转录归档 `evidence/device-install-r309cc3d.txt` + `evidence/device-lifecycle-r309cc3d.txt`（round 1）；**round 2 复核（修订 `a92e759`，21:19）**：`OK (4 tests)`，转录取 `evidence/device-install-final.txt` + `evidence/device-lifecycle-final.txt`。设备 = Pixel 6a（无线 adb，mDNS `adb-26111jEGR13989-MJzh3R._adb-tls-connect._tcp`；无线连接间歇掉线，脚本会自动重连重试）。
 
 MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual 1` 门控，默认 androidTest 集合会跳过而非挂起）。
 

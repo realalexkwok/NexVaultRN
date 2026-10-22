@@ -196,6 +196,7 @@ Given 与 Android TC-SA-010 相同的布局向量（version/IV/ciphertext/tag）
 When CryptoKit AES.GCM seal/open
 Then 布局一致、AAD 绑定一致
 And 错误 AAD / 篡改 / 截断均抛 E_SEC_IOS_BLOB_CORRUPT
+And 0 字节明文可 roundtrip（29 字节 blob，与 Android TC-SA-011 同布局）
 ```
 
 ### TC-SI-011 KEK 坐标契约（测试侧，Mac/simulator）
