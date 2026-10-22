@@ -1,8 +1,8 @@
-# static export route smoke — 2026-10-22T06:59:57Z UTC; expo serve 8080; dist = canonical export (review轮 2 fixes)
+# static export route smoke — 2026-10-22T07:12:34Z UTC; expo serve 8080; dist = canonical export (审核轮 3)
 GET / -> 200
 GET /home -> 200
 GET /history -> 200
 GET /settings -> 200
 GET /receive -> 200
 GET /send -> 200
-GET /_expo/static/js/web/entry-52f35f212e96e2472c784723703b0ae8.js -> 200 1331901B
+GET /_expo/static/js/web/entry-828c830cd0e4acaa015173fc3a8a3741.js -> 200 1331901B

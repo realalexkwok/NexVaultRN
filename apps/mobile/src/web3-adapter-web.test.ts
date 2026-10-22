@@ -94,6 +94,9 @@ describe('web address helpers (no keccak in the web chunk)', () => {
     expect(normalizeAddress(checksumInvalid)).toBe(checksumInvalid.toLowerCase());
   });
 
+  // Surface smoke only: Jest resolves the native barrel for './balance'/'./chains', so this
+  // asserts the export names exist; the web platform mapping gate is the export matrix
+  // (R7 grep over the bundle), not this test (review轮 3 NIT-5).
   it('web barrel exposes the read-only surface', () => {
     const barrel = webBarrel as unknown as Record<string, unknown>;
     for (const name of [

@@ -108,10 +108,10 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖）。**审核轮 2 BLOCKER-1 更正**：该行此前为红（`fetch` 缺 DOM lib），已修 `packages/web3-adapter/tsconfig.json`（lib 加 DOM）后复跑 0 | ✓ |
 | 2b | `pnpm --filter mobile exec jest --ci` | **3 suites / 25 tests passed**（adapter 10 + web 11 + store 4；审核轮 2 增 stall/timeout、checksum 分歧、web barrel 表面 3 例） | ✓ |
 | 2c | `head -1 apps/mobile/src/app/_layout.tsx` / `head -2 apps/mobile/src/polyfills.ts` / `grep -n '{ rank: false }' packages/web3-adapter/src/balance.ts` | 三条命令 exit 0；输出见 §Task 2 命令块（AC-1 顺序 + AC-3 代码路径） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web-canon2 --clear` | EXPORT_EXIT=0；**15 静态路由**；**canonical（2026-10-22，含 R7 web split）**：`entry-52f35f212e96e2472c784723703b0ae8.js` = **1,331,901 B**（审核轮 2 复跑；较拆分前 1,973,511 B **−641,610 B**）。每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
-| 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web-canon2/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
-| 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web-canon2/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
-| 5b | 全图矩阵（canon2 entry） | `@noble/curves` 0 · `@noble` 0 · `@scure` 0 · `secp256k1` 0 · `createWalletClient` 0 · `signMessage` 0 · `signTransaction` 0 · `HDKey` 0 · `mnemonicToSeedSync` 0 · `viem` 0（R7 web split 达成，AC-6/TC-W3A-006） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web-canon4 --clear` | EXPORT_EXIT=0；**15 静态路由**；**canonical（2026-10-22 审核轮 3）**：`entry-828c830cd0e4acaa015173fc3a8a3741.js` = **1,331,901 B**（此前 canon3/`52f35f` 为审核轮 2 历史；较拆分前 1,973,511 B **−641,610 B**）。每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
+| 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web-canon4/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
+| 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web-canon4/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
+| 5b | 全图矩阵（canon4 `entry-828c830c…js`，审核轮 3） | `@noble/curves` 0 · `@noble` 0 · `@scure` 0 · `secp256k1` 0 · `createWalletClient` 0 · `signMessage` 0 · `signTransaction` 0 · `HDKey` 0 · `mnemonicToSeedSync` 0 · `viem` 0（R7 web split 达成，AC-6/TC-W3A-006） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
 | 7 | R5 console grep（宪法原文） | R5_EXIT=1（零命中） | ✓ |
 | 8 | `npx expo-doctor`（apps/mobile） | **21/21 checks passed** | ✓ |
@@ -154,7 +154,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.3 Web 静态导出路由 smoke（`evidence/web-serve-smoke.txt`）
 
-`npx expo serve --port 8080`（dist = **审核轮 2 修复后 canonical 导出** `/tmp/t22-web-canon3`，2026-10-22T06:59:57Z = 14:59 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-52f35f21…js` 200 / **1,331,901 B**（证据 `evidence/web-serve-smoke.txt`；此前的 fd1422/160b/18dbd8d0/456faa1f 为历史记录）。
+`npx expo serve --port 8080`（dist = **审核轮 3 canonical 导出** `/tmp/t22-web-canon4`，2026-10-22T07:12:34Z = 15:12 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-828c830c…js` 200 / **1,331,901 B**（证据 `evidence/web-serve-smoke.txt`；此前的 fd1422/160b/18dbd8d0/456faa1f/52f35f21 为历史记录）。
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
@@ -175,7 +175,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.4b 2026-10-22 当前代码重建复走（审核轮 2 MINOR-6）
 
-- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,778,748 B**（arm64-only；sha256 前缀 `e6160366…`；`BUILD SUCCESSFUL in 1m 27s`；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = 2026-10-22 工作树（R7 web split + 审核轮 1/2 修复），零 Metro。
+- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,778,748 B**（arm64-only；sha256 前缀 `e6160366…`；`BUILD SUCCESSFUL in 1m 27s`，2026-10-22 14:54 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`87e6d8e`**（构建时为其工作树，提交含相同 app 代码：R7 web split + 审核轮 1/2 修复），零 Metro。
 - 设备：Pixel 6a / Android 17（adb `10.42.0.139:42409`）；输入法 = Gboard **English** 子类型（本轮中途一度复现中文拼音组合乱码，切回 English 后逐字正确）。
 
 | # | 操作 | 观察（UI dump，2026-10-22 14:55–15:00 +08，键盘收起） | 证据 |
@@ -338,6 +338,17 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-7** | web 测试绕过 `index.web` 映射 | 新增静态 `import * as webBarrel from 'web3-adapter/src/index.web'` 表面断言 | web test |
 
 复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-52f35f21…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、Android 五态+invalid 复走通过、R1/R5/R7 exit 1。修复提交：**`87e6d8e`**（main）。
+## Review round 12（2026-10-22，review-fix 循环轮 9 / 持久 reviewer 轮 3 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | web 独有第三参导致公开签名平台不一致，`RpcOptions` 未导出/未文档 | 新增平台中立 `types.ts`（`RpcOptions.timeoutMs`），**两平台同签名**（原生映射 `http(timeout)`，Web 映射 `AbortSignal.timeout`），`RpcOptions` 由 barrel 导出；spec §2.5 + FR-3 记录 | `types.ts`；`balance.ts`；`public-api.ts`；spec/FR-3 |
+| **MINOR-2** | 门禁行 3/4/5 指向 canon2 而 canonical 实为 canon3，新 hash 无法从记录命令复现 | 重导 **canon4**（`entry-828c830c…js`，1,331,901 B）；行 3/4/5/5b 全部改为 canon4 并标注矩阵来源；§6.3 smoke 同步 | §Task 5；§6.3；`evidence/web-serve-smoke.txt` |
+| **MINOR-3** | requirements AC-2/AC-9 仍写 22 tests | 改为 **3 suites / 25 tests**（adapter 10 + web 11 + store 4） | requirements AC-2/AC-9 |
+| **MINOR-4** | H10/MAN-017/AGENTS/§6.4b 仍指向旧 APK/旧走查；§6.4b 未记源码修订 | H10 改为「当前代码 APK 已在设备（46,778,748 B，源码 `87e6d8e`）可跑 MAN-018」；MAN-017/AGENTS 补 2026-10-22 复走；§6.4b 记源码 `87e6d8e` + 构建时间/hash | H10；MAN-017；AGENTS；§6.4b |
+| **NIT-5** | web barrel 测试只是表面 smoke，不证明平台映射 | 测试内注明「surface smoke；映射门禁 = export matrix」，validation 同步 | web test；§Task 5 |
+
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-828c830c…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、R1/R5/R7 exit 1。修复提交：`<pending12>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -415,4 +426,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
-| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录），Android 可立即执行（需构建含 `a8db6eb` 的当前代码 APK；旧的 `3943f28` APK 不含 announce） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |
+| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录）。**Android 条件已满足**：当前代码 release APK 已在设备上（**46,778,748 B**，源码 `87e6d8e`，§6.4b），可直接跑 MAN-018（旧 `3943f28` 构建不含 announce，已弃用） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |

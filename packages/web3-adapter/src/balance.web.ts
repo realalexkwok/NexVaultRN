@@ -1,4 +1,5 @@
 import { getChainConfig } from './chains';
+import type { RpcOptions } from './types';
 
 export { formatNativeBalance } from './format';
 export { isValidAddress, normalizeAddress } from './address.web';
@@ -12,11 +13,6 @@ interface JsonRpcResponse {
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
-
-interface RpcOptions {
-  /** Per-request ceiling; native viem transport has an equivalent HTTP timeout. */
-  timeoutMs?: number;
-}
 
 async function rpcCall(url: string, method: string, params: unknown[], options: RpcOptions): Promise<string> {
   const response = await fetch(url, {
