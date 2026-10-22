@@ -95,7 +95,6 @@ export function NexVaultTextField({
       {error ? (
         <Text
           accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
           className="mt-xs pl-md text-body-small font-inter-regular text-error"
         >
           {error}

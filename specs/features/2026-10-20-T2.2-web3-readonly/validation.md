@@ -44,7 +44,7 @@ adapter 链接：`packages/web3-adapter/node_modules/viem -> ../../../node_modul
 $ pnpm --filter mobile add -D jest@^29.7.0 jest-expo@57.0.6     # +252 packages
 $ pnpm --filter mobile add -D @jest/globals@^29.7.0            # +5 packages
 $ pnpm install                                                 # exit 0; 'Lockfile is up to date'; supply-chain policy pass
-$ pnpm audit                                                   # 6 advisories (4 moderate / 2 high), pre-existing toolchain
+$ pnpm audit                                                   # 2 high + 4 moderate; 1 NEW dev-only (sprintf-js via jest) + 5 pre-existing
 ```
 - 实测版本：jest **29.7.0** / jest-expo **57.0.6** / @jest/globals **29.7.0**（package.json 已钉精确版本）；安装位置 **apps/mobile devDependencies**。
 - lockfile `packages`：**647 → 862（+215）**（复现命令：`git show 6ca3885:pnpm-lock.yaml | sed -n "/^packages:/,/^[a-z]/p" | grep -c '^  [^ ]'`；`pnpm audit --json` → `totalDependencies: 862`）；`@jest/globals` 在 `6ca3885` 为 **0** 处，现 **5** 处。（此前记录的 1,032→1,384 无复现命令，**已撤回**——review round 6 MINOR-2。）
@@ -94,8 +94,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 MAJOR-1 新增 adapter 10 例；review round 6 增 store 3 例） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 5 = 1,973,195 B；round 6 = **1,973,171 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——round 4 的更正见 review round 7 MINOR-1） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 6 = 1,973,171 B；round 7 = **1,973,162 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -113,8 +113,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
-| 2b | `pnpm --filter mobile exec jest` | **2 suites / 13 tests pass**（review round 4 起；round 6 增至 13） |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 6 = 1,973,171 B；filename hash 为构建快照，NIT-5） |
+| 2b | `pnpm --filter mobile exec jest` | **2 suites / 13 tests pass**（round 4 = adapter 10；round 5 = 13（+store 3）；round 6 不变） |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 7 = 1,973,162 B；filename hash 为构建快照，NIT-5） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
 | 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
@@ -243,6 +243,16 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-8** | tech-stack 行把 eslint-config-expo 的位置一并改错；该包未安装 | tech-stack 拆三行：typescript / jest 工具链 / **eslint-config-expo（未安装，B.6-2 待接线）**；doc/dependencies.md 同步 | specs/tech-stack.md；doc/dependencies.md |
 
 复跑：tsc 双形态 0、jest **13/13**、`pnpm install` up to date、export 0（15 路由，entry **1,973,171 B**）、R1/R5/R7 exit 1。修复提交：**`5eefaf0`**（main）。
+## Review round 7（2026-10-22，review-fix 循环轮 4 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | iOS-only announce 可能让 Android 在 live region 未触发时**零播报**（live region 在条件挂载节点上） | 改为 **iOS+Android 单一显式播报**并**移除** error Text 的 live region（消除双播报/零播报两个路径）；设备级验证登记为 **MAN-018（☐ 待走查）** | `home.tsx`；`NexVaultTextField.tsx`；`pending-manual-test-cases.md` |
+| **MINOR-2** | 3 个 store 测试被误记为 round 6 新增（实为 round 5 `56b7f48`；round 6 仅改注释） | 门禁表改为「round 4 adapter 10；round 5 +store 3 = 13；round 6 不变」 | validation §Task 5 / §5.1 |
+| **MINOR-3** | `pnpm audit` 命令注释仍写「pre-existing toolchain」，与 round 6 更正矛盾 | 改为「1 NEW dev-only（sprintf-js via jest）+ 5 pre-existing」 | validation §Task 1 |
+| **NIT-4** | 注释「Pressable event handlers keep this effect inert on web」不实 | 改写为「显式播报在 iOS/Android 生效；web 为 no-op」 | `home.tsx` |
+
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry **1,973,162 B**）、R1/R5/R7 exit 1。修复提交：`<pending7>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
