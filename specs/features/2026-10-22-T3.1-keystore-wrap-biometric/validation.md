@@ -150,13 +150,13 @@ reviewer 子代理 `b75d6157-6d3b-4daa-90ac-edb389caa2cb`（持久 reviewer）�
 | M6 | TC-SI-009 无测试代码/无可运行入口（DECISION scope） | 待 owner 裁定（见 D8） |
 | M7 | 安全级别是生成路径来源而非验证，措辞过度（DECISION scope） | 即时修正已落（KDoc/validation 措辞 + T5.x attestation Handoff）；深层选项待 owner 裁定（见 D9） |
 | m1 | 交互用例混入默认 androidTest（会挂起/假失败） | **已修**：`-e t3_1_manual 1` Assume 门控；文档记录按类/方法 am instrument |
-| m2 | 无持久证据（evidence/ 空、JVM XML 早于最终源码） | **待修**：最终提交后重跑并归档修订号证据（Task 5 收尾） |
+| m2 | 无持久证据（evidence/ 空、JVM XML 早于最终源码） | **已修**：修复后重跑 JVM（9/9）+ 设备 4/4，XML/转录/APK sha 归档为 `evidence/*-r309cc3d.*`（提交 `ce97988`） |
 | m3 | spec 漂移（§2.1/§2.5/iOS §2.1 与实现不一致） | **已修**：security-android §2.1 偏差注 + §2.5 补登 E_SEC_BLOB_CORRUPT；security-ios §2.1 偏差注 |
 | m4 | androidx.biometric 无 OSV 记录 | **已修**：OSV 查询 0 条（Task 5 行） |
 | m5 | MAC-HANDOFF 缺 `-skipPackagePluginValidation -skipMacroValidation` 等 | **已修**：MS-1/MS-2/MS-3 命令补齐 + pinned simulator |
 | m6 | JS 侧 KEK 物化未标 [C]、缺 R6 表 | **已修**：R6 标注表 + T3.2 Handoff |
 | m7 | 提示在 state saved 时可能永不返回 | **已修**：isFinishing/isDestroyed/isStateSaved 预检 + 180s withTimeout |
-| m8 | 未做 app 级 Android 构建 | **进行中**：`:app:assembleDebug` 后台构建（见 Task 5 更新） |
+| m8 | 未做 app 级 Android 构建 | **已修**：`:app:assembleDebug` BUILD SUCCESSFUL（4m38s，237,537,841 B，sha256 `982cf4ec…`）；APK dex 内 `SecurityAndroidModule` 命中 33 次（app 级 autolinking 生效） |
 | n1 | JVM 计数 2+4+1=7 与 tests=8 矛盾 | **已修**：TC-SA-011 ×5，2+5+1=8 |
 | n2 | iOS 空明文 blob 比 Android 严格 | **已修**：`body.count >= tagSize` |
 
