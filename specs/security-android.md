@@ -215,6 +215,59 @@ When 检查首帧前主线程与后台线程
 Then 无文件 I/O 扫描、无网络 attestation 调用；首个检测任务出现在首帧之后
 ```
 
+### TC-SA-010 wrap blob 结构（JVM）
+
+```gherkin
+Given 软件 AES-256-GCM 测试密钥与固定 IV
+When AesGcmEnvelope.seal/open 一轮
+Then blob = version(1B)=1 ‖ IV(12B) ‖ ciphertext ‖ tag(16B)，IV 与注入值一致
+And 版本字节错误或截断 blob 抛 E_SEC_BLOB_CORRUPT
+```
+
+### TC-SA-011 wrap 完整性（AAD 绑定 / IV 唯一 / 篡改负例，JVM）
+
+```gherkin
+Given 同一 plaintext 与 AAD
+When 两次 seal（随机 IV）后分别 open
+Then 两次密文不同、roundtrip 字节一致
+And AAD 篡改或 ciphertext/tag 翻转 1 字节均抛 E_SEC_BLOB_CORRUPT 且零明文输出
+```
+
+### TC-SA-012 wrap 输入清零（JVM）
+
+```gherkin
+Given 32 字节 plaintext 缓冲区
+When seal 返回
+Then 输入缓冲区全 0（AC-7；unwrap 输出由 native 签名窗口负责清零）
+```
+
+### TC-SA-013 错误模板白名单（JVM + 真机）
+
+```gherkin
+Given 七个 E_SEC_* 错误
+When 构造并检查 code/message
+Then code 与 §2.5 一致，message 为固定模板、不含密钥/AAD/密文片段
+```
+
+### TC-SA-014 设备级 wrap key 生命周期与门禁（instrumentation + MAN-019）
+
+```gherkin
+Given Pixel 6a（安全锁屏 + 已录入指纹）
+When ensureWrapKey → wrap/unwrap（BiometricPrompt CryptoObject）
+Then securityLevel ∈ {STRONGBOX, TRUSTED_ENVIRONMENT}；roundtrip 字节一致
+And 连续 3 次错误指纹 fail-closed（E_SEC_BIOMETRIC_CANCELLED、无明文、下次重新弹窗）
+And 删除后 encrypt/decrypt 抛 E_SEC_KEY_INVALIDATED
+```
+
+### TC-SA-015 生物特征变更失效（instrumentation + MAN-020）
+
+```gherkin
+Given 已创建 wrap key
+When 系统设置新增 1 枚指纹后再初始化加密 cipher
+Then 抛 E_SEC_KEY_INVALIDATED（KeyPermanentlyInvalidatedException）
+And delete + ensure 恢复硬件级密钥
+```
+
 ## 6. 依赖与红线
 
 - **R1 + R6（本模块核心）**：安全判定 fail-closed——检测不通过则不释放签名材料（vault-core 门控 `E_SEC_GATE_DENIED`），而非「检测到就弹窗」；假设一切客户端判定可被伪造。这是 R1「密钥材料不出 native」在门控上的执行形态，也是 AGENTS.md R6 口径下唯一 [P] 级端上控制（cross_verification 全局一致性 #1），其余检测一律 [C]，禁止拔高（**R6**）。

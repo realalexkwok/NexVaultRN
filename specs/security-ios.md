@@ -179,6 +179,23 @@ When 检查首帧前主线程
 Then 无 dyld 遍历、无 /var/jb stat、无 App Attest 网络调用
 ```
 
+### TC-SI-009 Keychain KEK 生命周期（真机/Mac）
+
+```gherkin
+Given 合格 iPhone 与 expo-secure-store 条目（requireAuthentication + WHEN_UNLOCKED_THIS_DEVICE_ONLY）
+When ensureKek → wrap → unwrap → deleteKek
+Then 条目经生物识别放出 KEK；roundtrip 一致；deleteKek 后读取抛 E_SEC_IOS_KEK_MISSING
+```
+
+### TC-SI-010 跨平台 blob 结构 parity（XCTest）
+
+```gherkin
+Given 与 Android TC-SA-010 相同的布局向量（version/IV/ciphertext/tag）
+When CryptoKit AES.GCM seal/open
+Then 布局一致、AAD 绑定一致
+And 错误 AAD / 篡改 / 截断均抛 E_SEC_IOS_BLOB_CORRUPT
+```
+
 ## 6. 依赖与红线
 
 - **R1 + R6**：fail-closed 门控同 Android——越狱/调试信号不作签名硬前置（必然误伤+可绕），而是风险评分输入；签名材料释放由门控裁决。宪法依据：R1（密钥材料不出 native，检测不过则不释放）+ R6（fail-closed 耦合为唯一 [P] 级端上口径，其余检测一律 [C]）。
