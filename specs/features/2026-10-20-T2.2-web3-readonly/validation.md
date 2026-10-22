@@ -355,7 +355,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | **MINOR-1** | `ff80939` 改动了 native `balance.ts`（`RpcOptions`/`http(timeout)`），但 APK 与五态走查仍来自 `87e6d8e`，H10/§6.4b/MAN-017/AGENTS 却称「当前代码」 | **按 `ff80939` 代码重建 release APK**（46,779,132 B / sha256 `26c98930…`，15:19）并复走五态 + invalid（`#26246622` / `#26246623` / `#11968019`）；§6.4b、H10、MAN-017、AGENTS 同步为 `ff80939` | §6.4b；MAN-017；H10；AGENTS |
 
-复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（`entry-828c830c…js` 1,331,901 B）、矩阵 0、smoke 200、Android 五态+invalid（`ff80939` 代码）通过、R1/R5/R7 exit 1。修复提交：`<pending13>`。
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（`entry-828c830c…js` 1,331,901 B）、矩阵 0、smoke 200、Android 五态+invalid（`ff80939` 代码）通过、R1/R5/R7 exit 1。修复提交：**`78c85bb`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
