@@ -242,7 +242,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-7** | `@jest/globals` 文档写「精确」但 manifest 是 `^29.7.0` | 两者都钉 **29.7.0**（jest 同）；pnpm install up to date；文档与 manifest 一致 | package.json；doc/dependencies.md |
 | **MINOR-8** | tech-stack 行把 eslint-config-expo 的位置一并改错；该包未安装 | tech-stack 拆三行：typescript / jest 工具链 / **eslint-config-expo（未安装，B.6-2 待接线）**；doc/dependencies.md 同步 | specs/tech-stack.md；doc/dependencies.md |
 
-复跑：tsc 双形态 0、jest **13/13**、`pnpm install` up to date、export 0（15 路由，entry **1,973,171 B**）、R1/R5/R7 exit 1。修复提交：`<pending6>`。
+复跑：tsc 双形态 0、jest **13/13**、`pnpm install` up to date、export 0（15 路由，entry **1,973,171 B**）、R1/R5/R7 exit 1。修复提交：**`5eefaf0`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
