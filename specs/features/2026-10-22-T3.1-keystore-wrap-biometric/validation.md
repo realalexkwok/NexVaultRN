@@ -175,6 +175,21 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 | N6 | §2.5 新行 3 单元格 | **已修**：并入含义单元格 |
 | N7 | 空明文 blob 无测试 | **已修**：iOS `testEmptyPlaintextBlobIsValid` + Android JVM `emptyPlaintextBlobIsValid`（JVM 10 例） |
 
+## Review rounds 3–5（bookkeeping → 零发现）
+
+| 轮 | range | 发现 | 处置 |
+|---|---|---|---|
+| round 3 | 66df97b..48d95bc | 4 项 bookkeeping（NEW-A MAC-HANDOFF 测试计数/方法名；NEW-B JVM bullet tests=9/TC-SA-011 ×6；NEW-C 设备复跑时间；NEW-D AC-10 绑定 + 空明文 spec TC） | 全部修复（`48e4620`） |
+| round 4 | 48d95bc..48e4620 | 1 项残留（MAC-HANDOFF §1 inventory 仍写旧坐标/旧测试编号） | 修复（`e6b7489`，已 push） |
+| round 5 | 48e4620..e6b7489 | **No findings.**（reviewer 逐行核对 inventory/MS-2/MS-3 与代码/测试一致，无新问题） | — |
+
+**评审结论（非递延范围）**：持久 reviewer `b75d6157-6d3b-4daa-90ac-edb389caa2cb` 对最终 HEAD `e6b7489` 报告 **No findings.**；round 1 的 BLOCKER/MAJOR/MINOR/NIT 与 round 2–4 的后续发现全部处置完毕，证据（JVM 10/10、设备 4/4、APK sha、OSV、app 构建）在修复后复跑并复核通过。
+
+**仍开放（关闭门禁差项）**：
+1. **D6–D9**（review M1/M4/M6/M7）——owner 三轮问询超时未答，记录于 requirements §2；实现按裁定收敛。
+2. **真机走查**：MAN-019（5 步，含取消的 wrap 明文清零）、MAN-020（两阶段）、MAN-018（TalkBack 顺带）——需 owner 在场；`-e t3_1_manual 1` 门控已就位。
+3. **Task 7 收尾**：validation 定稿 → AGENTS Part A 关闭行 → B.3 merge/push/分支清理（待 1、2 完成后执行）。
+
 ## Task 7 — 收尾
 
 Status：`[ ]`
