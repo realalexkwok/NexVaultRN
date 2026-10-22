@@ -228,7 +228,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-2** | AGENTS 手工 cell 中 MAN-011 重复且「1 条」自相矛盾 | 重写为单行状态：MAN-011/014/015/016/017 通过 + MAN-009 未完成 | AGENTS Part A 手工验证 |
 | **NIT-3** | 「仍prescribe」拼写、Task 2/3 陈旧 | 改为「仍沿用」；Task 2/3 已同步（见 MINOR-1） | validation |
 
-复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry 1,973,195 B）、R1/R5/R7 exit 1。修复提交：`<pending5>`。
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry 1,973,195 B）、R1/R5/R7 exit 1。修复提交：**`56b7f48`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
