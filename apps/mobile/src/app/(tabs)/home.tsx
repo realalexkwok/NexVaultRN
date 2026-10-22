@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import {
   formatNativeBalance,
   getChainConfig,
@@ -43,13 +43,6 @@ export default function HomeScreen() {
   const [input, setInput] = useState(watchedAddress ?? '');
   const [inputError, setInputError] = useState<string | undefined>();
   const chain = getChainConfig(selectedChainId);
-
-  useEffect(() => {
-    // Single explicit announcement on iOS and Android: the error Text no longer declares an
-    // accessibilityLiveRegion, so there is no second (or zero) announcement path; on web
-    // announceForAccessibility is a no-op (review-fix loop 4 / review round 7 MINOR-1).
-    if (inputError) AccessibilityInfo.announceForAccessibility(inputError);
-  }, [inputError]);
 
   const balanceQuery = useQuery({
     // Public data only (address + numeric chainId); safe to poll (R5). Retry/polling are scoped

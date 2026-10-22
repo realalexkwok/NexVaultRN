@@ -71,6 +71,7 @@
 | AC-7 | balance walk：Web + Android 两锚点均返回余额与区块号 | MAN-017 | 自动侧：RPC curl 转录 + `expo serve` 路由 200（Web）、设备 UI dump/截图（Android）；手工侧：**MAN-017 通过（2026-10-21，真实 Chrome/155 via CDP）**，证据见 validation §Task 7 与 `evidence/web-walk-*` |
 | AC-8 | R1/R5 干净；无地址时显示 "Not configured"（无假数据） | R1/R5 门禁 | grep 退出码 + 走查证据 |
 | AC-9 | `pnpm --filter mobile exec tsc --noEmit` 与 `pnpm -r --if-present run typecheck` 双形态 exit 0；`pnpm --filter mobile exec jest` exit 0（**2 suites / 13 tests**）；`expo export --platform web --output-dir` exit 0 | B.6-1 / B.6-3 / R7 | 命令 + 退出码 |
+| AC-10 | 错误提示无障碍播报：`error` 出现时 `NexVaultTextField` 显式 announce（iOS/Android 单通道；无 live region 重复路径） | TC-UI-011 | 组件实现 + MAN-018（dev-only 待走查；iOS 侧 H10） |
 
 ## 记录偏差
 

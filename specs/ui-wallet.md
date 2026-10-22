@@ -230,6 +230,7 @@ export const PERF_BUDGET = {
 | AC-7 | 设计令牌：tokens 表与 §2.3 一致；地址组件等宽+首尾高亮；L0–L5 风险色使用低饱和语义色 | TC-UI-007 | jest（token 快照）+ 走查 |
 | AC-8 | 剪贴板：全 App 助记词/私钥路径无 Clipboard set 调用；地址复制可用 | TC-UI-008 | CI grep + 走查 |
 | AC-9 | Web 响应式：sm/md/lg 断点布局正确；Web 端不含写路径组件 chunk | TC-UI-009 | Web 走查 + CI grep |
+| AC-10 | 错误提示无障碍播报：输入错误出现时 TalkBack/VoiceOver **恰好播报一次**（不重复、不静默） | TC-UI-011 | 组件实现（`NexVaultTextField` 内 `announceForAccessibility`）+ 真机 MAN-018（待走查） |
 
 ## 5. 测试用例
 
@@ -313,6 +314,14 @@ Given 查询成功
 Then Total Balance = formatNativeBalance(wei) + symbol；caption = 链名 · Block #n；Tokens 单行 ETH
 Given 查询失败且无缓存
 Then 显示 "RPC unavailable" + Retry；若已有缓存数据则保留内容（不闪回空白）
+```
+
+### TC-UI-011 错误播报（无障碍，T2.2）
+```gherkin
+Given 设备开启 TalkBack（Android）或 VoiceOver（iOS）
+When 在 Home 输入非法地址（如 `0x123`）并 blur/submit
+Then `Invalid address` 恰好播报一次（无重复、无静默）
+And 合法地址提交后余额变化不重复播报
 ```
 
 ## 6. 依赖与红线

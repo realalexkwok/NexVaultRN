@@ -94,8 +94,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——round 4 的更正见 review round 7 MINOR-1） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 6 = 1,973,171 B；round 7 = **1,973,162 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——归属更正见 review round 6 MINOR-2 与 round 8 MINOR-4；早前误记为「round 4 的更正见 round 7 MINOR-1」，已撤回） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 6 = 1,973,171 B；round 7 = **1,973,162 B**）。**filename hash 与体积都是构建快照**：同一代码 clean rebuild 的 minified 体积会因 Metro 模块序/缓存而变（round 7 = 1,973,162 B；clean rebuild = 1,973,512 B；round 8 = **1,973,161 B / `entry-9ea97df9…js`**）——每轮记录 **hash + bytes**，不作跨构建体积相等断言（review round 8 MINOR-4；NIT-5 的「体积稳定」表述撤回） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -114,7 +114,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
 | 2b | `pnpm --filter mobile exec jest` | **2 suites / 13 tests pass**（round 4 = adapter 10；round 5 = 13（+store 3）；round 6 不变） |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 7 = 1,973,162 B；filename hash 为构建快照，NIT-5） |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；**该轮（review round 1 修复后）entry = 1,972,693 B**（历史值；后续轮以 Task 5 当轮 hash+bytes 为准） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
 | 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
@@ -253,6 +253,17 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-4** | 注释「Pressable event handlers keep this effect inert on web」不实 | 改写为「显式播报在 iOS/Android 生效；web 为 no-op」 | `home.tsx` |
 
 复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry **1,973,162 B**）、R1/R5/R7 exit 1。修复提交：**`94c661f`**（main）。
+## Review round 8（2026-10-22，review-fix 循环轮 5 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | MAN-018 无 spec TC（关联写 review finding + 无关 AC-8） | 新增 `specs/ui-wallet.md` **AC-10 + TC-UI-011**（错误播报恰好一次）；MAN-018 关联改为 TC-UI-011；T2.2 requirements 增 **AC-10**（组件实现 + MAN-018/H10） | `specs/ui-wallet.md` §4/§5；`pending-manual-test-cases.md`；requirements |
+| **MINOR-2** | MAN-018 未入 Handoff，且 iPhone 依赖未披露 | 新增 **H10**（Android Pixel 6a 可立即执行；iOS 待合格 iPhone，MAN-013 记录）；MAN-018 状态注明 | validation Handoff；registry |
+| **MINOR-3** | announce 只在 Home，共享组件契约回归 | 播报移入 **`NexVaultTextField`**（`error` 变化时）；Home 删除 effect 与 AccessibilityInfo import | `NexVaultTextField.tsx`；`home.tsx` |
+| **MINOR-4** | 证据不一致：交叉引用错、§5.1 历史表被回填 round-7 数值、体积稳定断言不可复现 | 交叉引用改为 round 6 MINOR-2/round 8；§5.1 恢复该轮 1,972,693 B；撤回「体积相同」断言，改记 **hash+bytes**（clean rebuild 1,973,512 B） | validation §Task 5 / §5.1 |
+| **NIT-5** | MAN-018 插在 MAN-017 前、表格被空行切断 | MAN-018 移到 MAN-017 之后；清除该段空行，表格连续 | registry |
+
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；entry **1,973,161 B** / `entry-9ea97df9a1a269a8c5239ee55d900b4b.js`）、R1/R5/R7 exit 1。修复提交：`<pending8>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -330,3 +341,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
+| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录），Android 可立即执行 | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置） | TC-UI-011 / MAN-018 / AC-10 |

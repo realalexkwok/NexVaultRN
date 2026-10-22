@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Text, TextInput, View } from 'react-native';
 
 import { tokens } from '@/theme/tokens';
 
@@ -49,6 +49,13 @@ export function NexVaultTextField({
   onSubmitEditing?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    // Announce from the component itself: native accessibilityRole="alert" is not spoken on
+    // Android/iOS, so a caller-local effect would silently drop for future consumers
+    // (review round 8 MINOR-3). RNW's announceForAccessibility is a no-op (web-safe).
+    if (error) AccessibilityInfo.announceForAccessibility(error);
+  }, [error]);
   const floated = focused || value.length > 0;
   const borderClass = error
     ? 'border-error'
