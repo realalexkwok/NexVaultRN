@@ -277,7 +277,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-7** | AC-10 「dev-only」混淆构建类型与测试范围 | 改为「MAN-018 待真机（Android 可执行；iOS H10）」 | requirements |
 | **NIT-8** | H10 行无行尾换行 | 已补 | validation |
 
-复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；canonical 见 §Task 5）、R1/R5/R7 exit 1。修复提交：`<pending9>`。
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；canonical 见 §Task 5）、R1/R5/R7 exit 1。修复提交：**`6a4b6e7`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
