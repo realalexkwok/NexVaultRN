@@ -13,9 +13,9 @@ modules/security-ios/
 │   ├── SecurityIosModule.swift      # Expo 模块壳（T3.1 无 AsyncFunction；wrap/unwrap 为 native-internal，T3.2 接 JS 面）
 │   ├── SecurityErrors.swift         # E_SEC_IOS_* 固定模板 + SecRandomCopyBytes fail-closed
 │   ├── AesGcmEnvelope.swift         # CryptoKit AES.GCM；version(1B)=1 ‖ IV(12B) ‖ ct ‖ tag(16B)；AAD 绑定
-│   ├── KeychainKek.swift            # 读 Keychain KEK（service = bundle id, account = "nexvault.kek.v1"，值为 32B 的 hex）
+│   ├── KeychainKek.swift            # 读 Keychain KEK（service = "app:auth"，kSecAttrAccount/Generic = Data("nexvault.kek.v1")，值为 32B 的 hex；坐标可注入供测试）
 │   ├── WrapKeyService.swift         # native-internal wrap/unwrap（读 KEK 时触发 Face ID）
-│   └── Tests/SecurityIosTests.swift # TC-SI-009/010 骨架（blob 布局/roundtrip/AAD/篡改/截断）
+│   └── Tests/SecurityIosTests.swift # TC-SI-010 五例 + 空明文 parity + TC-SI-011 坐标契约（TC-SI-009 属 D8）
 └── src/index.ts                     # 最小 JS 面：ensureKek/deleteKek（expo-secure-store，spec §2.2 OPTS）
 ```
 
