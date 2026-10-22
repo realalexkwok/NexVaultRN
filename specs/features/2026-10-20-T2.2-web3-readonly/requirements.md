@@ -51,7 +51,7 @@
 - **FR-4 Zustand store**：`src/store/observer.ts`——`selectedChainId`（默认 1）、`watchedAddresses: string[]`、`setSelectedChain`、`setWatchedAddress`；**无持久化**、无密钥语义（R1）。
 - **FR-5 Query 挂载**：根 `_layout.tsx` 模块级 `QueryClient`（**仅** `staleTime 30s` 与 `structuralSharing: false`——后者为防御性：跳过默认 `replaceEqualDeep` 深比较；v5 缓存不 JSON 序列化、primitive 用 `===` 比较，bigint 本安全，review N1/NIT-1 更正；**`retry 2` / `refetchInterval 30s` 挂在 home 的 balance `useQuery` 上**，review round 4 MINOR-4）；`QueryClientProvider` 包住 SafeAreaProvider 与既有 keyed Stack；首帧不 await 任何 RPC（ui-wallet §2.5 `homeSkeletonFirst`）。
 - **FR-6 Home 接入**：链 pill 可点按切换（Q3/D-j）；pill 下 watch 地址输入（Q1/D-i）；`useQuery(['native-balance', chainId, address])`，queryFn 并行取余额 + 区块号；四态：无地址 "Not configured"（R5）→ loading 骨架（shimmer tokens）→ 缓存内容在失败刷新时保留 → error "RPC unavailable" + Retry；Total Balance = `formatNativeBalance` + symbol，caption = `链名 · Block #n`；Tokens = 单行 ETH；非法地址 → inline error 且不发查询。
-- **FR-7 规格修订**：`specs/web3-adapter.md`（§2.2 交付注记、§2.5 只读子集口径 + T4.x 分界、附录 AC-9..AC-11 / TC-W3A-009..013）；`specs/ui-wallet.md`（§2.1 home 行注记 + §5 TC-UI-010）；`specs/pending-manual-test-cases.md` MAN-017；`AGENTS.md` B.5 R7 命令文本（H4）+ Part A 关闭行（Task 8）。
+- **FR-7 规格修订**：`specs/web3-adapter.md`（§2.2 交付注记、§2.5 只读子集口径 + T4.x 分界、附录 AC-9..AC-11 / TC-W3A-009..013）；`specs/ui-wallet.md`（§2.1 home 行注记 + §5 TC-UI-010；**a11y：§4 AC-10 + §5 TC-UI-011**，MAN-018 / H10）；`specs/pending-manual-test-cases.md` MAN-017；`AGENTS.md` B.5 R7 命令文本（H4）+ Part A 关闭行（Task 8）。
 - **FR-8 证据纪律（B.4）**：每 Task 命令原文 + 退出码/观察结果；balance walk 表格（address → balance → block → platform）；curl 转录 + 设备 UI dump/截图持久化在 `evidence/`（绝对路径）；`tsc` 双形态 + export + R1/R5/R7 grep 全量记录。
 
 ## Out of scope（本条目不做）
@@ -71,7 +71,7 @@
 | AC-7 | balance walk：Web + Android 两锚点均返回余额与区块号 | MAN-017 | 自动侧：RPC curl 转录 + `expo serve` 路由 200（Web）、设备 UI dump/截图（Android）；手工侧：**MAN-017 通过（2026-10-21，真实 Chrome/155 via CDP）**，证据见 validation §Task 7 与 `evidence/web-walk-*` |
 | AC-8 | R1/R5 干净；无地址时显示 "Not configured"（无假数据） | R1/R5 门禁 | grep 退出码 + 走查证据 |
 | AC-9 | `pnpm --filter mobile exec tsc --noEmit` 与 `pnpm -r --if-present run typecheck` 双形态 exit 0；`pnpm --filter mobile exec jest` exit 0（**2 suites / 13 tests**）；`expo export --platform web --output-dir` exit 0 | B.6-1 / B.6-3 / R7 | 命令 + 退出码 |
-| AC-10 | 错误提示无障碍播报：`error` 出现时 `NexVaultTextField` 显式 announce（iOS/Android 单通道；无 live region 重复路径） | TC-UI-011 | 组件实现 + MAN-018（dev-only 待走查；iOS 侧 H10） |
+| AC-10 | 错误提示无障碍播报：输入错误出现时 TalkBack/VoiceOver **恰好播报一次**（不重复、不静默；实现为 `NexVaultTextField` 内单通道 announce） | TC-UI-011 | 组件实现（`NexVaultTextField`）；MAN-018 待真机（Android 可执行；iOS 侧 H10）。**本 AC 不纳入 T2.2 关闭门禁**（a11y 增强项，H10 跟踪；关闭以 AC-1..9 为准） |
 
 ## 记录偏差
 

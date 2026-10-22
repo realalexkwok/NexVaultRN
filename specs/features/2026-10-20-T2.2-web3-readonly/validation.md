@@ -94,8 +94,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——归属更正见 review round 6 MINOR-2 与 round 8 MINOR-4；早前误记为「round 4 的更正见 round 7 MINOR-1」，已撤回） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 6 = 1,973,171 B；round 7 = **1,973,162 B**）。**filename hash 与体积都是构建快照**：同一代码 clean rebuild 的 minified 体积会因 Metro 模块序/缓存而变（round 7 = 1,973,162 B；clean rebuild = 1,973,512 B；round 8 = **1,973,161 B / `entry-9ea97df9…js`**）——每轮记录 **hash + bytes**，不作跨构建体积相等断言（review round 8 MINOR-4；NIT-5 的「体积稳定」表述撤回） | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——归属更正见 **round 7 MINOR-2**（94c661f）、计数更新见 **round 6 MINOR-5**、门禁再现性见 round 8 MINOR-4） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**。**canonical（clean rebuild，HEAD `22243b9`）**：`npx expo export --platform web --output-dir /tmp/t22-web-canon --clear` → `entry-8182b0df1158772a422795cd43b1cd16.js` = **1,973,511 B**（review round 6 MINOR-5 复现复核）。此前各轮的 1,973,16x B 为**增量构建快照**（Metro 缓存/模块序影响），不再作为门禁数值；每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -144,7 +144,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
-- 构件（review 修复后重构建，2026-10-20 19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。代码自该构建后未变（复核仅改文档/证据）。
+- 构件（review 修复后重构建，2026-10-20 19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。**构件版本注记（review round 6 MINOR-2）**：该 APK 的源码修订 = **`3943f28`**（review round 1 修复后、round 4 之前）；此后 `a239aeb`/`56b7f48`/`5eefaf0`/`94c661f`/`a8db6eb` 均改过 app 代码（含 a11y），故该 APK **不能**用于 AC-10/MAN-018 验证，MAN-017 余额走查亦为 round-4 前代码的既有证据；如需当前代码的真机证据须重新构建。
 - 设备：Pixel 6a / Android 17（`CP2A.260705.006`，`bluejay`，user/release-keys）；**2026-10-21 20:00 +08 键盘收起复走**（`adb` 串口 `10.42.0.139:42779`；10-20 首轮为 `:35343`/`:39871`）；输入方法 = Gboard **Alphabet** 子类型（中文拼音子类型会把 adb 注入的十六进制串组合成汉字，见 §6.5）。
 
 | # | 操作 | 观察（UI dump，2026-10-21 20:00–20:02 +08，键盘收起） | 证据 |
@@ -264,6 +264,20 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-5** | MAN-018 插在 MAN-017 前、表格被空行切断 | MAN-018 移到 MAN-017 之后；清除该段空行，表格连续 | registry |
 
 复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；entry **1,973,161 B** / `entry-9ea97df9a1a269a8c5239ee55d900b4b.js`）、R1/R5/R7 exit 1。修复提交：**`a8db6eb`**（main）。
+## Review round 9（2026-10-22，review-fix 循环轮 6 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | AC-10 唯一测试 MAN-018 仍待走查，零发现轮会带着未验证 AC 关闭 | 明确 **AC-10 不纳入 T2.2 关闭门禁**（a11y 增强项，H10 跟踪；关闭以 AC-1..9 为准）；H10 注明需含 `a8db6eb` 的当前代码 APK（旧 `3943f28` APK 不含 announce） | requirements AC-10；validation H10 |
+| **MINOR-2** | Task 6.4「代码自构建后未变」不实 | 记录 APK 源码修订 **`3943f28`**、证据范围（MAN-017 走查为 round 4 前代码）；a11y 验证需重建 | validation §Task 6.4 |
+| **MINOR-3** | 交叉引用错（round 6 MINOR-2 实为 lockfile delta） | 改为 **round 7 MINOR-2**（归属）+ **round 6 MINOR-5**（计数）+ round 8 MINOR-4 | §Task 5 |
+| **MINOR-4** | FR-7/AC-10 未含 a11y 交付 | FR-7 增 ui-wallet **AC-10/TC-UI-011/MAN-018**；AC-10 改为 outcome 口径（恰好一次） | requirements |
+| **MINOR-5** | round-8 export 数值不可复现 | 以 **canonical clean rebuild**（HEAD `22243b9`，`--clear`）为准：`entry-8182b0df…js` = **1,973,511 B**；旧 1,973,16x 标注为增量构建快照 | §Task 5 |
+| **NIT-6** | 「alert 不被朗读」表述不精确 | 改为「不自动播报（Android roleDescription / iOS UIAccessibilityTraitNone）」 | `NexVaultTextField.tsx` |
+| **NIT-7** | AC-10 「dev-only」混淆构建类型与测试范围 | 改为「MAN-018 待真机（Android 可执行；iOS H10）」 | requirements |
+| **NIT-8** | H10 行无行尾换行 | 已补 | validation |
+
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；canonical 见 §Task 5）、R1/R5/R7 exit 1。修复提交：`<pending9>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -341,4 +355,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
-| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录），Android 可立即执行 | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置） | TC-UI-011 / MAN-018 / AC-10 |
+| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录），Android 可立即执行（需构建含 `a8db6eb` 的当前代码 APK；旧的 `3943f28` APK 不含 announce） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |

@@ -51,9 +51,10 @@ export function NexVaultTextField({
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    // Announce from the component itself: native accessibilityRole="alert" is not spoken on
-    // Android/iOS, so a caller-local effect would silently drop for future consumers
-    // (review round 8 MINOR-3). RNW's announceForAccessibility is a no-op (web-safe).
+    // Announce from the component itself: accessibilityRole="alert" does not *auto-announce*
+    // on native (Android exposes roleDescription; iOS maps it to UIAccessibilityTraitNone), so a
+    // caller-local effect would silently drop for future consumers (review round 8 MINOR-3 /
+    // round 9 NIT-6). RNW's announceForAccessibility is a no-op (web-safe).
     if (error) AccessibilityInfo.announceForAccessibility(error);
   }, [error]);
   const floated = focused || value.length > 0;
