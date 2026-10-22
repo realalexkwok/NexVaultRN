@@ -284,7 +284,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 - **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = 独立评审 review-fix 循环的零发现轮**（2026-10-21 原文写「review round 3 通过」，已随 review-fix 循环启动而过时——2026-10-22 更正）；通过后恢复「已关闭」board 行。
 - **保留不变**：合并 `82addd0`；round 1–2 修复 `3943f28` / `f198711`；MAN-017 真实通过 `c90bf08`（真实 Chrome 155/macOS via CDP 五态）与键盘收起复走 `0099af9`（Tokens 行 PNG+dump 均可见）。
 - **治理教训（本条记录）**：关闭必须晚于评审验收；手工用例的「通过」只能来自真机/真实浏览器走查（B.4-2），不得由 agent 自证替代。
-- **分支恢复（2026-10-21，owner 裁定 Option A；同日推送）**：`feature/T2.2-web3-readonly` 恢复到 **`d3f773f`**（合并前尖端），并已**推送 origin**（`origin/feature/T2.2-web3-readonly` = `d3f773f`），另在 `d3f773f` 打注释 tag **`T2.2-pre-review`** 标名 pre-review snapshot；评审修复（`3943f28`/`f198711`）与全部记录在 `main`，`git diff feature/T2.2-web3-readonly..main` 即评审轮改动。**快照注记（review round 3 NIT-4）**：该分支内嵌的 `validation.md`/`AGENTS.md` 是评审前版本（仍写 MAN-017 通过 / T2.2 已关闭），以 `main` 的记录为准。
+- **分支现状（2026-10-22 owner 指示更新）**：owner 裁定「**修复应在该分支**、**代码评审不得改分支**」——`feature/T2.2-web3-readonly` 已 **fast-forward 到 `main` 尖端**并推送 origin（`git diff feature/T2.2-web3-readonly..main` 为空）；原 pre-review 快照 `d3f773f` 保留在注释 tag **`T2.2-pre-review`**。历史：2026-10-21 曾按 Option A 冻结在 `d3f773f`（当时记录的该分支内嵌 validation/AGENTS 为评审前版本，以 main 为准）。**评审只读纪律**：reviewer 仅读取该分支与提交范围，不得 commit / push / switch / 改写任何 branch ref；发现以文字回报，由主 agent 修复。
 
 ## Closure（2026-10-20）
 
