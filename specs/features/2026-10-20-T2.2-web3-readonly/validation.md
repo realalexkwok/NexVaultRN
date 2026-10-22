@@ -337,7 +337,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **MINOR-6** | Android 证据仍是 `3943f28` 旧构建 | **当前代码重建 release APK**（46,778,748 B）并复走五态 + invalid 态，记录于 §6.4b | §6.4b；`evidence/shell-home-*.png` / `dump-home-*.xml` |
 | **NIT-7** | web 测试绕过 `index.web` 映射 | 新增静态 `import * as webBarrel from 'web3-adapter/src/index.web'` 表面断言 | web test |
 
-复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-52f35f21…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、Android 五态+invalid 复走通过、R1/R5/R7 exit 1。修复提交：`<pending11>`。
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-52f35f21…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、Android 五态+invalid 复走通过、R1/R5/R7 exit 1。修复提交：**`87e6d8e`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
