@@ -41,7 +41,10 @@ cd ios && pod install
 
 ```bash
 cd apps/mobile/ios
-xcodebuild -workspace NexVault.xcworkspace -scheme NexVault   -destination 'generic/platform=iOS' -configuration Debug build
+xcodebuild -workspace NexVault.xcworkspace -scheme NexVault -destination 'generic/platform=iOS' -configuration Debug -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO build
+```
+
+> `-skipPackagePluginValidation -skipMacroValidation` 为强制项（T1.5 §6 追加：swift-secp256k1 的 SPM 插件校验会让无交互 xcodebuild 卡住）；`CODE_SIGNING_ALLOWED=NO` 用于无签名证书的 CLI 构建。
 ```
 
 观察：`BUILD SUCCEEDED`。若失败，优先核对：
@@ -53,22 +56,27 @@ xcodebuild -workspace NexVault.xcworkspace -scheme NexVault   -destination 'gene
 
 ```bash
 cd apps/mobile/ios
-xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests   -destination 'platform=iOS Simulator,name=iPhone 17'
+xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO
 ```
 
-预期：5 个用例全绿（TC-SI-010 布局 + roundtrip + 错误 AAD + 篡改 + 截断）。记录 simulator/OS 版本与 `xcodebuild` 输出。
+预期：6 个用例全绿（TC-SI-010：布局 + roundtrip + 错误 AAD + 篡改 + 截断；TC-SI-011：Keychain 坐标可执行断言）。记录 simulator/OS 版本与 `xcodebuild` 输出。
 
-### MS-3 Keychain 坐标核对（关键假定）
+### MS-3 Keychain 坐标核对（可执行断言，TC-SI-011）
 
-`KeychainKek.service` 假定 expo-secure-store 的默认 Keychain service = `Bundle.main.bundleIdentifier`，account = 存储 key（`nexvault.kek.v1`），值 = 32 字节 KEK 的十六进制字符串。
+坐标不是假定值，而是从**已安装依赖**读出（`apps/mobile/node_modules/expo-secure-store/ios/SecureStoreModule.swift`，`query(with:options:requireAuthentication:)`）：
 
-在 Mac/模拟器上执行一次 `ensureKek()`（JS 面，需 dev build）后核对：
+- `service = (keychainService ?? "app") + ":auth"`（本仓 JS 面不传 keychainService → **`app:auth`**）
+- `kSecAttrAccount = kSecAttrGeneric = Data(key.utf8)`（→ `Data("nexvault.kek.v1".utf8)`）
+- ACL = `SecAccessControlCreateWithFlags(WHEN_UNLOCKED_THIS_DEVICE_ONLY, .biometryCurrentSet)`
+
+可执行断言已写入 `Tests/SecurityIosTests.swift`（TC-SI-011）：
+
 ```bash
-# 模拟器 Keychain 路径示例（或以 Security 工具/代码断点核对）
-# 目标：kSecClassGenericPassword + kSecAttrService == bundle id + kSecAttrAccount == "nexvault.kek.v1"
+cd apps/mobile/ios
+xcodebuild test -workspace NexVault.xcworkspace -scheme SecurityIos-Unit-Tests -destination 'platform=iOS Simulator,id=8A63EA78-9400-4324-A81F-58C2A499FAD9' -skipPackagePluginValidation -skipMacroValidation CODE_SIGNING_ALLOWED=NO -only-testing:SecurityIos-Unit-Tests/SecurityIosTests/testKekReadsEntryWithExpoSecureStoreCoordinates
 ```
-- 若 expo-secure-store 使用了 `keychainService` 选项或不同 account 命名，**改 `KeychainKek` 的常量**使其与条目一致（这是唯一允许的适配点；不要改 blob 格式）。
-- 同时核对条目 ACL：`requireAuthentication=true` + `WHEN_UNLOCKED_THIS_DEVICE_ONLY`（对应 Keychain 的 `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` + 生物识别 ACL）。
+
+该用例按上述坐标写入一个**无 ACL** 的测试条目，再经 `KeychainKek.loadKek()` 读回并逐字节比对；若 Mac 会话发现 `app.json` 配置了 `keychainService` 或依赖升级改了服务名，改 `KeychainKek.service`/`account` 并记录证据（唯一允许的适配点；blob 格式不变）。
 
 ### MS-4 真机走查（[P] 生效条件）
 

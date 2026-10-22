@@ -63,4 +63,34 @@ final class SecurityIosTests: XCTestCase {
     XCTAssertThrowsError(try AesGcmEnvelope.parse(blob.prefix(1 + 12 + 15)))
     XCTAssertThrowsError(try AesGcmEnvelope.parse(Data()))
   }
+
+  // TC-SI-011 (MS-3): the KEK query matches expo-secure-store 57.0.4's item coordinates.
+  // Written in the same shape SecureStoreModule.swift uses for requireAuthentication items, minus
+  // the biometry ACL so a simulator without enrolled biometrics can read it back.
+  func testKekReadsEntryWithExpoSecureStoreCoordinates() throws {
+    let account = Data(KeychainKek.account.utf8)
+    let kekHex = (0..<32).map { String(format: "%02x", $0) }.joined()
+    let item: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: KeychainKek.service,
+      kSecAttrGeneric as String: account,
+      kSecAttrAccount as String: account,
+      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecValueData as String: Data(kekHex.utf8)
+    ]
+    let deleteQuery: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: KeychainKek.service,
+      kSecAttrGeneric as String: account,
+      kSecAttrAccount as String: account
+    ]
+    SecItemDelete(deleteQuery as CFDictionary)
+    XCTAssertEqual(SecItemAdd(item as CFDictionary, nil), errSecSuccess)
+    defer { SecItemDelete(deleteQuery as CFDictionary) }
+
+    let kek = try KeychainKek.loadKek()
+    let bytes = kek.withUnsafeBytes { Data($0) }
+    XCTAssertEqual(bytes, Data((0..<32).map { UInt8($0) }))
+  }
 }
+

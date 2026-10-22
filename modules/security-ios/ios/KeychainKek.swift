@@ -1,16 +1,20 @@
 import CryptoKit
 import Foundation
-import LocalAuthentication
 import Security
 
 /**
- * Reads the KEK that the T3.1 JS face (src/index.ts) creates through expo-secure-store with
- * requireAuthentication + WHEN_UNLOCKED_THIS_DEVICE_ONLY.
+ * Reads the KEK that the T3.1 JS face (src/index.ts) creates through expo-secure-store 57.0.4
+ * with requireAuthentication + WHEN_UNLOCKED_THIS_DEVICE_ONLY.
  *
- * Keychain coordinates mirror expo-secure-store's defaults: generic password, service = the app
- * bundle identifier, account = the key name. The stored value is the hex encoding of the 32-byte
- * KEK (SecureStore stores strings). Verification on the Mac/device is MS-3 of MAC-HANDOFF.md; if
- * expo-secure-store's service differs (keychainService option), align the constants there.
+ * Coordinates are taken from the installed dependency, not from memory:
+ * SecureStoreModule.swift `query(with:options:requireAuthentication:)` stores
+ * requireAuthentication items under service = (keychainService ?? "app") + ":auth" and
+ * kSecAttrAccount / kSecAttrGeneric = Data(key.utf8). The T3.1 JS face passes no
+ * keychainService, so the item lives under "app:auth" / Data("nexvault.kek.v1".utf8).
+ *
+ * The item carries a .biometryCurrentSet ACL over WHEN_UNLOCKED_THIS_DEVICE_ONLY, so this read
+ * triggers Face ID / Touch ID. TC-SI-011 (SecurityIosTests) asserts the coordinate match with a
+ * test item written in the same shape; MAC-HANDOFF MS-3 runs it on the Mac.
  *
  * Zeroization caveat: Swift Data/SymmetricKey are copy-on-write values; the intermediate hex and
  * byte arrays are wiped best-effort and the limitation is recorded [C] (AGENTS.md R6).
@@ -19,23 +23,22 @@ enum KeychainKek {
   static let account = "nexvault.kek.v1"
   static let kekSize = 32
 
-  static var service: String {
-    Bundle.main.bundleIdentifier ?? "io.github.realalexkwok.nexvault"
-  }
+  /// (keychainService ?? "app") + ":auth" — expo-secure-store 57.0.4, requireAuthentication=true.
+  static let service = "app:auth"
 
-  /// Loads and decodes the KEK; a missing/invalidated item fails closed with E_SEC_IOS_KEK_MISSING.
   static func loadKek() throws -> SymmetricKey {
+    let encodedKey = Data(account.utf8)
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrAccount as String: account,
+      kSecAttrGeneric as String: encodedKey,
+      kSecAttrAccount as String: encodedKey,
       kSecReturnData as String: true,
       kSecMatchLimit as String: kSecMatchLimitOne,
+      // Deprecated since iOS 14 but still honoured; LAContext.localizedReason is read-only, so the
+      // operation prompt remains the supported way to label a Keychain ACL read.
       kSecUseOperationPrompt as String: "Unlock the wallet key"
     ]
-    if #available(iOS 13.0, *) {
-      query[kSecUseAuthenticationContext as String] = LAContext()
-    }
 
     var item: CFTypeRef?
     let status = SecItemCopyMatching(query as CFDictionary, &item)

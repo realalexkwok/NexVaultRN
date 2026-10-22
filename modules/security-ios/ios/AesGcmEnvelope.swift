@@ -25,7 +25,7 @@ enum AesGcmEnvelope {
     guard bytes[0] == version else { throw SecurityIosError.blobCorrupt }
     let iv = Data(bytes[1..<(1 + ivSize)])
     let body = Data(bytes[(1 + ivSize)..<bytes.count])
-    guard body.count > tagSize else { throw SecurityIosError.blobCorrupt }
+    guard body.count >= tagSize else { throw SecurityIosError.blobCorrupt }
     let ciphertext = body.prefix(body.count - tagSize)
     let tag = body.suffix(tagSize)
     return Parsed(iv: iv, ciphertext: Data(ciphertext), tag: Data(tag))

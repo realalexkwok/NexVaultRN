@@ -44,6 +44,8 @@ export function attestDevice(serverChallenge: ArrayBuffer): Promise<{ keyId: str
 export function generateAssertion(serverChallenge: ArrayBuffer, payloadHash: ArrayBuffer): Promise<string>;        // 敏感请求逐次
 ```
 
+> **2026-10-22 T3.1 交付偏差（owner D2 批准）**：T3.1 的 JS 面仅 `ensureKek`/`deleteKek`（`src/index.ts`，expo-secure-store 57.0.4）；`wrapKey`/`unwrapKey` 为 native-internal Swift（CryptoKit AES.GCM + Keychain KEK），随 T3.2 的 vault-core 耦合上移。KEK 以 **hex 字符串**存于 expo-secure-store（`requireAuthentication: true` + `WHEN_UNLOCKED_THIS_DEVICE_ONLY`）；条目坐标取自安装依赖 `SecureStoreModule.swift`：service = `(keychainService ?? "app") + ":auth"`、account = `kSecAttrGeneric = Data(key.utf8)`。完整 KEK 走查（TC-SI-009）随 T3.2 JS 面，见 T3.1 Handoff。
+
 ### 2.2 Keychain 条目配置（expo-secure-store 调用面）
 
 ```ts

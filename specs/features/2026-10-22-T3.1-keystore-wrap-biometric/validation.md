@@ -63,7 +63,7 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :secur
 ```
 
 观察：`BUILD SUCCESSFUL`；XML 计数：
-- `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=8 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×4、TC-SA-012 ×1、AAD/篡改负例含于 TC-SA-011）
+- `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=8 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×5：roundtrip / wrongAad / 篡改 / IV 唯一 / 密文不同、TC-SA-012 ×1）
 - `TEST-expo.modules.securityandroid.SecurityErrorCodesTest.xml`：tests=1 failures=0（TC-SA-013 JVM 半）
 
 合计 **9/9**。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
@@ -82,6 +82,8 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 
 观察（2026-10-22 19:47）：`Performing Streamed Install / Success`；`OK (4 tests)`（keyLifecycleIsHardwareBackedAndIdempotent / capabilitiesReportDeviceState / deletedKeyFailsClosedWithTypedError / errorTemplatesCarryNoMaterial）。
 
+**注（review round 1 m2）**：该 4/4 运行发生在外层 wipe/timeout 重构之前；重构后 test APK 已重建（20:25，sha256 见 Task 5），但设备在 20:30 后离线（无线 adb connection refused），**4/4 必须在最终代码上复跑**并归档转录，方可计入。MAN-019/020 同此暂停点。
+
 ### 设备发现（真实缺陷 → 修复，记录）
 
 首跑 3/4 失败：`java.security.NoSuchAlgorithmException: no such algorithm: AES for provider AndroidKeyStore`（`KeyFactory.getInstance(key.algorithm, "AndroidKeyStore")`，WrapKeyManager.describe）。AOSP `AndroidKeyStoreKeyFactorySpi.java` 证实 keystore2 的 KeyInfo 只对私钥开放，AES 密钥的硬件归属无法事后查询。
@@ -91,6 +93,19 @@ adb -s "$SERIAL" shell am instrument -w -e class expo.modules.securityandroid.Wr
 ### MAN-019 / MAN-020 / MAN-018
 
 待 owner 在场走查（本轮暂停点）。走查完成后补本节。
+
+## R6 标注（T3.1；三级标注禁止拔高）
+
+| 机制 | 标注 | 依据 / 生效条件 |
+|---|---|---|
+| Android Keystore AES-256-GCM wrap key（StrongBox→TEE 来源）+ per-use BiometricPrompt（CryptoObject，3 次失败 fail-closed） | **[P]**（生效条件：MAN-019/020 走查通过） | 验收设备 Pixel 6a 自动侧：密钥生成/级别/删除幂等 4/4；提示与 3 错 fail-closed 需 owner 真人指纹（MAN-019/020 待走查）。**未走查前不得对外宣称已验证** |
+| SOFTWARE_DEBUG（模拟器/调试构建）路径 | **[C]** | 仅模拟器/debug 可得；非 debug 构建直接抛 `E_SEC_SOFTWARE_KEYSTORE`，永不静默降级、永不标 [P] |
+| iOS Keychain KEK（.biometryCurrentSet ACL + WHEN_UNLOCKED_THIS_DEVICE_ONLY） | **[P]**（生效条件：MS-4 真机 + MS-2 XCTest 在 Mac 通过） | 本机无 Xcode，当前状态 `[~]`；实现依据 spec §2.2 与 expo-secure-store 57.0.4 源码坐标 |
+| wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]** | JVM 9/9 已证（AAD 篡改/ct/tag 翻转/截断全负例）；设备侧在 MAN-019 第 4 步复验 |
+| 清零：wrap 入参（含认证失败路径）/ AAD 副本 / unwrap 输出（调用方） | **[C]** | JVM 断言成功路径清零；认证失败路径由 MAN-019 第 5 步断言；ART/Hermes GC 副本不可控（如实标注） |
+| iOS Swift `Data`/`SymmetricKey` COW 零化 | **[C]** | 值类型复制不可控；best-effort 清零 |
+| iOS JS 面 KEK 物化（ensureKek 读取 hex 字符串回 JS，不可清零） | **[C]**（+ T3.2 Handoff：改为 native 存在性检查/创建） | spec §2.2 的既定调用面；k1 明文永不过 JS（R1 边界不变） |
+| 提示挂起保护（state saved/销毁预检 + 180s 超时 → E_SEC_BIOMETRIC_CANCELLED） | **[C]** | 防挂死，不构成认证边界 |
 
 ## Task 5 — 门禁
 
@@ -108,12 +123,40 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 | R7 | `grep -rE 'signDigest|importMnemonic|vault-core' dist-web/_expo/static/js/` → **0 行**；`grep -rE 'E_SEC_|nexvault\.wrap|SecurityAndroid|security-android'` → **0 行** | 干净（新模块未进 web bundle） |
 | expo-doctor | `npx expo-doctor` | 20/21；唯一失败 = "Check that packages match versions required by installed Expo SDK"：`expo expected ~57.0.31 found 57.0.30`、`expo-router expected ~57.0.29 found 57.0.28`——**既有 patch 建议**（T2.2 时 21/21，SDK 元数据此后更新），升级属 R4 修宪，本 feature 不做 |
 | androidx 传递版本 | `:security-android:dependencies`（debugCompileClasspath） | biometric 1.1.0 → `androidx.fragment:fragment:1.2.5` / `androidx.core:core:1.3.2`（模块内解析）；`:app:debugRuntimeClasspath` 实际解析 `androidx.core:core 1.18.0`（**无降级**） |
+| OSV 复核 | `curl -X POST https://api.osv.dev/v1/query -d '{"package":{"name":"androidx.biometric:biometric","ecosystem":"Maven"},"version":"1.1.0"}'` | 响应 `{}`（2026-10-22；0 条已知漏洞） |
+| app 级构建（m8） | `cd apps/mobile/android && ./gradlew :app:assembleDebug` | **BUILD SUCCESSFUL in 4m 38s**（416 tasks）；构件 `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` **237,537,841 B**，sha256 `982cf4ec7cdd6c8067668f12cf5f4d8c6a7f58648aa28345b7e00b405c1589d2`（20:38）——验证新模块 autolinking、manifest 合并与 expo-secure-store config plugin 在 app 级生效 |
+| JVM 证据归档（m2） | 修复后重跑 `:security-android:testDebugUnitTest --rerun` | BUILD SUCCESSFUL（20:46）；XML 归档至 `evidence/jvm-TEST-expo.modules.securityandroid.{AesGcmEnvelopeTest,SecurityErrorCodesTest}.xml`（修订号随提交后重命名）；test APK sha256 `5b7da988343ddaf6b62508afa6c26636bfc6663775d241e6744540a44ad09d21` |
 
 `dist-web` 为构建产物（未入 git；已删除，保留命令与输出为证据）。
 
 ## Task 6 — review-fix 循环
 
 Status：`[ ]`
+
+## Review round 1（独立评审 2026-10-22；range 56e950f..607bfe7）
+
+reviewer 子代理 `b75d6157-6d3b-4daa-90ac-edb389caa2cb`（持久 reviewer）：1 BLOCKER + 7 MAJOR + 8 MINOR + 2 NIT。
+
+| # | 发现 | 处置 |
+|---|---|---|
+| B1 | KeychainKek 坐标与 expo-secure-store 57.0.4 实际条目不符（service=`app:auth`、account=`Data(key.utf8)`） | **已修**：坐标改为安装依赖实测值 + TC-SI-011 可执行坐标断言（XCTest）+ MAC-HANDOFF MS-3 改为可执行命令 |
+| M1 | 设备凭据成功路径回传 null cryptoObject → 被误报 CANCEL（DECISION scope） | 待 owner 裁定（见 D6） |
+| M2 | wrap 在认证失败路径不擦除入参明文 | **已修**：wrap 外层 try/finally 擦除 + MAN-019 第 5 步回归断言 |
+| M3 | web stub 不抛 E_SEC_UNSUPPORTED_OPERATION（FR-4/R7） | **已修**：新增 `modules/security-android/index.ts` 公共面（typeof 守卫 + coded error，镜像 vault-core） |
+| M4 | 新 TS 面不在任何 tsc 门禁内（DECISION tooling） | 待 owner 裁定（见 D7） |
+| M5 | MAN-020 在无密钥时假通过 | **已修**：拆 phase1（建键+断言存在）/ phase2（先断言键曾存在再断言失效）+ MAN-020 行更新 |
+| M6 | TC-SI-009 无测试代码/无可运行入口（DECISION scope） | 待 owner 裁定（见 D8） |
+| M7 | 安全级别是生成路径来源而非验证，措辞过度（DECISION scope） | 即时修正已落（KDoc/validation 措辞 + T5.x attestation Handoff）；深层选项待 owner 裁定（见 D9） |
+| m1 | 交互用例混入默认 androidTest（会挂起/假失败） | **已修**：`-e t3_1_manual 1` Assume 门控；文档记录按类/方法 am instrument |
+| m2 | 无持久证据（evidence/ 空、JVM XML 早于最终源码） | **待修**：最终提交后重跑并归档修订号证据（Task 5 收尾） |
+| m3 | spec 漂移（§2.1/§2.5/iOS §2.1 与实现不一致） | **已修**：security-android §2.1 偏差注 + §2.5 补登 E_SEC_BLOB_CORRUPT；security-ios §2.1 偏差注 |
+| m4 | androidx.biometric 无 OSV 记录 | **已修**：OSV 查询 0 条（Task 5 行） |
+| m5 | MAC-HANDOFF 缺 `-skipPackagePluginValidation -skipMacroValidation` 等 | **已修**：MS-1/MS-2/MS-3 命令补齐 + pinned simulator |
+| m6 | JS 侧 KEK 物化未标 [C]、缺 R6 表 | **已修**：R6 标注表 + T3.2 Handoff |
+| m7 | 提示在 state saved 时可能永不返回 | **已修**：isFinishing/isDestroyed/isStateSaved 预检 + 180s withTimeout |
+| m8 | 未做 app 级 Android 构建 | **进行中**：`:app:assembleDebug` 后台构建（见 Task 5 更新） |
+| n1 | JVM 计数 2+4+1=7 与 tests=8 矛盾 | **已修**：TC-SA-011 ×5，2+5+1=8 |
+| n2 | iOS 空明文 blob 比 Android 严格 | **已修**：`body.count >= tagSize` |
 
 ## Task 7 — 收尾
 

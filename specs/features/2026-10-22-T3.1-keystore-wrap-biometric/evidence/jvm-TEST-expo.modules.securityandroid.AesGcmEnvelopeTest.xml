@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="expo.modules.securityandroid.AesGcmEnvelopeTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-22T12:46:15.613Z" hostname="superguo-SQM2270" time="0.094">
+  <properties/>
+  <testcase name="sealProducesDifferentCiphertextForTheSamePlaintext" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.061"/>
+  <testcase name="sealWipesItsPlaintextInput" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.011"/>
+  <testcase name="versionMismatchAndTruncatedBlobFailClosed" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.004"/>
+  <testcase name="roundtripReturnsTheOriginalPlaintext" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.001"/>
+  <testcase name="wrongAadFailsClosed" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.003"/>
+  <testcase name="ivIsUniqueAcrossSeals" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.002"/>
+  <testcase name="blobLayoutIsVersionIvCiphertextTag" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.001"/>
+  <testcase name="tamperedCiphertextOrTagFailsClosed" classname="expo.modules.securityandroid.AesGcmEnvelopeTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
