@@ -365,6 +365,14 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-2** | §6.4b 标题仍写「审核轮 2 MINOR-6」，与当前 ff80939 复走不符 | 标题改为「审核轮 2 MINOR-6 / 审核轮 4 复走」 | §6.4b 标题 |
 
 仅文档修订（无 app 代码变更），门禁沿用审核轮 13 复跑结果（tsc 0/0、jest 25、canon4 1,331,901 B、矩阵 0）。修复提交：**`78bf133`**（main）。
+## Review round 15 — 零发现轮与关闭裁定（2026-10-22）
+
+**持久 reviewer（`7f7338dd…`）复审 `e5c0375..43e683f`（HEAD `43e683f`；工作树干净、未改动仓库）后结论：`No findings.`**
+
+- 复审范围含 11 轮修复后的全部代码与记录；评审自跑门禁：form-1 `tsc` 0、form-2 `pnpm -r --if-present run typecheck` 0、jest **3 suites / 25 tests**、canonical `/tmp/t22-web-canon4/entry-828c830c…js` **1,331,901 B**、R7 全符号矩阵 **0**、R1/R5/R7 grep 干净、Android 五态 + invalid 证据（`ff80939` 代码、APK 46,779,132 B）。
+- **关闭门禁 AC-1..9 全部满足**：AC-1/AC-3 命令与退出码（§Task 2/§Task 5 行 2c）；AC-2 只读契约（25 tests + tsc 双形态）；AC-4/AC-6 web 产物矩阵 0（`entry-828c830c…`）；AC-5 格式化与 curl 交叉表；AC-7 两侧 walk；AC-8 R1/R5 + Not configured；AC-9 双形态 tsc / jest / export 全 0。
+- **AC-10（a11y MAN-018）不纳入关闭门禁**，由 H10 跟踪（Android 当前代码 APK 已就绪；iOS 待合格设备）；MAN-017 已通过（2026-10-21 CDP + 2026-10-22 当前代码 Android 复走）。
+- **裁定：T2.2 恢复「已关闭」**（2026-10-22）。关闭依据 = 持久 reviewer 零发现轮；此前 2026-10-20 的关闭曾因评审未完成于 2026-10-21 撤回，本轮为评审验收后的重关。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
