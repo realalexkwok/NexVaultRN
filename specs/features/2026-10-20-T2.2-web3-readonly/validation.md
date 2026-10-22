@@ -309,7 +309,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-9** | store 无地址不变量 | `setWatchedAddress` 归一化后写入、非法忽略；store 测试 +1（共 4） | `observer.ts`；`observer.test.ts` |
 | **NIT-10** | chain pill / Retry 触控目标 < 48dp | 两处加 `hitSlop={tokens.spacing.sm}` | `home.tsx` |
 
-复跑：tsc 双形态 0、jest **3 suites / 22 tests**、export 0（**15 路由**；`entry-456faa1f…js` **1,331,702 B**）、全图矩阵 0、web smoke 六路由 200、五态 + RPC-error 态 CDP 走查 PASS、R1/R5/R7 exit 1。修复提交：`<pending10>`。
+复跑：tsc 双形态 0、jest **3 suites / 22 tests**、export 0（**15 路由**；`entry-456faa1f…js` **1,331,702 B**）、全图矩阵 0、web smoke 六路由 200、五态 + RPC-error 态 CDP 走查 PASS、R1/R5/R7 exit 1。修复提交：**`6563ff6`**（main）。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
