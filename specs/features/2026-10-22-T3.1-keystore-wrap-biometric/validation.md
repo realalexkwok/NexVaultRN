@@ -54,6 +54,10 @@ Status：`[~]`（本机无 Xcode；MAC-HANDOFF.md 已落盘）
 - 文件：`ios/SecurityIos.podspec`（ExpoModulesCore，iOS 16.4）、`AesGcmEnvelope.swift`（CryptoKit AES.GCM，同一 blob 布局，含空明文 parity）、`KeychainKek.swift`（Keychain 条目读取：**service=`app:auth`**（= `(keychainService ?? "app") + ":auth"`）、**account/kSecAttrGeneric = `Data("nexvault.kek.v1".utf8)`**、值为 32B KEK 的十六进制；`kSecUseOperationPrompt` 触发 Face ID；坐标可注入供测试）、`WrapKeyService.swift`（native-internal wrap/unwrap）、`SecurityErrors.swift`（E_SEC_IOS_* 固定模板 + SecRandomCopyBytes 失败 fail-closed）、`SecurityIosModule.swift`（Expo 模块壳，T3.2 接管 JS 面）、`Tests/SecurityIosTests.swift`（**TC-SI-010** 5 例 + 空明文 parity + **TC-SI-011** 坐标契约；**TC-SI-009 完整生命周期属 D8 待裁定项**）、`src/index.ts`（ensureKek/deleteKek via expo-secure-store，spec §2.2 OPTS）。
 - R1 记录：KEK 不是 k1（k1 明文永不过 JS）；ensureKek 在 JS 侧生成 KEK 字节是 spec §2.2 的既定调用面，Swift 侧读同一条目，wrap/unwrap 明文只在 native。
 - 待 Mac：MS-1 编译、MS-2 XCTest、MS-3 Keychain 坐标核对、MS-4 真机 Face ID 走查（见 MAC-HANDOFF.md）。
+- **静态验证（Linux 可做，2026-10-22）**：
+  - `cd apps/mobile && npx expo config --type introspect` → `ios.infoPlist.NSFaceIDUsageDescription = "Allow $(PRODUCT_NAME) to access your Face ID biometric data."`（expo-secure-store config plugin 生效）；`bundleIdentifier = io.github.realalexkwok.nexvault`；`deploymentTarget = 18.0`；plugins 含 `expo-secure-store`。
+  - `npx expo-modules-autolinking resolve --platform apple` → `packageName: 'security-ios'`，`podspecDir: <repo>/modules/security-ios/ios`；`search --platform apple` 同样发现 `security-ios` 与 `vault-core`（iOS autolinking 正确）。
+  - 边界：本机无 ruby/cocoapods/swiftc（`which` 均未命中），podspec 语法与 Swift 编译只能在 Mac（MS-1）验证。
 
 ## Task 3 — JVM 门禁
 
