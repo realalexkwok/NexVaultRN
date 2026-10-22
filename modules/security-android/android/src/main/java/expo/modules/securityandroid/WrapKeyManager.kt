@@ -17,7 +17,6 @@ import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.UnrecoverableKeyException
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -270,7 +269,7 @@ internal class WrapKeyManager(private val context: Context) {
     // cancellation propagates as structured cancellation instead of being mis-labelled.
     val authorized = withTimeoutOrNull(PROMPT_TIMEOUT_MS) {
       suspendCancellableCoroutine { continuation ->
-        val failures = AtomicInteger(0)
+        val failureGate = PromptFailureGate(MAX_FAILED_ATTEMPTS)
         val settled = AtomicBoolean(false)
         var prompt: BiometricPrompt? = null
 
@@ -311,10 +310,9 @@ internal class WrapKeyManager(private val context: Context) {
           }
 
           override fun onAuthenticationFailed() {
-            val count = failures.incrementAndGet()
-            if (count >= MAX_FAILED_ATTEMPTS) {
-              // Demo gate (owner 2026-10-22): three wrong fingerprints fail closed instead of
-              // waiting for the system lockout at five attempts.
+            // Demo gate (owner 2026-10-22): three wrong fingerprints fail closed instead of
+            // waiting for the system lockout at five attempts. The counter is JVM-tested.
+            if (failureGate.onFailure()) {
               finishWith(BiometricCancelledException())
               cancelPrompt()
             }

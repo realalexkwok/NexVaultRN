@@ -1,0 +1,3 @@
+--------- beginning of main
+10-22 22:54:05.675 31040 31055 I T3.1-DEMO: STEP 1/5 WRAP: enter a CORRECT fingerprint
+10-22 22:54:13.169 31040 31055 I T3.1-DEMO: STEP 2/5 UNWRAP: enter THREE WRONG fingerprints (the gate cancels itself)

@@ -70,8 +70,9 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :secur
 观察：`BUILD SUCCESSFUL`；XML 计数：
 - `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=9 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×6：roundtrip / wrongAad / 篡改 / IV 唯一 / 密文不同 / 空明文 parity、TC-SA-012 ×1）
 - `TEST-expo.modules.securityandroid.SecurityErrorCodesTest.xml`：tests=1 failures=0（TC-SA-013 JVM 半）
+- `TEST-expo.modules.securityandroid.PromptFailureGateTest.xml`：tests=2 failures=0（TC-SA-014 的「第 3 次失败即 fail-closed」计数契约，JVM 半）
 
-合计 **10/10**（AesGcmEnvelopeTest 9：含 N7 空明文 parity 用例；SecurityErrorCodesTest 1）。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
+合计 **12/12**（AesGcmEnvelopeTest 9 含 N7 空明文 parity；SecurityErrorCodesTest 1；PromptFailureGateTest 2）。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
 
 ## Task 4 — 真机
 
@@ -98,6 +99,11 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 3. 证据：`evidence/man019-run-c.txt` + `man019-logcat-c.txt`（TEE 首跑，STEP 1 通过）；`evidence/man019-run-d.txt` + `man019-logcat-d.txt`（复跑；STEP 2 被正确手指认证）；`man019-prompt-c.png` / `man019-prompt-d.png`（提示截图）。
 4. **待完成**：STEP 2 需用**未录入的手指**连续 3 次（门禁自动取消）→ STEP 3/4/5；MAN-020（phase1 → owner 新增指纹 → phase2）与 MAN-018（TalkBack）同待 owner 在设备旁。
 5. 门禁机制层面验证：每次 wrap/unwrap 均创建新的 AuthSession（per-use），提示/认证/错误链路正常。
+6. **自动化 fail-closed 设备证据（无需人手）**：`BiometricCancelDeviceTest` 在提示出现 2.5s 后向焦点对话框注入 BACK，断言操作以 `E_SEC_BIOMETRIC_CANCELLED` 结束且被取消的 wrap 明文已清零。
+   - 命令：`adb -t <tid> shell am instrument -w -e class expo.modules.securityandroid.BiometricCancelDeviceTest expo.modules.securityandroid.test/androidx.test.runner.AndroidJUnitRunner`
+   - 观察（2026-10-22 23:20）：`OK (1 test)`（4.841s）；logcat `CANCEL FAIL-CLOSED OK code=E_SEC_BIOMETRIC_CANCELLED`。
+   - 结论：取消路径的 fail-closed + 明文清零已在真机验证；**MAN-019 仍欠「3 次错误指纹」这一条**（需未录入手指），其余（提示、per-use、取消 fail-closed、清零）均已取证。
+7. 走查辅助：`TestBiometricActivity` 顶部红色横幅在每次提示前显示该步动作（1/5…5/5），避免操作者需同时看聊天记录。
 
 ### 设备发现（真实缺陷 → 修复，记录）
 
