@@ -198,6 +198,15 @@ Then 布局一致、AAD 绑定一致
 And 错误 AAD / 篡改 / 截断均抛 E_SEC_IOS_BLOB_CORRUPT
 ```
 
+### TC-SI-011 KEK 坐标契约（测试侧，Mac/simulator）
+
+```gherkin
+Given 已安装的 expo-secure-store 57.0.4（requireAuthentication 条目坐标 service="app:auth"、account=Data(key.utf8)）
+When 断言 KeychainKek.service == "app:auth" 且 account == "nexvault.kek.v1"
+And 在 test-only 坐标写入同一编码的 hex 值并经 loadKek(service:account:) 读回
+Then 字面量契约与 Data-account 编码/hex 解码均被验证（不触碰生产 KEK 条目）
+```
+
 ## 6. 依赖与红线
 
 - **R1 + R6**：fail-closed 门控同 Android——越狱/调试信号不作签名硬前置（必然误伤+可绕），而是风险评分输入；签名材料释放由门控裁决。宪法依据：R1（密钥材料不出 native，检测不过则不释放）+ R6（fail-closed 耦合为唯一 [P] 级端上口径，其余检测一律 [C]）。

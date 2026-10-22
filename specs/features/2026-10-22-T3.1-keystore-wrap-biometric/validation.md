@@ -34,6 +34,7 @@ Status：`[x]`（代码 + JVM 门禁；设备侧见 Task 4）
 | `WrapKeyManager.kt` | ensureKey（StrongBox→TEE→SOFTWARE_DEBUG 来源级）、deleteKey、encryptCipher/decryptCipher、wrap/unwrap（BiometricPrompt CryptoObject；3 次失败自动 cancel → fail-closed）、错误映射 |
 | `SecurityAndroidModule.kt` | 最小 JS 面：getCapabilities / ensureWrapKey / deleteWrapKey（wrap/unwrap 为 native-internal，`// T3.2 wiring`） |
 | `src/SecurityAndroidModule.ts` | TS 声明（无密钥语义标识符，R1） |
+| `index.ts` | 公共 JS 面：typeof 守卫 + coded `E_SEC_UNSUPPORTED_OPERATION`（web 为 stub 时 fail-closed，镜像 vault-core） |
 | `src/SecurityAndroidModule.web.ts` | web stub（R7；web 导出零该模块代码） |
 
 编译修复记录（均为真实缺陷）：
@@ -50,7 +51,7 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :secur
 Status：`[~]`（本机无 Xcode；MAC-HANDOFF.md 已落盘）
 
 - 安装（D2，tech-stack 既有批准行）：`cd apps/mobile && npx expo install expo-secure-store` → `expo-secure-store ~57.0.4`；`pnpm-lock.yaml` +12 行、`apps/mobile/package.json` +1 行；`expo install` 自动加入 config plugin（app.json `plugins` +1 行，保留最小 diff；plugin 注入 iOS `NSFaceIDUsageDescription`）。
-- 文件：`ios/SecurityIos.podspec`（ExpoModulesCore，iOS 16.4）、`AesGcmEnvelope.swift`（CryptoKit AES.GCM，同一 blob 布局）、`KeychainKek.swift`（Keychain 条目读取：service=Bundle id、account=nexvault.kek.v1、值为 32B KEK 的十六进制；`kSecUseOperationPrompt` 触发 Face ID）、`WrapKeyService.swift`（native-internal wrap/unwrap）、`SecurityErrors.swift`（E_SEC_IOS_* 固定模板 + SecRandomCopyBytes 失败 fail-closed）、`SecurityIosModule.swift`（Expo 模块壳，T3.2 接管 JS 面）、`Tests/SecurityIosTests.swift`（TC-SI-009/010 骨架）、`src/index.ts`（ensureKek/deleteKek via expo-secure-store，spec §2.2 OPTS）。
+- 文件：`ios/SecurityIos.podspec`（ExpoModulesCore，iOS 16.4）、`AesGcmEnvelope.swift`（CryptoKit AES.GCM，同一 blob 布局，含空明文 parity）、`KeychainKek.swift`（Keychain 条目读取：**service=`app:auth`**（= `(keychainService ?? "app") + ":auth"`）、**account/kSecAttrGeneric = `Data("nexvault.kek.v1".utf8)`**、值为 32B KEK 的十六进制；`kSecUseOperationPrompt` 触发 Face ID；坐标可注入供测试）、`WrapKeyService.swift`（native-internal wrap/unwrap）、`SecurityErrors.swift`（E_SEC_IOS_* 固定模板 + SecRandomCopyBytes 失败 fail-closed）、`SecurityIosModule.swift`（Expo 模块壳，T3.2 接管 JS 面）、`Tests/SecurityIosTests.swift`（**TC-SI-010** 5 例 + 空明文 parity + **TC-SI-011** 坐标契约；**TC-SI-009 完整生命周期属 D8 待裁定项**）、`src/index.ts`（ensureKek/deleteKek via expo-secure-store，spec §2.2 OPTS）。
 - R1 记录：KEK 不是 k1（k1 明文永不过 JS）；ensureKek 在 JS 侧生成 KEK 字节是 spec §2.2 的既定调用面，Swift 侧读同一条目，wrap/unwrap 明文只在 native。
 - 待 Mac：MS-1 编译、MS-2 XCTest、MS-3 Keychain 坐标核对、MS-4 真机 Face ID 走查（见 MAC-HANDOFF.md）。
 
@@ -66,7 +67,7 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew :secur
 - `TEST-expo.modules.securityandroid.AesGcmEnvelopeTest.xml`：tests=8 skipped=0 failures=0 errors=0（TC-SA-010 ×2、TC-SA-011 ×5：roundtrip / wrongAad / 篡改 / IV 唯一 / 密文不同、TC-SA-012 ×1）
 - `TEST-expo.modules.securityandroid.SecurityErrorCodesTest.xml`：tests=1 failures=0（TC-SA-013 JVM 半）
 
-合计 **9/9**。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
+合计 **10/10**（AesGcmEnvelopeTest 9：含 N7 空明文 parity 用例；SecurityErrorCodesTest 1）。诚实边界：Keystore/BiometricPrompt 无法在 JVM 运行，设备侧见 Task 4。
 
 ## Task 4 — 真机
 
@@ -90,7 +91,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 
 首跑 3/4 失败：`java.security.NoSuchAlgorithmException: no such algorithm: AES for provider AndroidKeyStore`（`KeyFactory.getInstance(key.algorithm, "AndroidKeyStore")`，WrapKeyManager.describe）。AOSP `AndroidKeyStoreKeyFactorySpi.java` 证实 keystore2 的 KeyInfo 只对私钥开放，AES 密钥的硬件归属无法事后查询。
 
-修复（测试驱动）：安全级别改为「生成路径来源」——StrongBox 尝试成功 → STRONGBOX；TEE 回退或进程重启后重开 → TRUSTED_ENVIRONMENT（保守降级，绝不抬高，R6）；模拟器 → SOFTWARE_DEBUG（非 debug 构建直接抛 E_SEC_SOFTWARE_KEYSTORE）。级别只缓存在进程内、不落盘（R5 落盘白名单仅地址与 SecureStore/Keychain 密文）。修复后 4/4 通过。
+修复（测试驱动）：安全级别改为「生成路径来源」——StrongBox 尝试成功 → STRONGBOX；TEE 回退或进程重启后重开 → TRUSTED_ENVIRONMENT，这是**未验证下限（unverified floor）而非 attestation**：软件后端的真实设备会被标为 TEE（D9 待裁定，T5.x attestation 验证）；模拟器 → SOFTWARE_DEBUG（非 debug 构建直接抛 E_SEC_SOFTWARE_KEYSTORE）。级别只缓存在进程内、不落盘（R5 落盘白名单仅地址与 SecureStore/Keychain 密文）。修复后 4/4 通过。
 
 ### MAN-019 / MAN-020 / MAN-018
 
@@ -103,7 +104,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 | Android Keystore AES-256-GCM wrap key（StrongBox→TEE 来源）+ per-use BiometricPrompt（CryptoObject，3 次失败 fail-closed） | **[P]**（生效条件：MAN-019/020 走查通过） | 验收设备 Pixel 6a 自动侧：密钥生成/级别/删除幂等 4/4；提示与 3 错 fail-closed 需 owner 真人指纹（MAN-019/020 待走查）。**未走查前不得对外宣称已验证** |
 | SOFTWARE_DEBUG（模拟器/调试构建）路径 | **[C]** | 仅模拟器/debug 可得；非 debug 构建直接抛 `E_SEC_SOFTWARE_KEYSTORE`，永不静默降级、永不标 [P] |
 | iOS Keychain KEK（.biometryCurrentSet ACL + WHEN_UNLOCKED_THIS_DEVICE_ONLY） | **[P]**（生效条件：MS-4 真机 + MS-2 XCTest 在 Mac 通过） | 本机无 Xcode，当前状态 `[~]`；实现依据 spec §2.2 与 expo-secure-store 57.0.4 源码坐标 |
-| wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]** | JVM 9/9 已证（AAD 篡改/ct/tag 翻转/截断全负例）；设备侧在 MAN-019 第 4 步复验 |
+| wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]**（生效条件：MAN-019 第 4 步通过） | JVM 已证静态路径（AAD 篡改/ct/tag 翻转/截断/空明文全负例）；设备侧待 MAN-019 第 4 步复验 |
 | 清零：wrap 入参（含认证失败路径）/ AAD 副本 / unwrap 输出（调用方） | **[C]** | JVM 断言成功路径清零；认证失败路径由 MAN-019 第 5 步断言；ART/Hermes GC 副本不可控（如实标注） |
 | iOS Swift `Data`/`SymmetricKey` COW 零化 | **[C]** | 值类型复制不可控；best-effort 清零 |
 | iOS JS 面 KEK 物化（ensureKek 读取 hex 字符串回 JS，不可清零） | **[C]**（+ T3.2 Handoff：改为 native 存在性检查/创建） | spec §2.2 的既定调用面；k1 明文永不过 JS（R1 边界不变） |
@@ -159,6 +160,20 @@ reviewer 子代理 `b75d6157-6d3b-4daa-90ac-edb389caa2cb`（持久 reviewer）�
 | m8 | 未做 app 级 Android 构建 | **已修**：`:app:assembleDebug` BUILD SUCCESSFUL（4m38s，237,537,841 B，sha256 `982cf4ec…`）；APK dex 内 `SecurityAndroidModule` 命中 33 次（app 级 autolinking 生效） |
 | n1 | JVM 计数 2+4+1=7 与 tests=8 矛盾 | **已修**：TC-SA-011 ×5，2+5+1=8 |
 | n2 | iOS 空明文 blob 比 Android 严格 | **已修**：`body.count >= tagSize` |
+
+## Review round 2（2026-10-22 21:16；range 607bfe7..66df97b）
+
+reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证据复核通过（JVM XML 8+1 / test APK sha / 设备 4/4 / app APK 237,537,841 B + 33 次 dex 命中 / OSV {} / spec 偏差注 / Xcode flags）。新增 1 MAJOR + 4 MINOR + 2 NIT；M1/M4/M6/M7（D6–D9）仍开放。
+
+| # | 发现 | 处置 |
+|---|---|---|
+| N2 (MAJOR) | MAN-019 登记命令缺 `-e t3_1_manual 1`（照做会被 Assume 跳过、无证据）；行内仍写 4 步 | **已修**：命令补参数、行改为 **5 步**并加第 5 步期望（取消的 wrap 亦清零明文） |
+| N1 | TC-SI-011 循环论证（用 KeychainKek.service/account 播种又读回） | **已修**：先断言字面量 `"app:auth"` / `"nexvault.kek.v1"`，再用 **test-only 坐标** + 可注入 `loadKek(service:account:)` 读回；不再触碰生产 KEK 条目 |
+| N3 | m7 修复的线程问题（isStateSaved 在调用线程、取消在定时器线程、定时器后仍创建 prompt、外层超时被吞） | **已修**：状态检查/prompt 创建全部移入 UI 线程并检查 settled/isActive；取消一律 post 主线程；改用 `withTimeoutOrNull`（只吞本次超时，外层取消照常传播） |
+| N4 | R6 blob 行过度标 [P]；validation/security-android 仍写「绝不抬高/保守下限」 | **已修**：blob 行改为 [P]（生效条件 MAN-019 第 4 步）；两处措辞改为「未验证下限（unverified floor），非 attestation；软件后端真实设备可能误标（D9）」 |
+| N5 | 文档未随修复更新（Task 2 KeychainKek 描述、TC-SI 编号、Task 1 缺 index.ts、FR-2/FR-3 旧签名、TC-SI-011 未登记、D6–D9 无处定义） | **已修**：全部更新 + requirements 增 D6–D9 表 + security-ios §5 登记 TC-SI-011 |
+| N6 | §2.5 新行 3 单元格 | **已修**：并入含义单元格 |
+| N7 | 空明文 blob 无测试 | **已修**：iOS `testEmptyPlaintextBlobIsValid` + Android JVM `emptyPlaintextBlobIsValid`（JVM 10 例） |
 
 ## Task 7 — 收尾
 

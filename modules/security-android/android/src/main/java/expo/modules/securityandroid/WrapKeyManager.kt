@@ -25,9 +25,8 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal enum class SecurityLevel { STRONGBOX, TRUSTED_ENVIRONMENT, SOFTWARE_DEBUG }
 
@@ -56,10 +55,11 @@ internal data class WrapCapabilities(
  * private keys, so an AES key's hardware backing cannot be queried after the fact. The level is
  * therefore the generation path's provenance, cached in memory: a successful StrongBox attempt ->
  * STRONGBOX; the TEE path or a later process re-open -> TRUSTED_ENVIRONMENT. TRUSTED_ENVIRONMENT
- * is an unverified floor for non-emulator devices (Android requires a keymaster HAL there, but the
- * claim itself is provenance, not attestation) and is verified only by the T5.x attestation work;
- * emulator -> SOFTWARE_DEBUG, refused on a non-debuggable build. No level marker is persisted
- * (R5's on-disk whitelist is addresses and SecureStore/Keychain ciphertext only).
+ * is an **unverified floor** for non-emulator devices, not an attestation claim: a device whose
+ * Keystore is software-backed would be labelled TRUSTED_ENVIRONMENT (owner decision D9, open);
+ * verification belongs to the T5.x attestation work. Emulator -> SOFTWARE_DEBUG, refused on a
+ * non-debuggable build. No level marker is persisted (R5's on-disk whitelist is addresses and
+ * SecureStore/Keychain ciphertext only).
  *
  * Honest boundary: the Keystore and BiometricPrompt paths cannot run on the JVM; the pure blob
  * codec lives in [AesGcmEnvelope] and carries the JVM gate.
@@ -260,86 +260,95 @@ internal class WrapKeyManager(private val context: Context) {
   private fun keyStore(): KeyStore = KeyStore.getInstance(KEYSTORE).apply { load(null) }
 
   private suspend fun authenticate(activity: FragmentActivity, cipher: Cipher): Cipher {
-    // androidx.biometric's authenticateInternal() returns silently when the fragment manager is
-    // null or the state is saved; without this guard the continuation would never resume.
-    if (activity.isFinishing || activity.isDestroyed || activity.supportFragmentManager.isStateSaved) {
-      throw SecurityUnsupportedException()
-    }
     val info = try {
       promptInfo()
     } catch (e: IllegalArgumentException) {
       throw SecurityUnsupportedException()
     }
 
-    return try {
-      withTimeout(PROMPT_TIMEOUT_MS) {
-        suspendCancellableCoroutine { continuation ->
-          val failures = AtomicInteger(0)
-          val settled = AtomicBoolean(false)
-          var prompt: BiometricPrompt? = null
+    // withTimeoutOrNull only returns null for this call's own timeout; an outer caller's
+    // cancellation propagates as structured cancellation instead of being mis-labelled.
+    val authorized = withTimeoutOrNull(PROMPT_TIMEOUT_MS) {
+      suspendCancellableCoroutine { continuation ->
+        val failures = AtomicInteger(0)
+        val settled = AtomicBoolean(false)
+        var prompt: BiometricPrompt? = null
 
-          fun finishWith(exception: CodedException) {
-            if (settled.compareAndSet(false, true) && continuation.isActive) {
-              continuation.resumeWithException(exception)
+        fun finishWith(exception: CodedException) {
+          if (settled.compareAndSet(false, true) && continuation.isActive) {
+            continuation.resumeWithException(exception)
+          }
+        }
+
+        fun finishWithCipher(authorizedCipher: Cipher?) {
+          if (settled.compareAndSet(false, true) && continuation.isActive) {
+            if (authorizedCipher == null) {
+              continuation.resumeWithException(BiometricCancelledException())
+            } else {
+              continuation.resume(authorizedCipher)
             }
           }
+        }
 
-          fun finishWithCipher(authorized: Cipher?) {
-            if (settled.compareAndSet(false, true) && continuation.isActive) {
-              if (authorized == null) {
-                continuation.resumeWithException(BiometricCancelledException())
-              } else {
-                continuation.resume(authorized)
-              }
-            }
-          }
-
-          val callback = object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-              finishWithCipher(result.cryptoObject?.cipher)
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-              finishWith(mapError(errorCode))
-            }
-
-            override fun onAuthenticationFailed() {
-              val count = failures.incrementAndGet()
-              if (count >= MAX_FAILED_ATTEMPTS) {
-                // Demo gate (owner 2026-10-22): three wrong fingerprints fail closed instead of
-                // waiting for the system lockout at five attempts.
-                finishWith(BiometricCancelledException())
-                activity.runOnUiThread { prompt?.cancelAuthentication() }
-              }
-            }
-          }
-
-          continuation.invokeOnCancellation {
+        // BiometricPrompt/FragmentManager are main-thread objects: every touch is posted.
+        fun cancelPrompt() {
+          activity.runOnUiThread {
             try {
               prompt?.cancelAuthentication()
             } catch (ignored: Throwable) {
               // The prompt may already be gone; cancellation must never crash the caller.
             }
           }
+        }
 
-          activity.runOnUiThread {
-            try {
-              val created = BiometricPrompt(
-                activity,
-                ContextCompat.getMainExecutor(activity),
-                callback
-              )
-              prompt = created
-              created.authenticate(info, BiometricPrompt.CryptoObject(cipher))
-            } catch (e: Throwable) {
-              finishWith(SecurityUnsupportedException())
+        val callback = object : BiometricPrompt.AuthenticationCallback() {
+          override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            finishWithCipher(result.cryptoObject?.cipher)
+          }
+
+          override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            finishWith(mapError(errorCode))
+          }
+
+          override fun onAuthenticationFailed() {
+            val count = failures.incrementAndGet()
+            if (count >= MAX_FAILED_ATTEMPTS) {
+              // Demo gate (owner 2026-10-22): three wrong fingerprints fail closed instead of
+              // waiting for the system lockout at five attempts.
+              finishWith(BiometricCancelledException())
+              cancelPrompt()
             }
           }
         }
+
+        continuation.invokeOnCancellation { cancelPrompt() }
+
+        activity.runOnUiThread {
+          // The timeout may have settled this attempt before the post runs: never create a prompt
+          // for an attempt the caller has already abandoned.
+          if (settled.get() || !continuation.isActive) return@runOnUiThread
+          if (activity.isFinishing || activity.isDestroyed || activity.supportFragmentManager.isStateSaved) {
+            finishWith(SecurityUnsupportedException())
+            return@runOnUiThread
+          }
+          try {
+            val created = BiometricPrompt(
+              activity,
+              ContextCompat.getMainExecutor(activity),
+              callback
+            )
+            prompt = created
+            if (!settled.get() && continuation.isActive) {
+              created.authenticate(info, BiometricPrompt.CryptoObject(cipher))
+            }
+          } catch (e: Throwable) {
+            finishWith(SecurityUnsupportedException())
+          }
+        }
       }
-    } catch (e: TimeoutCancellationException) {
-      throw BiometricCancelledException()
     }
+
+    return authorized ?: throw BiometricCancelledException()
   }
 
   private fun promptInfo(): BiometricPrompt.PromptInfo {

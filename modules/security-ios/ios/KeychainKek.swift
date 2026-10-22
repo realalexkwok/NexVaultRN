@@ -26,7 +26,10 @@ enum KeychainKek {
   /// (keychainService ?? "app") + ":auth" — expo-secure-store 57.0.4, requireAuthentication=true.
   static let service = "app:auth"
 
-  static func loadKek() throws -> SymmetricKey {
+  static func loadKek(
+    service: String = KeychainKek.service,
+    account: String = KeychainKek.account
+  ) throws -> SymmetricKey {
     let encodedKey = Data(account.utf8)
     var query: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,

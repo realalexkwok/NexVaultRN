@@ -133,4 +133,14 @@ class AesGcmEnvelopeTest {
     assertArrayEquals(ByteArray(32), plaintext)
     assertTrue(plaintext.all { it == 0.toByte() })
   }
+
+  // N7 parity: the zero-length plaintext blob (29 bytes) is valid on both platforms.
+  @Test
+  fun emptyPlaintextBlobIsValid() {
+    val blob = AesGcmEnvelope.seal(encryptCipher(), ByteArray(0), aad)
+    assertEquals(1 + 12 + 16, blob.size)
+    val parsed = AesGcmEnvelope.parse(blob)
+    assertArrayEquals(ByteArray(0), AesGcmEnvelope.open(decryptCipher(parsed.iv), parsed, aad))
+  }
 }
+

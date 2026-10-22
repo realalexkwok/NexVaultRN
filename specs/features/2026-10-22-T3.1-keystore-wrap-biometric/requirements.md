@@ -20,6 +20,10 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 | D3 | T2.2 H10 裁定（B.7-2） | **Android 腿在 T3.1 真机轮顺带实施**（MAN-018 TalkBack 走查）；iOS 腿 replan → T4.x | 其余 H1–H9 维持 T2.2 记录（见 §3） |
 | D4 | 附加真机走查 | **纳入 MAN-020**（新增指纹 → E_SEC_KEY_INVALIDATED） | 证明 setInvalidatedByBiometricEnrollment(true) |
 | D5 | plans 行 61 措辞 | **追加 v1.4 追记**：T3.1 = native-internal wrap/unwrap + 最小 JS 面；原「锁屏后调 signDigest 弹生物识别」门禁措辞与 E_VAULT_SECURITY_GATE 耦合移入 T3.2 | plans 只增不改 |
+| D6（review M1） | 设备凭据成功路径回传 null cryptoObject | **待裁定**（a 生物识别-only，推荐 / b 保留 flags + 专门错误并声明 PIN 不可 unwrap / c 非零窗口） | 2026-10-22 两轮 ask-user 超时；review round 1/2 记为 deferred |
+| D7（review M4） | 新 TS 面不在 tsc 门禁 | **待裁定**（a 每模块 package.json+typecheck / b 顶层模块 tsconfig+paths，推荐 / c Handoff 至 T4.1） | 同上 |
+| D8（review M6） | TC-SI-009 无 harness | **待裁定**（a DEBUG seam / b app-hosted Keychain test / c 随 T3.2 JS 面，推荐） | 同上 |
+| D9（review M7） | 安全级别语义（来源 vs 验证） | **待裁定**（a 接受来源模型 + 措辞修正，推荐 / b 增加 UNVERIFIED / c 改 AC-2） | 同上 |
 
 ## 3. Handoff re-read（B.7-2；上一条目 T2.2 的 H1–H10 逐条裁定）
 
@@ -39,8 +43,8 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 ## 4. 功能需求（FR）
 
 - FR-1（Android wrap key 生命周期）：ensureWrapKey 生成 alias `nexvault.wrap.v1` 的 AES-256-GCM Keystore 密钥；flag 集按 security-android §2.4：setUserAuthenticationRequired(true)；**API ≥ 30** → setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG or AUTH_DEVICE_CREDENTIAL)（窗口 0，per-use），**API 24–29** → per-use 默认（不设 validity duration；androidx.biometric 兼容路径，实现期核对官方文档）；setInvalidatedByBiometricEnrollment(true)；setIsStrongBoxBacked(true) 且 StrongBoxUnavailableException → TEE 重试，绝不静默 SOFTWARE；setUnlockedDeviceRequired(true) 仅 API ≥ 35（28–34 官方明示 bug，默认关）；KeyInfo.isInsideSecureHardware() + securityLevel 校验；无锁屏 → E_SEC_NO_LOCKSCREEN（生成前失败）。
-- FR-2（native-internal wrap/unwrap）：wrap(plain, aad, crypto: BiometricPrompt.CryptoObject) → blob = version(1B)=1 ‖ IV(12B SecureRandom) ‖ ciphertext ‖ tag(16B)；unwrap(blob, aad, crypto) 逆操作；AAD = 账户地址‖userId（UTF-8，仅公开材料）；GCM tag 失败 → E_SEC_BLOB_CORRUPT（零明文输出）；明文/IV/AAD 缓冲 finally Arrays.fill(0)。
-- FR-3（BiometricPrompt 门控）：每次 wrap/unwrap 需 CryptoObject 绑定的 BiometricPrompt；取消/负按钮 → E_SEC_BIOMETRIC_CANCELLED；锁定 → E_SEC_BIOMETRIC_LOCKOUT；KeyPermanentlyInvalidatedException → E_SEC_KEY_INVALIDATED；UserNotAuthenticatedException → E_SEC_BIOMETRIC_*；currentActivity 非 FragmentActivity/null → 类型错误不崩溃。
+- FR-2（native-internal wrap/unwrap）：**交付 API = `suspend wrap(activity: FragmentActivity, plaintext, aad)` / `unwrap(activity, blob, aad)`**——manager 内部持有 CryptoObject 与 cipher，activity 由调用方注入（T3.1 为 instrumentation 宿主；T3.2 由 JS 面解析 currentActivity）。blob = version(1B)=1 ‖ IV(12B)（Keystore 生成）‖ ciphertext ‖ tag(16B)；AAD = 账户地址‖userId（UTF-8，仅公开材料）；GCM tag 失败 → E_SEC_BLOB_CORRUPT（零明文输出）；明文在成功与失败路径均清零（wrap 外层 finally；AAD 副本 finally）。**2026-10-22 交付偏差记录**（原措辞 `wrap(plain, aad, crypto)` 为 spec §2.4 示意签名）。
+- FR-3（BiometricPrompt 门控）：每次 wrap/unwrap 需 CryptoObject 绑定的 BiometricPrompt；取消/负按钮/超时 → E_SEC_BIOMETRIC_CANCELLED；锁定 → E_SEC_BIOMETRIC_LOCKOUT；**activity 由调用方传入**（native-internal；T3.2 再解析 currentActivity）；finishing/destroyed/stateSaved 预检 → E_SEC_UNSUPPORTED_OPERATION，180s 超时 → E_SEC_BIOMETRIC_CANCELLED（不挂起）；KeyPermanentlyInvalidatedException → E_SEC_KEY_INVALIDATED；UserNotAuthenticatedException → E_SEC_BIOMETRIC_*。**2026-10-22 交付偏差记录**（原措辞的 currentActivity 解析属 T3.2 JS 面）。
 - FR-4（最小 JS 面）：SecurityAndroidModule AsyncFunction 仅 getCapabilities()（裁剪形 { hasStrongBox, isDeviceSecure, securityLevel }；spec §2.1 全形 hasGms/isEmulator 与 opts.attestationChallenge 属 T3.2/T5.x，偏差记录）、ensureWrapKey()、deleteWrapKey()；wrap/unwrap 为纯 Kotlin 方法（// T3.2 wiring 注释）。web stub 恒抛 E_SEC_UNSUPPORTED_OPERATION（R7）。
 - FR-5（iOS）：ensureKek/deleteKek 经 expo-secure-store（specs/security-ios.md §2.2 OPTS：requireAuthentication: true、WHEN_UNLOCKED_THIS_DEVICE_ONLY、synchronizable 关；随机 32B KEK，远低于 2048B 上限）；wrap/unwrap native-internal Swift 用 CryptoKit AES.GCM（同一 blob 格式 + AAD）；KEK 读取同一 Keychain 条目（service/account 与 expo-secure-store 一致，实现期按 v57 文档核实 keychainService）；Data 清零（CoW 注意项记 [C]）。
 - FR-6（错误码）：E_SEC_NO_LOCKSCREEN / E_SEC_KEY_INVALIDATED / E_SEC_BIOMETRIC_CANCELLED / E_SEC_BIOMETRIC_LOCKOUT / E_SEC_BLOB_CORRUPT / E_SEC_SOFTWARE_KEYSTORE / E_SEC_UNSUPPORTED_OPERATION——固定模板、不回显密钥/AAD/密文片段（R5）。
@@ -74,7 +78,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 
 ## 7. 测试编号登记
 
-- 自动用例（新增）：TC-SA-010（pack/unpack roundtrip + version 字节 + 截断负例，JVM）、TC-SA-011（roundtrip 字节相等 + IV 唯一 + AAD 绑定 + 篡改 tag/ct 负例，JVM）、TC-SA-012（零化断言，JVM）、TC-SA-013（错误模板白名单：不含密钥/AAD/密文片段，JVM）、TC-SA-014（设备：安全级别 / roundtrip / 删除 / 幂等 / per-use 弹窗，instrumentation）、TC-SA-015（设备：生物特征变更失效，MAN-020 自动侧）、TC-SI-009（iOS Keychain KEK roundtrip，Mac/simulator）、TC-SI-010（跨平台 blob 结构 parity 共享向量，Mac）。
+- 自动用例（新增）：TC-SA-010（pack/unpack roundtrip + version 字节 + 截断负例，JVM）、TC-SA-011（roundtrip 字节相等 + IV 唯一 + AAD 绑定 + 篡改 tag/ct + 空明文 parity 负例，JVM）、TC-SA-012（零化断言，JVM）、TC-SA-013（错误模板白名单：不含密钥/AAD/密文片段，JVM）、TC-SA-014（设备：安全级别 / roundtrip / 删除 / 幂等 / per-use 弹窗，instrumentation）、TC-SA-015（设备：生物特征变更失效，MAN-020 自动侧）、TC-SI-010（跨平台 blob 结构 parity 共享向量 + 空明文 parity，Mac/simulator）、TC-SI-011（KEK 坐标契约：字面量 `service="app:auth"` + `Data` account 断言 + test-only 坐标 roundtrip，Mac/simulator）、TC-SI-009（iOS KEK 完整生命周期 roundtrip——**D8 待裁定**，当前无 harness）。
 - 手工用例（新增）：MAN-019（弹窗 + 3 错 fail-closed + 正确指纹成功）、MAN-020（新增指纹 → E_SEC_KEY_INVALIDATED）；MAN-018 Android 腿本期核销（D3），iOS 腿随 H10 → T4.x。
 - 既有：MAN-002 保持开放（更宽生物识别走查 → T3.2）。
 

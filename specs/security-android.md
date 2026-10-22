@@ -40,7 +40,7 @@ export function unwrapKey(blob: ArrayBuffer, aad: ArrayBuffer): Promise<ArrayBuf
 export function deleteWrapKey(): Promise<void>;
 ```
 
-> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 为非模拟器设备的保守下限、由 T5.x attestation 验证。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
+> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（owner 决策 D9 待裁定），验证属 T5.x attestation。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
 
 ### 2.2 完整性/环境检测子模块（TS 面，全部异步、结果入 SecurityStateCache）
 
@@ -101,7 +101,7 @@ internal object BundleSelfCheck { fun verifyHermesBundleHash(): Boolean }
 | `E_SEC_GATE_DENIED` | fail-closed 门控拦截签名材料释放 |
 | `E_SEC_INTEGRITY_UNAVAILABLE` | Play Integrity 不可用（无 GMS/网络）→ 降级 Key Attestation，不阻断读操作 |
 | `E_SEC_UNSUPPORTED_OPERATION` | Web 端调用 |
-| `E_SEC_BLOB_CORRUPT` | wrap blob 版本/长度/GCM tag/AAD 校验失败（零明文输出） | 2026-10-22 T3.1 补登（实现已在用；TC-SA-010/011/013） |
+| `E_SEC_BLOB_CORRUPT` | wrap blob 版本/长度/GCM tag/AAD 校验失败（零明文输出）；2026-10-22 T3.1 补登（实现已在用；TC-SA-010/011/013） |
 
 ## 3. 威胁模型
 
