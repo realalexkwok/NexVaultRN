@@ -39,6 +39,18 @@ adapter 链接：`packages/web3-adapter/node_modules/viem -> ../../../node_modul
 - **Peer 警告（预存在）**：`expo-modules-core@57.0.23` 期望 worklets `^0.7.4…^0.10.0`，实装 `0.13.0`（CVE-2026-97724 下限，tech-stack 已钉）——T2.1a 即存在，非本条目引入。
 - **expo-doctor 回归与处置**：首次接入后 doctor exit 1（`react-native-get-random-values` 期望 `~1.11.0`、实装 `2.0.0` = R4 钉版，`2.0 起仅新架构/RN ≥0.81`，本工程 RN 0.86.3）；按文档化机制加入 `expo.install.exclude`（scaffold 配置，非依赖变更）→ 复跑 **21/21 通过**。
 
+**2026-10-22 — review round 4 的 R4 修订（owner 批准「Add Jest tests now」）**：
+```bash
+$ pnpm --filter mobile add -D jest@^29.7.0 jest-expo@57.0.6     # +252 packages
+$ pnpm --filter mobile add -D @jest/globals@^29.7.0            # +5 packages
+$ pnpm install                                                 # exit 0; 'Lockfile is up to date'; supply-chain policy pass
+$ pnpm audit                                                   # 6 advisories (4 moderate / 2 high), pre-existing toolchain
+```
+- 实测版本：jest **29.7.0** / jest-expo **57.0.6** / @jest/globals **29.7.0**；安装位置 **apps/mobile devDependencies**。
+- lockfile package key：**1,032 → 1,384（+352）**；`@jest/globals` 在 `6ca3885` 为 **0** 处，现 **5** 处。
+- `pnpm audit`：2 high（node-forge、braces）+ 4 moderate（uuid、decode-uri-component、sprintf-js、PostCSS）——均来自既有 expo/metro/tailwind 工具链，**不在 jest 依赖路径**；R4 禁止顺手升级，本轮不处置。
+- 记录更正（review round 2 MAJOR-1）：此前「零新包 / 零新解析」**不成立**；逐行记录见 `specs/tech-stack.md` jest 行与 `doc/dependencies.md`（jest / @jest/globals 两行）。
+
 ## Task 2 — polyfill 契约 + Query Provider
 
 `apps/mobile/src/polyfills.ts`（新建；**两行 import 在文件最前**，注释在后）：
@@ -46,13 +58,13 @@ adapter 链接：`packages/web3-adapter/node_modules/viem -> ../../../node_modul
 import 'react-native-get-random-values';
 import 'fastestsmallesttextencoderdecoder';
 ```
-`apps/mobile/src/app/_layout.tsx`：第 1 行 `import '../polyfills';`（grep 实测）；模块级 `QueryClient`：`staleTime 30_000` / `retry 2` / `refetchInterval 30_000` / `refetchIntervalInBackground false` / **`structuralSharing false`**（**防御性**：跳过默认 `replaceEqualDeep` 深比较；v5 缓存不 JSON 序列化、primitive 用 `===` 比较并原样复制，bigint 本安全——review N1 更正，早前「bigint 会被 JSON 序列化破坏」的表述错误）；`<QueryClientProvider client={queryClient}>` 包住 `<SafeAreaProvider>`（keyed Stack 重挂载不重挂 Provider）。
+`apps/mobile/src/app/_layout.tsx`：第 1 行 `import '../polyfills';`（grep 实测）；模块级 `QueryClient`：**仅** `staleTime 30_000` + **`structuralSharing false`**（`retry 2` / `refetchInterval 30_000` / `refetchIntervalInBackground false` 已移至 home 的 balance `useQuery`，review round 4 MINOR-4）（**防御性**：跳过默认 `replaceEqualDeep` 深比较；v5 缓存不 JSON 序列化、primitive 用 `===` 比较并原样复制，bigint 本安全——review N1 更正，早前「bigint 会被 JSON 序列化破坏」的表述错误）；`<QueryClientProvider client={queryClient}>` 包住 `<SafeAreaProvider>`（keyed Stack 重挂载不重挂 Provider）。
 
 位置口径（O-5）：spec §2.1 写 `apps/mobile/polyfills.ts`，ui-wallet §2.1 要求根 `_layout` 第一行 `import '../polyfills'`（相对 = `src/polyfills.ts`）——取后者的位置（`src/polyfills.ts`），契约顺序不变。
 
 ## Task 3 — adapter 源码 + specs/web3-adapter.md 修订
 
-新建：`packages/web3-adapter/src/errors.ts`（`W3AError` + `E_W3A_UNKNOWN_CHAIN`，T4.x 码仅注释）、`chains.ts`（`ChainConfig` / `SUPPORTED_CHAINS` / `getChainConfig` / 内部 `toViemChain`）、`balance.ts`（`getNativeBalance` / `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress`）、`index.ts`、`index.web.ts`（同为只读 barrel，无 `toViemChain`）。
+新建：`packages/web3-adapter/src/errors.ts`（`W3AError` + `E_W3A_UNKNOWN_CHAIN`，T4.x 码仅注释）、`chains.ts`（`ChainConfig` / `SUPPORTED_CHAINS` / `getChainConfig` / 内部 `toViemChain`）、`balance.ts`（`getNativeBalance` / `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress`）、`public-api.ts`（**单一导出面**，两 barrel `export *`，review round 4 MINOR-6+）、`index.ts`、`index.web.ts`（同为只读 barrel，无 `toViemChain`）。
 
 ```bash
 $ pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json
@@ -83,7 +95,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
 | 2b | `pnpm --filter mobile exec jest --ci` | **1 suite / 10 tests passed**（review round 4 MAJOR-1 新增；`apps/mobile/src/web3-adapter.test.ts`） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积——review round 4 重建 **1,973,116 B**（`entry-18dbd8d0…js`；此前 1,972,693 B 为历史快照）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 4 = 1,973,116 B；round 5 = **1,973,195 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -102,7 +114,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
 | 2b | `pnpm --filter mobile exec jest` | 10/10 tests pass（review round 4 MAJOR-1） |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry **1,973,116 B**（review round 4 重建；filename hash 为构建快照，NIT-5） |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 5 = 1,973,195 B；filename hash 为构建快照，NIT-5） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
 | 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
@@ -189,9 +201,9 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 | # | 评审发现 | 处置 | 证据 |
 |---|---|---|---|
-| **MAJOR-1** | adapter 无可执行测试（仅 typecheck），AC-2/AC-5 却绑定 TC | **owner 裁定「Add Jest tests now」**：安装已核准的 jest 29.7 + jest-expo 57.0.6（+ 工具链成员 `@jest/globals`，零新解析），新增 `apps/mobile/src/web3-adapter.test.ts`（未知链/格式化/地址/注册表 10/10），`test` script + AC-2/AC-5/AC-9 与 H6 同步 | `apps/mobile/jest.config.js`；`apps/mobile/src/web3-adapter.test.ts`；`pnpm --filter mobile exec jest` 10/10 |
+| **MAJOR-1** | adapter 无可执行测试（仅 typecheck），AC-2/AC-5 却绑定 TC | **owner 裁定「Add Jest tests now」**：安装已核准的 jest 29.7 + jest-expo 57.0.6（+ 工具链成员 `@jest/globals`；lockfile **+352** package keys——round 2 MAJOR-1 更正了「零新解析」的错误表述），新增 `apps/mobile/src/web3-adapter.test.ts`（未知链/格式化/地址/注册表 10/10），`test` script + AC-2/AC-5/AC-9 与 H6 同步 | `apps/mobile/jest.config.js`；`apps/mobile/src/web3-adapter.test.ts`；`pnpm --filter mobile exec jest` 10/10 |
 | **MINOR-2** | AC-7/§Task 7 仍写 ☐ 待走查，与 MAN-017 ☑ 矛盾 | AC-7 最终同步为「MAN-017 通过（真实 Chrome via CDP）」；§Task 7 历史条目改为「状态（历史）」+「手工侧（已完成）」 | requirements AC-7；§Task 7 |
-| **MINOR-3** | plan.md 仍prescribe `main: src/index.ts`、bigint 理由、死端点 | plan 顶部新增 **Post-review divergences** 块（逐项指向 FR-2/FR-5、spec §2.2、validation M2/O-3/O-6），并就地修正 4 处 | plan.md |
+| **MINOR-3** | plan.md 仍沿用 `main: src/index.ts`、bigint 理由、死端点 | plan 顶部新增 **Post-review divergences** 块（逐项指向 FR-2/FR-5、spec §2.2、validation M2/O-3/O-6），并就地修正 4 处 | plan.md |
 | **MINOR-4** | `retry`/`refetchInterval` 是全局默认，所有查询都轮询 | 移至 balance `useQuery`；全局默认仅保留 `staleTime` + `structuralSharing` | `_layout.tsx`；`home.tsx` |
 | **MINOR-5** | `setSelectedChain` 接受任意 number，未知链会让 Home 渲染抛错 | store 校验 `SUPPORTED_CHAINS`，忽略未注册 id | `store/observer.ts` |
 | **MINOR-6** | index.ts / index.web.ts 双 barrel 复制导出，可漂移 | 抽出 `src/public-api.ts`，两 barrel `export *`，平台不再可漂移 | `packages/web3-adapter/src/{public-api,index,index.web}.ts` |
@@ -201,6 +213,22 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-10** | AGENTS「手工验证」cell 仍写 MAN-001…011 | 更新为 MAN-001…017，列 MAN-011/014/015/016/017 通过日期与证据 | AGENTS.md |
 
 复跑：tsc 双形态 0、jest 10/10、export 0（15 路由，entry 1,973,116 B）、R1/R5/R7 exit 1、web smoke 六路由 200。修复提交：**`a239aeb`**（main）。
+## Review round 5（2026-10-22，review-fix 循环轮 2 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | R4 记录不实：`@jest/globals` 无 dependencies 行、`doc/dependencies.md` 未同步、lockfile +352、validation 无 install/policy/audit，且「零新包/零新解析」表述错误 | ① `doc/dependencies.md` 新增 @jest/globals 行并更新 jest 行（版本/位置 apps/mobile/audit/审批）；② tech-stack 行改为实测版本 + 位置 + lockfile delta + audit；③ validation Task 1 记录 install/policy/audit 实测（jest 29.7.0 / jest-expo 57.0.6 / @jest/globals 29.7.0；1,032 → 1,384 keys；6 条既有 advisory）；④ requirements §R4 改为「原五行零修订 + 2026-10-22 owner 批准 jest 工具链」；⑤「零新解析」表述已在 §Review round 4 更正 | `specs/tech-stack.md`；`doc/dependencies.md`；validation §Task 1 / §Review round 4 |
+| **MINOR-1** | FR-2/FR-5、validation Task 2/3、spec §2.5、plan Task 3 仍是旧形态（全局 retry/refetch、双 barrel） | FR-2 增 `public-api.ts`；FR-5 改为仅 staleTime+structuralSharing（retry/refetch 在 home query）；Task 2/3 与 spec §2.5 同步单 barrel；plan Task 3 增 public-api + tests | requirements；validation §Task 2/3；`specs/web3-adapter.md` §2.5；plan Task 3 |
+| **MINOR-2** | jest testMatch 只含 `*.test.ts`，未来 tsx/__tests__ 会被静默跳过 | 扩为 `**/*.test.{ts,tsx}` + `**/__tests__/**/*.{ts,tsx}` | `apps/mobile/jest.config.js` |
+| **MINOR-3** | AGENTS 仍写完成条件 = review round 3，且缺 round 4 记录 | 改为「独立评审 review-fix 循环零发现轮」；补 round 4 修复 `a239aeb` 记录 | AGENTS Part A 两处 |
+| **MINOR-4** | `setSelectedChain` 守卫无测试 | 新增 `apps/mobile/src/store/observer.test.ts`（未知 id 忽略 / 所有注册 id 生效 / 单地址与清空） | 该测试；jest 13/13 |
+| **MINOR-5** | 注册表测试标题称「independent」但只断言数量 | 断言 hostname 唯一 + 至少两个 operator domain | `web3-adapter.test.ts` |
+| **MINOR-6** | `maxLength={42}` 会在 trim 前截断带前导空格粘贴的合法地址 | 移除 maxLength（保留 trim 后校验），TextField 仍支持该 prop | `home.tsx` |
+| **NIT-1** | `accessibilityLiveRegion` 仅 Android，iOS 可能不播报 | error 变化时 `AccessibilityInfo.announceForAccessibility(error)` | `home.tsx` |
+| **NIT-2** | AGENTS 手工 cell 中 MAN-011 重复且「1 条」自相矛盾 | 重写为单行状态：MAN-011/014/015/016/017 通过 + MAN-009 未完成 | AGENTS Part A 手工验证 |
+| **NIT-3** | 「仍prescribe」拼写、Task 2/3 陈旧 | 改为「仍沿用」；Task 2/3 已同步（见 MINOR-1） | validation |
+
+复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry 1,973,195 B）、R1/R5/R7 exit 1。修复提交：`<pending5>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。

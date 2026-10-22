@@ -143,7 +143,8 @@
 |---|---|---|---|---|---|---|
 | eas-cli | CI 钉版（以 tech-stack.md 为准） | EAS Build/Update/Submit CLI | CI 环境（非运行时依赖） | 高（Expo 官方） | 无 | 信任依据：官方。风险点：OTA 签名私钥经 CLI 本地签名，私钥永不入 CI/仓库（R2）。缓解：`--private-key-path` 仅指向离线介质。[^21^] |
 | expo-updates | ~57（随 SDK） | OTA 更新客户端；代码签名校验（rsa-v1_5-sha256）；fingerprint runtimeVersion | apps/mobile | 高（官方） | 无 | 风险点：其自身版本变更即触发 R3 热更禁区。缓解：fingerprint 策略自动拦截不兼容更新；签名验证失败拒绝加载。[^21^] |
-| jest + jest-expo | 随 SDK 57 模板钉版 | 单元测试；BIP-39/32 官方向量对拍在 jest/instrumentation 双侧 | root / apps/mobile（dev） | 高 | 无 | 备注：安全路径测试向量回归为质量门禁（B.6-3）；版本随 SDK 模板锁定，单独升级走修宪。 |
+| jest + jest-expo | 随 SDK 57 模板钉版（实测 **jest 29.7.0 + jest-expo 57.0.6**） | 单元测试；BIP-39/32 官方向量对拍在 jest/instrumentation 双侧 | apps/mobile（dev；2026-10-22 更正） | 高 | 无 | 备注：安全路径测试向量回归为质量门禁（B.6-3）；版本随 SDK 模板锁定，单独升级走修宪。**T2.2（2026-10-22，owner 批准「Add Jest tests now」）**：新增安装；lockfile package key 1,032 → 1,384（+352）；`pnpm audit` 6 条既有 advisory（2 high: node-forge/braces；4 moderate: uuid/decode-uri-component/sprintf-js/PostCSS），均来自既有 expo/metro/tailwind 工具链、不在 jest 依赖路径；按 R4「禁止顺手升级」本轮不处置。 |
+| @jest/globals | 29.7.0（精确） | 测试文件显式导入 describe/it/expect（类型 + 运行时）；jest 工具链成员 | apps/mobile（dev） | 高 | 无已知 CVE | 信任依据：jest 官方包（jestjs/jest），由 jest-expo 传递解析；直接 importer 仅用于测试代码（`src/**/*.test.ts`）；2026-10-22 owner 批准「Add Jest tests now」时一并纳入；lockfile 中 6ca3885 不存在 → 现 5 处引用。 |
 | eslint（eslint-config-expo） | 随 SDK 57 模板钉版 | 静态检查；`no-restricted-imports`、R5 日志启发式规则 | root（dev） | 高 | 无 | 备注：严格规则集为零 error 门禁（B.6-2）。 |
 | pnpm（包管理） | ≥9（isolated 安装） | workspace monorepo；lockfile 钉版 | 工具链 | 高 | — | 风险点：hoisted 模式下其他 app 的原生依赖被 autolinking 误扫。缓解：默认 isolated；遇阻回退 `nodeLinker: hoisted` 并配 autolinking.exclude + Metro resolveRequest 双层屏蔽。[^22^] |
 

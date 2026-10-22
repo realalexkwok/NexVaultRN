@@ -35,10 +35,15 @@ describe('getChainConfig (TC-W3A-010)', () => {
     }
   });
 
-  it('registry invariants: every chain has >= 2 independent public RPC endpoints', () => {
+  it('registry invariants: every chain has >= 2 distinct endpoints from >= 2 operators', () => {
     expect(SUPPORTED_CHAINS.length).toBeGreaterThanOrEqual(2);
     for (const chain of SUPPORTED_CHAINS) {
       expect(chain.rpcUrls.length).toBeGreaterThanOrEqual(2);
+      // Distinct hostnames, and at least two distinct operator domains (review round 2 MINOR-5).
+      const hostnames = chain.rpcUrls.map((url) => new URL(url).hostname);
+      expect(new Set(hostnames).size).toBe(chain.rpcUrls.length);
+      const operatorDomains = new Set(hostnames.map((host) => host.split('.').slice(-2).join('.')));
+      expect(operatorDomains.size).toBeGreaterThanOrEqual(2);
       expect(chain.nativeCurrency.decimals).toBe(18);
       expect(chain.explorerTxUrl('0xdead')).toContain('0xdead');
     }

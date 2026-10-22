@@ -104,7 +104,7 @@ export function buildUnsignedTxQrPayload(intent: UnsignedTxIntent, from: `0x${st
 // 明确不导出：prepareTransaction 的签名后续步骤、signPrepared、signAndBroadcast、任何 VaultHandle 引用
 ```
 
-> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 同为只读 barrel（自身导出零签名符号）。**Metro 平台解析（review M2 修复）**：包 `main` 为**无扩展名** `src/index`，web 构建解析到 `index.web.ts`、原生构建解析到 `index.ts`（dev bundle 模块路径实证：`packages/web3-adapter/src/index.web.ts` 在 web 图内、`index.ts` 不在；见 T2.2 validation §5.1）；`types` 仍指向 `src/index.ts` 供 tsc。
+> **T2.2 交付口径（2026-10-20）**：本期 Web/原生只读 barrel 实际导出 `SUPPORTED_CHAINS` / `getChainConfig` / `getNativeBalance(address, chainId)`（由上文 `getBalance` **更名**，参数顺序不变）/ `getLatestBlockNumber` / `formatNativeBalance` / `isValidAddress` / `normalizeAddress` / `W3AError`；`getTransactionStatus` 与 `buildUnsignedTxQrPayload` 留待 T4.x（当前仅为文档指针，不实装）。`index.web.ts` 与 `index.ts` 均 `export * from './public-api'`（**单一导出面**，两平台 barrel 不会漂移——review round 4 MINOR-6；自身导出零签名符号）。**Metro 平台解析（review M2 修复）**：包 `main` 为**无扩展名** `src/index`，web 构建解析到 `index.web.ts`、原生构建解析到 `index.ts`（dev bundle 模块路径实证：`packages/web3-adapter/src/index.web.ts` 在 web 图内、`index.ts` 不在；见 T2.2 validation §5.1）；`types` 仍指向 `src/index.ts` 供 tsc。
 
 ### 2.6 错误码表
 

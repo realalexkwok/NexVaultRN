@@ -44,7 +44,7 @@
 | @bam.tech/react-native-app-security | 1.0.0 | apps/mobile | TLS 双 SPKI pinning |
 | expo-updates | ~57（随 SDK） | apps/mobile | 版本变更即触发 R3 热更禁区 |
 | eas-cli | CI 钉版 | CI 环境 | 签名私钥永不入 CI/仓库（R2） |
-| typescript / jest+jest-expo / eslint-config-expo | ~5.9.x / 随 SDK 模板 | root（dev） | strict 与零 error 为质量门禁（B.6）。**T2.2 实测**：jest 29.7.x + jest-expo 57.0.6；`@jest/globals` 作为 jest 工具链成员直接 importer（已随 jest-expo 解析，零新包）；`pnpm --filter mobile exec jest` 10/10 |
+| typescript / jest+jest-expo / eslint-config-expo | ~5.9.x / 随 SDK 模板 | apps/mobile（dev；2026-10-22 更正，原记 root） | strict 与零 error 为质量门禁（B.6）。**T2.2 实测（2026-10-22，owner 批准「Add Jest tests now」）**：jest **29.7.0** + jest-expo **57.0.6** + `@jest/globals` **29.7.0**（jest 工具链成员，直接 importer）；lockfile package key **1,032 → 1,384（+352）**；`pnpm --filter mobile exec jest` **13/13**；`pnpm audit` 6 条既有 advisory（详见 doc/dependencies.md 两行） |
 | pnpm | ≥9（isolated 安装） | 工具链 | 异常时回退 hoisted + 双层屏蔽 |
 | modules/vault-core | 自写（Kotlin+Swift） | modules/ | 四方法闭环；roadmap：libsecp256k1 v0.7.0 经 CMake |
 | junit / androidx.test（modules/vault-core 测试） | junit 4.13.2；androidx.test.ext:junit 1.3.0；androidx.test:runner / rules / core 1.7.0 | modules/vault-core/android（test + androidTest） | **T1.2 R4 修宪（owner 2026-10-14 批准）**；BIP39 前 4 向量自动门禁；版本参照原 NexVault 仓库 + Expo SDK 57 自身测试用法（dependencies.md §6a） |

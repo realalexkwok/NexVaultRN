@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
 import {
   formatNativeBalance,
   getChainConfig,
@@ -43,6 +43,12 @@ export default function HomeScreen() {
   const [input, setInput] = useState(watchedAddress ?? '');
   const [inputError, setInputError] = useState<string | undefined>();
   const chain = getChainConfig(selectedChainId);
+
+  useEffect(() => {
+    // accessibilityLiveRegion is Android-only; announce the inline error explicitly on iOS
+    // (review round 2 NIT-1). announceForAccessibility is a no-op on platforms without it.
+    if (inputError) AccessibilityInfo.announceForAccessibility(inputError);
+  }, [inputError]);
 
   const balanceQuery = useQuery({
     // Public data only (address + numeric chainId); safe to poll (R5). Retry/polling are scoped
@@ -132,7 +138,6 @@ export default function HomeScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
-          maxLength={42}
           accessibilityLabel="Watch address"
           accessibilityHint="Enter a public EVM address to watch on the selected chain"
           error={inputError}

@@ -56,7 +56,7 @@ import 'fastestsmallesttextencoderdecoder';
 - `src/errors.ts`：`W3AErrorCode = 'E_W3A_UNKNOWN_CHAIN'`（T2.2 子集；T4.x 码注释列出不实现）；`class W3AError extends Error { readonly code }`；`isW3AError`。
 - `src/chains.ts`：`ChainConfig`（spec §2.2 形状）；`SUPPORTED_CHAINS` = mainnet(1) [`eth.drpc.org`, `ethereum-rpc.publicnode.com`] / sepolia(11155111) [`sepolia.drpc.org`, `ethereum-sepolia-rpc.publicnode.com`]（O-3 实装端点）；`getChainConfig` 抛 `E_W3A_UNKNOWN_CHAIN`；内部 `toViemChain`（`defineChain`，nativeCurrency 补 name）。
 - `src/balance.ts`：`getNativeBalance(address, chainId): Promise<bigint>`（`createPublicClient` + `fallback(rpcUrls.map(u => http(u)), { rank: false })` + `getBalance`）；`getLatestBlockNumber(chainId): Promise<bigint>`；`formatNativeBalance(wei, decimals=18)`（`formatUnits` → 截 4 位小数去尾零）；`isValidAddress`/`normalizeAddress`（viem `isAddress`/`getAddress`）。
-- `src/index.ts` / `src/index.web.ts`：只读 barrel（errors/chains/balance 全部再导出；**不含** `toViemChain`）；签名/交易/验证 API = 文档注释指针（T4.x），零假实现。
+- `src/public-api.ts`：单一只读导出面（errors/chains/balance 全部再导出；**不含** `toViemChain`）；`src/index.ts` / `src/index.web.ts` 均 `export * from './public-api'`（review round 4 MINOR-6；签名/交易/验证 API = 文档注释指针（T4.x），零假实现）；`apps/mobile/src/web3-adapter.test.ts` + `jest.config.js`（review round 4 MAJOR-1）。
 - `specs/web3-adapter.md`：§2.2 追加 T2.2 交付注记；§2.5 只读子集块改为本期口径（`getNativeBalance(address, chainId)` 更名 + `getLatestBlockNumber`/`formatNativeBalance`；`getTransactionStatus`/`buildUnsignedTxQrPayload` 标 T4.x）；附录 `T2.2 交付（2026-10-20）` = AC-9..AC-11 + TC-W3A-009..013（gherkin）。
 验证：`pnpm -r --if-present run typecheck`（adapter 委派脚本）exit 0；`grep -rE 'privateKeyToAccount|createWalletClient|signDigest|importMnemonic' packages/web3-adapter/src` 零命中。
 
