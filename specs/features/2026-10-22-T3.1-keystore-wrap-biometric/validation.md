@@ -132,6 +132,10 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 
 `dist-web` 为构建产物（未入 git；已删除，保留命令与输出为证据）。
 
+**post-review 复核（HEAD `0e1afd8`，2026-10-22 21:4x）**：`pnpm --filter mobile exec tsc --noEmit` **exit 0**；`pnpm -r exec tsc --noEmit` **exit 0**（根目录 filter 提示同 B.6-1）；R1 grep **exit 1（干净）**；R5 grep **exit 1（干净）**；jest **3 suites / 25 tests** 全通过。
+
+**modules TS 探针（D7 证据，未落盘为门禁）**：临时 tsconfig（`extends ./tsconfig.json`；`include: ["../../modules/*/src/**/*.ts", "../../modules/security-android/index.ts"]`；`paths` 指向 `./node_modules/expo` 与 `./node_modules/expo-secure-store`）→ `npx tsc -p … --noEmit` **exit 0，零类型错误**。即 D7 option (b) 的模块 tsconfig 门禁可直接通过；待 owner 裁定后正式落盘（临时文件已删除，未入库）。
+
 ## Task 6 — review-fix 循环
 
 Status：`[ ]`
