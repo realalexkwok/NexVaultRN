@@ -45,10 +45,14 @@ export default function HomeScreen() {
   const chain = getChainConfig(selectedChainId);
 
   const balanceQuery = useQuery({
-    // Address+numeric chainId only — public data, safe to poll (R5). bigint stays in the
-    // query result (the client disables JSON structural sharing for exactly this reason).
+    // Public data only (address + numeric chainId); safe to poll (R5). Retry/polling are scoped
+    // to this query instead of global defaults (review MINOR-4); structuralSharing:false is a
+    // defensive client setting — v5 never JSON-serializes the cache (O-6/N1).
     queryKey: ['native-balance', selectedChainId, watchedAddress],
     enabled: watchedAddress !== null,
+    retry: 2,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const [wei, blockNumber] = await Promise.all([
         getNativeBalance(watchedAddress as `0x${string}`, selectedChainId),
@@ -75,8 +79,9 @@ export default function HomeScreen() {
     }
     const normalized = normalizeAddress(trimmed);
     if (!normalized) {
-      // Invalid input clears the watch so the rendered balance can never describe a different
-      // address than the field (review N3), then shows the inline error (R5: no fake data).
+      // Invalid input clears the committed watch and shows the inline error (R5: no fake data).
+      // Guarantee is commit-time only: while the user edits an invalid fragment the previous
+      // balance stays visible until blur/submit clears it (O-7 / review NIT-2).
       setInputError('Invalid address');
       setWatchedAddress(null);
       return;
@@ -111,8 +116,9 @@ export default function HomeScreen() {
           onChangeText={(value) => {
             setInput(value);
             if (inputError) setInputError(undefined);
-            // Commit as soon as the text parses (review N3: the rendered balance must never lag
-            // behind a valid field value). Empty text clears the watch.
+            // Commit as soon as the text parses (N3); while editing, an invalid fragment leaves
+            // the previous committed address in place until blur/submit (O-7 / NIT-2). Empty text
+            // clears the watch.
             const trimmed = value.trim();
             if (trimmed.length === 0) {
               setWatchedAddress(null);
@@ -124,6 +130,11 @@ export default function HomeScreen() {
           onBlur={commitAddress}
           onSubmitEditing={commitAddress}
           autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          maxLength={42}
+          accessibilityLabel="Watch address"
+          accessibilityHint="Enter a public EVM address to watch on the selected chain"
           error={inputError}
         />
       </View>

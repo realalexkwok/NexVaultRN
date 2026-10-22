@@ -1,8 +1,8 @@
-# static export route smoke — 2026-10-21T06:18:55Z UTC; npx expo serve --port 8080 (dist = copy of /tmp/t22-web, post-3943f28 export)
+# static export route smoke — 2026-10-22T00:35:41Z UTC; npx expo serve --port 8080 (dist = /tmp/t22-web5, review-round-4 export)
 GET / -> 200
 GET /home -> 200
 GET /history -> 200
 GET /settings -> 200
 GET /receive -> 200
 GET /send -> 200
-GET /_expo/static/js/web/entry-fd1422cf11f7ad4bf46cc42d28d8e2b4.js -> 200 1972693B
+GET /_expo/static/js/web/entry-18dbd8d0eebdd40235eafe07b85fced7.js -> 200 1973116B

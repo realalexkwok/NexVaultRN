@@ -18,6 +18,11 @@ export function NexVaultTextField({
   labelBackdrop = 'bg-bg',
   className = '',
   autoCapitalize = 'sentences',
+  autoCorrect,
+  spellCheck,
+  maxLength,
+  accessibilityLabel,
+  accessibilityHint,
   onBlur,
   onSubmitEditing,
 }: {
@@ -32,6 +37,13 @@ export function NexVaultTextField({
   labelBackdrop?: string;
   className?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  /** Address fidelity: hex input must not be autocorrected/spellchecked (review NIT-8). */
+  autoCorrect?: boolean;
+  spellCheck?: boolean;
+  maxLength?: number;
+  /** The floating label is a sibling Text, so the input itself needs an explicit label. */
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   /** Commit hook (T2.2 watch-address field); fires after the focus state is updated. */
   onBlur?: () => void;
   onSubmitEditing?: () => void;
@@ -67,6 +79,11 @@ export function NexVaultTextField({
           placeholderTextColor={tokens.color.textMedium}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          spellCheck={spellCheck}
+          maxLength={maxLength}
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint={accessibilityHint}
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
@@ -75,7 +92,15 @@ export function NexVaultTextField({
           onSubmitEditing={onSubmitEditing}
         />
       </View>
-      {error ? <Text className="mt-xs pl-md text-body-small font-inter-regular text-error">{error}</Text> : null}
+      {error ? (
+        <Text
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          className="mt-xs pl-md text-body-small font-inter-regular text-error"
+        >
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

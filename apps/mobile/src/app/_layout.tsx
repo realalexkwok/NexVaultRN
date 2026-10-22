@@ -15,15 +15,14 @@ import { tokens } from '@/theme/tokens';
 // balance result is a one-shot { wei, blockNumber } record, so skipping the default
 // replaceEqualDeep pass avoids deep-compare work (v5 never JSON-serializes the cache and compares
 // primitives with ===, so bigint is safe either way — corrects the earlier rationale, review N1).
-// refetchInterval polls the public RPC (dependencies.md react-query row), never in the background.
-// First frame never awaits an RPC: the balance query is mounted by the home screen after render.
+// Global defaults stay minimal on purpose: retry/refetchInterval belong to the query that wants
+// them (the balance query sets both in home.tsx), so unrelated future queries do not inherit an
+// RPC polling policy (review MINOR-4). First frame never awaits an RPC: the balance query is
+// mounted by the home screen after render.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      retry: 2,
-      refetchInterval: 30_000,
-      refetchIntervalInBackground: false,
       structuralSharing: false,
     },
   },

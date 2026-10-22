@@ -82,7 +82,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积 = **1,972,693 B**（review 修复前 1,971,473 B）。**filename hash 是构建快照**：同一 main 代码 clean rebuild 得 `entry-160b032e…js`（与 `entry-fd1422cf…js` 同体积；差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **1 suite / 10 tests passed**（review round 4 MAJOR-1 新增；`apps/mobile/src/web3-adapter.test.ts`） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积——review round 4 重建 **1,973,116 B**（`entry-18dbd8d0…js`；此前 1,972,693 B 为历史快照）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -100,7 +101,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry **1,972,693 B**（filename hash 为构建快照：`entry-fd1422…` = `entry-160b…` 同体积，NIT-5） |
+| 2b | `pnpm --filter mobile exec jest` | 10/10 tests pass（review round 4 MAJOR-1） |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry **1,973,116 B**（review round 4 重建；filename hash 为构建快照，NIT-5） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
 | 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
@@ -126,7 +128,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.3 Web 静态导出路由 smoke（`evidence/web-serve-smoke.txt`）
 
-`npx expo serve --port 8080`（dist = /tmp/t22-web 副本，**post-3943f28 导出**，2026-10-21T06:18:55Z = 14:18 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle 200 / **1,972,693 B**（review NIT-3 更正——此前引用的是修复前 bundle；filename hash 为构建快照，clean rebuild 得 `entry-160b…js` 同体积，NIT-5）。
+`npx expo serve --port 8080`（dist = **round-4 导出** `/tmp/t22-web5`，2026-10-22T00:35:41Z = 08:35 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-18dbd8d0…js` 200 / **1,973,116 B**（review round 4 重建；此前的 fd1422/160b 同体积快照为历史记录）。
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
@@ -151,11 +153,11 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ## Task 7 — MAN-017 走查（review round 1 M1 更正）
 
-- **状态：☐ 待走查**（MAN-017 未完成）。`plan.md` Task 7 明示「owner 走查后回填；若 owner 未即时走查：MAN-017 保持 ☐ 待走查」——此前记录的「☑ 通过（agent 走查）」**作废**。
+- **状态（历史）：☐ 待走查**——当时（review round 1 M1）MAN-017 未完成，此前「☑ 通过（agent 走查）」作废。**最终状态：☑ 通过（2026-10-21，见下方『走查完成』）**；本条保留时间顺序。
 - **已完成的自动侧**：RPC curl 转录（drpc/publicnode）+ `expo serve` 六路由 200。
 - **已完成的 Android 真机侧（agent）**：review 修复后重构建 APK 的**五态**截图 + **五份持久化 UI dump**（`evidence/dump-home-{empty,balance-vitalik,balance-anchor1,balance-sepolia,invalid}.xml`；§6.4，2026-10-20 19:14–19:16 +08 复走 + 2026-10-21 20:00 键盘收起复走，含 N3/N4 错误态回归与 Tokens 行文本——review MINOR-1 / round 3 NIT-3 计数对齐）。
-- **未完成的手工侧**：**Web 桌面浏览器**输入地址并截图/UI dump（MAN-017 与 reviewer M1 要求）——待 owner 走查后回填并通过。
-- 同步更正：`requirements.md` AC-7 的验证方式列（自动侧/手工侧分列，消除与 MAN-017 的口径矛盾）。
+- **手工侧（已完成 2026-10-21）**：**Web 桌面浏览器**走查两锚点 + 链切换 + 空态（真实 Chrome/155 macOS via CDP；身份与截图证据见下）。
+- 同步更正：`requirements.md` AC-7 的验证方式列——**2026-10-22 最终同步为「MAN-017 通过」**（review round 4 MINOR-2 指出此前只写了分列、未回填通过状态）。
 - **owner 走查邀请与 deferral（2026-10-21 19:38–19:49 +08）**：按已批准 continuation plan 起 `npx expo serve --port 8080`（dist = post-fix 导出副本；`/`、`/home`、`/history`、`/settings`、`/receive`、`/send` 全 200；bundle `entry-fd1422cf…js` 1,972,693 B），并采集**同轮次**交叉核对 transcripts：`evidence/curl-mainnet-walk2-{drpc,publicnode}.json`（2026-10-21T11:38:59Z；block `0x19066d7` = **26,240,727**；anchor1 `0x0`；anchor2 `0x501eb617f2372aeb` = `5,773,251,986,299,759,339` wei → 显示 **5.7732**）。已向 owner 发起 10 分钟走查确认窗口，**未收到结论** → 按 plan 记录 **deferral**：MAN-017 保持 ☐、H9 保持 open；服务可由 `cd apps/mobile && npx expo serve --port 8080` 复起，owner 完成后回填。**未以任何形式把走查记为通过。**
 - **走查完成（2026-10-21 19:59 +08 首跑；20:26 +08 复跑并持久化浏览器身份；owner 指示 agent 代为执行）**：真实桌面浏览器 **Chrome/155.0.8059.85（macOS；UA 含 `Macintosh; Intel Mac OS X 10_15_7`）** 经 **CDP :9222** + 8080 端口转发驱动（真实渲染，非模拟器）。**身份证据**：`evidence/web-walk-browser.txt`——`Browser.getVersion`（product/UA/protocolVersion 1.3）、`navigator.userAgent/platform/language`、viewport **1280×900** @dpr 1、timezone Asia/Hong_Kong、CDP target id（review round 3 MINOR-1）。五步全 PASS：
 
@@ -183,6 +185,22 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-5** | entry 文件名 hash 不可复现（`entry-fd1422…` vs clean rebuild `entry-160b…`，同体积 1,972,693 B） | 记录改为**以体积为准**并注明 filename hash 是构建快照（差异限于 Expo Router NativeTabs CSS 类图键序）；§5.1/§6.3/§Task 5 同步 | §5.1 #3/#6；§6.3；§Task 5 #3 |
 
 修复后复跑：走查五步 PASS（20:26 +08）、生产 source map 导出 exit 0、按体积核对 entry 1,972,693 B。修复提交：**`e51691e`**（main）。
+## Review round 4（2026-10-22，独立评审 subagent（review-fix-loop 轮 1）→ 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | adapter 无可执行测试（仅 typecheck），AC-2/AC-5 却绑定 TC | **owner 裁定「Add Jest tests now」**：安装已核准的 jest 29.7 + jest-expo 57.0.6（+ 工具链成员 `@jest/globals`，零新解析），新增 `apps/mobile/src/web3-adapter.test.ts`（未知链/格式化/地址/注册表 10/10），`test` script + AC-2/AC-5/AC-9 与 H6 同步 | `apps/mobile/jest.config.js`；`apps/mobile/src/web3-adapter.test.ts`；`pnpm --filter mobile exec jest` 10/10 |
+| **MINOR-2** | AC-7/§Task 7 仍写 ☐ 待走查，与 MAN-017 ☑ 矛盾 | AC-7 最终同步为「MAN-017 通过（真实 Chrome via CDP）」；§Task 7 历史条目改为「状态（历史）」+「手工侧（已完成）」 | requirements AC-7；§Task 7 |
+| **MINOR-3** | plan.md 仍prescribe `main: src/index.ts`、bigint 理由、死端点 | plan 顶部新增 **Post-review divergences** 块（逐项指向 FR-2/FR-5、spec §2.2、validation M2/O-3/O-6），并就地修正 4 处 | plan.md |
+| **MINOR-4** | `retry`/`refetchInterval` 是全局默认，所有查询都轮询 | 移至 balance `useQuery`；全局默认仅保留 `staleTime` + `structuralSharing` | `_layout.tsx`；`home.tsx` |
+| **MINOR-5** | `setSelectedChain` 接受任意 number，未知链会让 Home 渲染抛错 | store 校验 `SUPPORTED_CHAINS`，忽略未注册 id | `store/observer.ts` |
+| **MINOR-6** | index.ts / index.web.ts 双 barrel 复制导出，可漂移 | 抽出 `src/public-api.ts`，两 barrel `export *`，平台不再可漂移 | `packages/web3-adapter/src/{public-api,index,index.web}.ts` |
+| **NIT-7** | home.tsx 注释与已更正结论矛盾；多处注释引用 agent skill 而非 spec | 注释改为评审后语义（structuralSharing 防御性、提交时刻保证），引用 `specs/web3-adapter.md` | `home.tsx`；`balance.ts`/`chains.ts`/`errors.ts`/`index.ts` |
+| **NIT-8** | 地址输入无 a11yLabel、错误无 live region、autoCorrect/spellCheck/maxLength 缺失 | TextField 增 `accessibilityLabel/Hint`、`autoCorrect/spellCheck/maxLength` 透传；错误 `accessibilityRole=alert` + `accessibilityLiveRegion=polite`；home 传入 42 上限等 | `NexVaultTextField.tsx`；`home.tsx` |
+| **NIT-9** | `formatNativeBalance` 把 1–9999 wei 显示为 `0` | **owner 裁定**：非零低于精度 → `<0.0001`；AC-12/TC-W3A-013 更新；jest 覆盖 1/9999/阈值边界 | `balance.ts`；spec AC-12/TC-W3A-013；test |
+| **NIT-10** | AGENTS「手工验证」cell 仍写 MAN-001…011 | 更新为 MAN-001…017，列 MAN-011/014/015/016/017 通过日期与证据 | AGENTS.md |
+
+复跑：tsc 双形态 0、jest 10/10、export 0（15 路由）、R1/R5/R7 exit 1。修复提交：`<pending4>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -245,6 +263,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | O-7 | 地址提交语义与 Tokens 状态：空输入曾报 "Invalid address" 且保留旧地址；loading/error 时 Tokens 恒显示 "Not configured" | 已修（N3/N4）：空输入清空；非法输入清空 + 报错；输入即校验提交；Tokens 四态（无地址=Not configured / loading=骨架 / error=— / data=行）。**措辞更正（review round 3 NIT-2）**：提交时刻保证「展示余额 = 已提交地址」；**编辑过程中**字段持有非法片段时，余额仍可能短时显示上一个已提交地址，直到 blur/submit 清空——非「任何时候都不可能对应不同地址」 |
 | O-8 | 包 `main` 带扩展名（`src/index.ts`）使 web 永不解析 `index.web.ts`（M2） | 已修：`main: src/index`；`types: src/index.ts`；dev bundle 模块路径实证（§5.1） |
 | O-9 | `formatNativeBalance` 未传链 decimals（两链均 18，暂无可见缺陷） | 已修（N5）：两处调用传入 `chain.nativeCurrency.decimals` |
+| O-10 | 显示截断把非零小额渲染成 `0`（1–9999 wei） | 2026-10-22 owner 裁定 + review NIT-9：非零且低于精度显示 `<0.0001`；AC-12/TC-W3A-013 与 jest 用例同步 |
 
 ## Handoff 清单（T2.2 → T3.x / T4.x）
 
@@ -255,7 +274,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H3 | 链 failover live-fire 演练（可编程故障注入） | 需故障注入载具 | T4.x | TC-W3A-011 |
 | H4 | watch 地址持久化（SecureStore/AsyncStorage） | 新依赖需 R4 提案 | 未来条目 | Q4 / AC-6 |
 | H5 | 行情/图表数据（Total Balance 24h、chart、区间切换） | 非 T2.2 范围 | T4.x | Q2 |
-| H6 | adapter jest 单测接线（纯函数格式化/未知链） | B.6-3 当前目标 = vault-core；本期以门禁 + 走查取材 | 未来 | B.6-3 |
+| H6 | ~~adapter jest 单测接线~~ **已完成（2026-10-22，review round 4 MAJOR-1）** | — | **关闭**：jest-expo 57.0.6 + jest 29.7，`apps/mobile/src/web3-adapter.test.ts` 10/10（未知链/格式化/地址帮助函数/注册表） | B.6-3 / TC-W3A-009/010/013 |
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |

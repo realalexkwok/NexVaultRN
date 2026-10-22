@@ -238,7 +238,7 @@ Then 此前无任何 await RPC；余额区域先骨架屏后异步合并
 | AC-9 | 只读 API 契约：§2.5 导出齐全；无签名符号；`E_W3A_UNKNOWN_CHAIN` 机器可读 | TC-W3A-009 / TC-W3A-010 | tsc 双形态 + grep |
 | AC-10 | RPC 顺序 failover 机制（`fallback(..., { rank: false })`）；live-fire 演练递延 T4.x | TC-W3A-011 | 代码 grep + Handoff 记录 |
 | AC-11 | Web 只读产物：不含 vault-core 绑定与任何**密钥材料**导出（`signDigest`/`importMnemonic`/`privateKeyToAccount`/`mnemonicToAccount`/`hdKey` = 0）；viem root barrel 的 wallet-action 模块（`createWalletClient`、`signMessage` 等）随根导入进入 bundle 但无账户对象可签名——实测计数见 T2.2 validation §5.1（review M4 收窄措辞） | TC-W3A-012 | export 产物 grep（宪法 R7 命令 + 密钥符号矩阵） |
-| AC-12 | 余额显示值与 RPC wei 的 formatUnits 截断（≤4 位小数、去尾零）一致 | TC-W3A-013 | 走查交叉计算 |
+| AC-12 | 余额显示值与 RPC wei 的 formatUnits 截断（≤4 位小数、去尾零）一致；**非零但低于显示精度时显示 `<0.0001`**（不显示假零，2026-10-22 review NIT-9 裁定） | TC-W3A-013 | jest（格式化用例）+ 走查交叉计算 |
 
 ### TC-W3A-009 只读 API 契约（tsc + grep）
 ```gherkin
@@ -276,6 +276,7 @@ Then 零命中
 Given 锚点地址在 mainnet 的 eth_getBalance wei
 When UI 显示 formatNativeBalance(wei)
 Then 显示值 === formatUnits(wei, 18) 截断 4 位小数去尾零
+And 当 wei > 0 且显示为 0 时，显示 `<0.0001`（不显示假零）
 And 区块号 caption 与 eth_blockNumber 同轮次记录
 ```
 

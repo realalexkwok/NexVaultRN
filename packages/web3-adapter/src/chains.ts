@@ -4,7 +4,7 @@ import { W3AError } from './errors';
 
 // spec: web3-adapter §2.2 — the registry is the single source of chain truth. Two independent
 // public operators per chain, no API keys (R5: nothing to inject, nothing to leak). Demo scope is
-// mainnet + sepolia; the balance-walk anchors live on mainnet (skill Step 5).
+// mainnet + sepolia; the balance-walk anchors live on mainnet (spec §2.5 / validation §6.2).
 export interface ChainConfig {
   chainId: number;
   name: string;

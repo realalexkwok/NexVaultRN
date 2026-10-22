@@ -20,20 +20,23 @@ export async function getNativeBalance(address: `0x${string}`, chainId: number):
   return publicClient(chainId).getBalance({ address });
 }
 
-/** Latest block number — doubles as the balance-walk evidence anchor (skill Step 5). */
+/** Latest block number — doubles as the balance-walk evidence anchor (spec §2.5 / validation §6.2). */
 export async function getLatestBlockNumber(chainId: number): Promise<bigint> {
   return publicClient(chainId).getBlockNumber();
 }
 
 /**
  * Display helper: wei -> decimal string with at most 4 fraction digits, trailing zeros stripped.
- * Precision is lost only here, at the render edge (skill Step 4).
+ * Precision is lost only here, at the render edge (spec §2.5; AC-12 / TC-W3A-013). A nonzero
+ * balance below the display precision renders `<0.0001`, never a false zero (review NIT-9).
  */
 export function formatNativeBalance(wei: bigint, decimals = 18): string {
   const [whole, fraction] = formatUnits(wei, decimals).split('.');
   if (!fraction) return whole;
   const trimmed = fraction.slice(0, 4).replace(/0+$/, '');
-  return trimmed.length > 0 ? `${whole}.${trimmed}` : whole;
+  if (trimmed.length > 0) return `${whole}.${trimmed}`;
+  // e.g. 5.0000 -> "5"; 1 wei -> "<0.0001" (not "0"); exact zero still renders "0".
+  return whole === '0' && wei > 0n ? '<0.0001' : whole;
 }
 
 /** viem isAddress — checksum insensitivity is handled by normalizeAddress. */

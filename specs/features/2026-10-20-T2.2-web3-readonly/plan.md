@@ -3,6 +3,13 @@
 > Status: 规划轮批准（2026-10-20，`exit_plan_mode approved: true`）；按 Task 0–8 顺序执行，每 Task 完成即在 validation.md 落命令与观察结果 | Skill: `.agents/skills/nexvault-t2-2-web3-readonly/SKILL.md`（提交 `9118080`）
 > 实施纪律：R1/R5/R7/R4（技能 Invariant 1–3）；B.4 双侧证据；B.6-1 tsc 双形态；每次落盘前已有规划轮 Q/A（Q1–Q5，随 plan 批准）。
 
+> **Post-review divergences（2026-10-22，以实现与 validation 为准）**：本计划的早期草案文字已被评审轮修正，实际以以下条目为准——
+> ① `package.json main` = **无扩展名 `src/index`**（M2；写成 `src/index.ts` 会让 Metro 绕过 `index.web.ts`）；
+> ② 查询默认值仅 `staleTime` + `structuralSharing`，`retry/refetchInterval` 在 balance `useQuery` 上（MINOR-4）；`structuralSharing` 是防御性设置（v5 不 JSON 序列化缓存，N1/O-6）；
+> ③ 端点 = **drpc + publicnode**（O-3；llamarpc 已死、sepolia.org 无响应）；
+> ④ barrel = `src/public-api.ts` 单一导出面（MINOR-6）；⑤ 新增 jest 单测（MAJOR-1）；⑥ 显示 <0.0001 阈值（NIT-9）。
+> 细节指针：requirements FR-2/FR-5/AC-2/AC-5/AC-9；`specs/web3-adapter.md` §2.2/§2.5/附录 AC-12；validation M2/O-3/O-6/O-10 与 §Review round 4。
+
 ## Task 0 — 预检、分支与 feature 目录（validation §Task 0）
 
 - 预检（规划轮已做）：R4 五行核验（requirements §R4 预检，零修订）；`pnpm-workspace.yaml` 含 `packages/*`；polyfill 注入点 = `src/app/_layout.tsx`；MAN 下一号 = MAN-017；git main @ `9118080`。
@@ -17,7 +24,7 @@
   "name": "web3-adapter",
   "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
+  "main": "src/index",  // M2: extensionless -> Metro applies index.web.ts on web
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json"
@@ -41,13 +48,13 @@ import 'fastestsmallesttextencoderdecoder';
 // R8: Chrome remote debugging degrades getRandomValues to Math.random — real-money flows
 // must never run under remote debug. Web: both polyfills are no-ops (native crypto/TextEncoder exist).
 ```
-`src/app/_layout.tsx`：**第一行** `import '../polyfills';`；模块级 `const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 2, refetchInterval: 30_000, refetchIntervalInBackground: false, structuralSharing: false } } })`（bigint 非 JSON-safe）；`<QueryClientProvider client={queryClient}>` 包住 `<SafeAreaProvider>`（keyed Stack 重挂载不重挂 Provider）。
+`src/app/_layout.tsx`：**第一行** `import '../polyfills';`；模块级 `const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, structuralSharing: false } } })`（`structuralSharing:false` 为防御性、非 JSON-serialization 问题，N1/O-6；`retry/refetchInterval` 移至 balance query，MINOR-4）；`<QueryClientProvider client={queryClient}>` 包住 `<SafeAreaProvider>`（keyed Stack 重挂载不重挂 Provider）。
 验证：`head -1` grep 断言；`grep -n 'structuralSharing'`；tsc（Task 5 统一）。
 
 ## Task 3 — adapter 源码 + specs/web3-adapter.md 修订（FR-2/FR-3/FR-7；validation §Task 3）
 
 - `src/errors.ts`：`W3AErrorCode = 'E_W3A_UNKNOWN_CHAIN'`（T2.2 子集；T4.x 码注释列出不实现）；`class W3AError extends Error { readonly code }`；`isW3AError`。
-- `src/chains.ts`：`ChainConfig`（spec §2.2 形状）；`SUPPORTED_CHAINS` = mainnet(1) [`eth.llamarpc.com`, `ethereum-rpc.publicnode.com`] / sepolia(11155111) [`ethereum-sepolia-rpc.publicnode.com`, `rpc.sepolia.org`]；`getChainConfig` 抛 `E_W3A_UNKNOWN_CHAIN`；内部 `toViemChain`（`defineChain`，nativeCurrency 补 name）。
+- `src/chains.ts`：`ChainConfig`（spec §2.2 形状）；`SUPPORTED_CHAINS` = mainnet(1) [`eth.drpc.org`, `ethereum-rpc.publicnode.com`] / sepolia(11155111) [`sepolia.drpc.org`, `ethereum-sepolia-rpc.publicnode.com`]（O-3 实装端点）；`getChainConfig` 抛 `E_W3A_UNKNOWN_CHAIN`；内部 `toViemChain`（`defineChain`，nativeCurrency 补 name）。
 - `src/balance.ts`：`getNativeBalance(address, chainId): Promise<bigint>`（`createPublicClient` + `fallback(rpcUrls.map(u => http(u)), { rank: false })` + `getBalance`）；`getLatestBlockNumber(chainId): Promise<bigint>`；`formatNativeBalance(wei, decimals=18)`（`formatUnits` → 截 4 位小数去尾零）；`isValidAddress`/`normalizeAddress`（viem `isAddress`/`getAddress`）。
 - `src/index.ts` / `src/index.web.ts`：只读 barrel（errors/chains/balance 全部再导出；**不含** `toViemChain`）；签名/交易/验证 API = 文档注释指针（T4.x），零假实现。
 - `specs/web3-adapter.md`：§2.2 追加 T2.2 交付注记；§2.5 只读子集块改为本期口径（`getNativeBalance(address, chainId)` 更名 + `getLatestBlockNumber`/`formatNativeBalance`；`getTransactionStatus`/`buildUnsignedTxQrPayload` 标 T4.x）；附录 `T2.2 交付（2026-10-20）` = AC-9..AC-11 + TC-W3A-009..013（gherkin）。
@@ -76,7 +83,7 @@ import 'fastestsmallesttextencoderdecoder';
 ## Task 6 — balance walk 自动化侧（FR-8/AC-7；validation §Task 6）
 
 锚点：`0x9858EfFD232B4033E47d90003D41EC34EcaEda94`、`0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`（mainnet）。
-- curl 转录：对 mainnet 双 RPC 分别 `eth_getBalance` + `eth_blockNumber` → `evidence/curl-mainnet-{llama,publicnode}.json`；交叉计算表（wei → formatUnits → UI 截断值）。
+- curl 转录：对 mainnet 双 RPC 分别 `eth_getBalance` + `eth_blockNumber` → `evidence/curl-mainnet-{drpc,publicnode}.json`；交叉计算表（wei → formatUnits → UI 截断值；非零低于精度显示 `<0.0001`）。
 - Web：`python3 -m http.server` 服 `/tmp/t22-web` → curl `/` 与 `/home` 200；转录 `evidence/web-serve-smoke.txt`。
 - Android：`./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a`（T2.1a 同管线）→ `adb install -r` → 停 Metro → 启动 → 输入锚点地址 → UI dump + 截图（余额 + block caption）→ `evidence/shell-home-balance-*.png/.txt`；记录 `adb devices`、`getprop ro.build.version.release`。
 

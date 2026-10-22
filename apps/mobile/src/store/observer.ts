@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { SUPPORTED_CHAINS } from 'web3-adapter';
+
 // Observed-wallet store (T2.2). Public data only: a chain id and watched addresses (R1 — no key
 // material ever enters the store; nothing here is sensitive). Session-only by design: no
 // persistence dependency is R4-approved (AsyncStorage/SecureStore would each need an amendment —
@@ -16,6 +18,11 @@ export interface ObserverState {
 export const useObserverStore = create<ObserverState>()((set) => ({
   selectedChainId: 1, // Ethereum mainnet — the balance-walk anchor chain
   watchedAddresses: [],
-  setSelectedChain: (chainId) => set({ selectedChainId: chainId }),
+  setSelectedChain: (chainId) => {
+    // Ignore unregistered ids: Home renders getChainConfig(selectedChainId), which throws for an
+    // unknown chain, so the store is the invariant boundary (review MINOR-5).
+    if (!SUPPORTED_CHAINS.some((candidate) => candidate.chainId === chainId)) return;
+    set({ selectedChainId: chainId });
+  },
   setWatchedAddress: (address) => set({ watchedAddresses: address ? [address] : [] }),
 }));
