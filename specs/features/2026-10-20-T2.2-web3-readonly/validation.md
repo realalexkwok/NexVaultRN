@@ -95,7 +95,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
 | 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——归属更正见 **round 7 MINOR-2**（94c661f）、计数更新见 **round 6 MINOR-5**、门禁再现性见 round 8 MINOR-4） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**。**canonical（clean rebuild，HEAD `22243b9`）**：`npx expo export --platform web --output-dir /tmp/t22-web-canon --clear` → `entry-8182b0df1158772a422795cd43b1cd16.js` = **1,973,511 B**（review round 6 MINOR-5 复现复核）。此前各轮的 1,973,16x B 为**增量构建快照**（Metro 缓存/模块序影响），不再作为门禁数值；每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**。**canonical（clean rebuild，HEAD `22243b9`）**：`npx expo export --platform web --output-dir /tmp/t22-web-canon --clear` → `entry-8182b0df1158772a422795cd43b1cd16.js` = **1,973,511 B**（review round 9 MINOR-5 复现复核）。此前各轮的 1,973,16x B 为**增量构建快照**（Metro 缓存/模块序影响），不再作为门禁数值；每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -144,7 +144,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
-- 构件（review 修复后重构建，2026-10-20 19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。**构件版本注记（review round 6 MINOR-2）**：该 APK 的源码修订 = **`3943f28`**（review round 1 修复后、round 4 之前）；此后 `a239aeb`/`56b7f48`/`5eefaf0`/`94c661f`/`a8db6eb` 均改过 app 代码（含 a11y），故该 APK **不能**用于 AC-10/MAN-018 验证，MAN-017 余额走查亦为 round-4 前代码的既有证据；如需当前代码的真机证据须重新构建。
+- 构件（review 修复后重构建，2026-10-20 19:08）：`/home/superguo/Projects/NexVaultRN/apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,756,998 B**（内置 bundle **4,129,056 B**；arm64；`BUILD SUCCESSFUL in 1m 37s`；`JAVA_HOME=/home/superguo/tools/jdk-17`，见 spec dev-environment §1）。**构件版本注记（review round 9 MINOR-2）**：该 APK 的源码修订 = **`3943f28`**（review round 1 修复后、round 4 之前）；此后 `a239aeb`/`56b7f48`/`5eefaf0`/`94c661f`/`a8db6eb` 均改过 app 代码（含 a11y），故该 APK **不能**用于 AC-10/MAN-018 验证，MAN-017 余额走查亦为 round-4 前代码的既有证据；如需当前代码的真机证据须重新构建。
 - 设备：Pixel 6a / Android 17（`CP2A.260705.006`，`bluejay`，user/release-keys）；**2026-10-21 20:00 +08 键盘收起复走**（`adb` 串口 `10.42.0.139:42779`；10-20 首轮为 `:35343`/`:39871`）；输入方法 = Gboard **Alphabet** 子类型（中文拼音子类型会把 adb 注入的十六进制串组合成汉字，见 §6.5）。
 
 | # | 操作 | 观察（UI dump，2026-10-21 20:00–20:02 +08，键盘收起） | 证据 |
