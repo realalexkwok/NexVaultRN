@@ -10,6 +10,7 @@ import {
   isValidAddress,
   normalizeAddress,
 } from 'web3-adapter/src/balance.web';
+import * as webBarrel from 'web3-adapter/src/index.web';
 
 const originalFetch = globalThis.fetch;
 
@@ -62,6 +63,14 @@ describe('web JSON-RPC balance path', () => {
     mockFetch(async () => ({ error: { code: -32000, message: 'boom' } }));
     await expect(getLatestBlockNumber(11155111)).rejects.toThrow('boom');
   });
+
+  it('aborts a stalled endpoint instead of hanging in isLoading', async () => {
+    const fetchMock = jest.fn((_url: unknown, init?: RequestInit) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await expect(getLatestBlockNumber(1, { timeoutMs: 30 })).rejects.toThrow();
+  });
 });
 
 describe('web address helpers (no keccak in the web chunk)', () => {
@@ -75,6 +84,31 @@ describe('web address helpers (no keccak in the web chunk)', () => {
   it('canonicalizes to lowercase (JSON-RPC form)', () => {
     expect(normalizeAddress('0x9858EfFD232B4033E47d90003D41EC34EcaEda94')).toBe('0x9858effd232b4033e47d90003d41ec34ecaeda94');
     expect(normalizeAddress('0x123')).toBeNull();
+  });
+
+  it('accepts mixed-case without EIP-55 validation (documented web divergence)', () => {
+    // Checksum-invalid casing: native viem isAddress rejects it, the web regex cannot know
+    // (no keccak in the web chunk) and accepts it — see specs/web3-adapter.md §2.5.
+    const checksumInvalid = '0x9858EFFd232B4033E47d90003D41EC34EcaEda94';
+    expect(isValidAddress(checksumInvalid)).toBe(true);
+    expect(normalizeAddress(checksumInvalid)).toBe(checksumInvalid.toLowerCase());
+  });
+
+  it('web barrel exposes the read-only surface', () => {
+    const barrel = webBarrel as unknown as Record<string, unknown>;
+    for (const name of [
+      'SUPPORTED_CHAINS',
+      'getChainConfig',
+      'getNativeBalance',
+      'getLatestBlockNumber',
+      'formatNativeBalance',
+      'isValidAddress',
+      'normalizeAddress',
+      'W3AError',
+      'isW3AError',
+    ]) {
+      expect(barrel[name]).toBeDefined();
+    }
   });
 
   it('shares the display formatting with native', () => {

@@ -1,8 +1,8 @@
-# static export route smoke — 2026-10-22T06:36:50Z UTC; expo serve 8080; dist = canonical export after R7 web split
+# static export route smoke — 2026-10-22T06:59:57Z UTC; expo serve 8080; dist = canonical export (review轮 2 fixes)
 GET / -> 200
 GET /home -> 200
 GET /history -> 200
 GET /settings -> 200
 GET /receive -> 200
 GET /send -> 200
-GET /_expo/static/js/web/entry-456faa1f757599399b6c62b8065d6bd9.js -> 200 1331702B
+GET /_expo/static/js/web/entry-52f35f212e96e2472c784723703b0ae8.js -> 200 1331901B

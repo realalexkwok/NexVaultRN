@@ -11,11 +11,21 @@ interface JsonRpcResponse {
   error?: { code: number; message: string };
 }
 
-async function rpcCall(url: string, method: string, params: unknown[]): Promise<string> {
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+interface RpcOptions {
+  /** Per-request ceiling; native viem transport has an equivalent HTTP timeout. */
+  timeoutMs?: number;
+}
+
+async function rpcCall(url: string, method: string, params: unknown[], options: RpcOptions): Promise<string> {
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    // A stalled endpoint must fail (and fail over) instead of leaving the query in isLoading
+    // forever — React Query retry cannot abort an in-flight fetch (review轮 2 MINOR-2).
+    signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`RPC HTTP ${response.status} from ${url}`);
   const payload = (await response.json()) as JsonRpcResponse;
@@ -24,12 +34,12 @@ async function rpcCall(url: string, method: string, params: unknown[]): Promise<
   return payload.result;
 }
 
-async function callWithFailover(chainId: number, method: string, params: unknown[]): Promise<bigint> {
+async function callWithFailover(chainId: number, method: string, params: unknown[], options: RpcOptions): Promise<bigint> {
   const { rpcUrls } = getChainConfig(chainId);
   let lastError: unknown;
   for (const url of rpcUrls) {
     try {
-      return BigInt(await rpcCall(url, method, params));
+      return BigInt(await rpcCall(url, method, params, options));
     } catch (error) {
       lastError = error;
     }
@@ -37,10 +47,10 @@ async function callWithFailover(chainId: number, method: string, params: unknown
   throw lastError instanceof Error ? lastError : new Error('RPC unavailable');
 }
 
-export async function getNativeBalance(address: `0x${string}`, chainId: number): Promise<bigint> {
-  return callWithFailover(chainId, 'eth_getBalance', [address, 'latest']);
+export async function getNativeBalance(address: `0x${string}`, chainId: number, options: RpcOptions = {}): Promise<bigint> {
+  return callWithFailover(chainId, 'eth_getBalance', [address, 'latest'], options);
 }
 
-export async function getLatestBlockNumber(chainId: number): Promise<bigint> {
-  return callWithFailover(chainId, 'eth_blockNumber', []);
+export async function getLatestBlockNumber(chainId: number, options: RpcOptions = {}): Promise<bigint> {
+  return callWithFailover(chainId, 'eth_blockNumber', [], options);
 }

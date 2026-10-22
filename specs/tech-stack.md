@@ -37,7 +37,7 @@
 | viem | 2.56.x（2.56.9） | packages/web3-adapter + apps/mobile | 唯一 EVM 链交互库 |
 | react-native-get-random-values | 2.0.0 | apps/mobile | 入口 polyfill 首行；远程调试退化 Math.random（R8） |
 | fastestsmallesttextencoderdecoder | 1.0.20 | apps/mobile | TextEncoder 防御性 polyfill（viem 官方推荐） |
-| @noble/curves / @noble/hashes / @scure/bip39 / @scure/bip32 | vault-core 测试直用 2.4.x；**viem 2.56.9 传递生产副本 = @noble/curves 1.9.1 / @noble/hashes 1.8.0 / @scure/bip32 1.7.0 / @scure/bip39 1.6.0** | packages/vault-core（dev 测试）+ packages/web3-adapter（viem 传递，** native only**） | 信任依据：viem 官方依赖（paulmillr 审计）。**2026-10-22 更正**：不再是「仅 devDependency」——原生 bundle 含 viem 图（预期）；**web chunk 经 R7 split 后全矩阵 0**（`@noble*`/`@scure*`/`secp256k1`/wallet actions，见 T2.2 validation §Task 5 行 5b），web 读路径为 fetch JSON-RPC |
+| @noble/curves / @noble/hashes / @scure/bip39 / @scure/bip32 | **viem 2.56.9 传递生产副本 = @noble/curves 1.9.1 / @noble/hashes 1.8.0 / @scure/bip32 1.7.0 / @scure/bip39 1.6.0**（lockfile 精确；非直接依赖） | packages/web3-adapter（viem 传递，**native only**） | 信任依据：viem 官方依赖（paulmillr 审计）。**2026-10-22 更正（审核轮 2 MINOR-5）**：本仓**没有** `packages/vault-core`，也没有 2.4.x 直接 devDependency——T1.4 的 noble@2.4.0 是 `/tmp` 一次性交叉核验，零仓库漂移；原生 bundle 含 viem 图属预期；**web chunk 经 R7 split 后全矩阵 0**（见 T2.2 validation §Task 5 行 5b），web 读路径为 fetch JSON-RPC |
 | expo-secure-store | ~57（随 SDK） | apps/mobile | KV 密文存储，不存 k1 私钥 |
 | expo-screen-capture | ~57.0.4 | apps/mobile | FLAG_SECURE / app switcher 模糊 |
 | @expo/app-integrity | alpha（**精确锁版**） | apps/mobile | 升级走修宪 |
