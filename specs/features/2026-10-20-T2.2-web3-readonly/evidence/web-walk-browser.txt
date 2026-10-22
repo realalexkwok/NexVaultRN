@@ -1,7 +1,7 @@
 # Browser identity captured over CDP :9222 during the MAN-017 walk
-captured_at_utc: 2026-10-21T12:26:07.653Z
+captured_at_utc: 2026-10-22T06:36:54.350Z
 cdp_endpoint: http://localhost:9222 (Target.createTarget /json/new, then Page/Runtime)
-target_id: 649D4DB5018AC6AD4114CAE720923D48
+target_id: 2E1C8FF5B5856AF11C6BE54C94BD1E7C
 Browser.getVersion.product: Chrome/155.0.8059.85
 Browser.getVersion.userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
 Browser.getVersion.protocolVersion: 1.3

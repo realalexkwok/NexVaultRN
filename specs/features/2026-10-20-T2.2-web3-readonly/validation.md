@@ -60,7 +60,19 @@ import 'fastestsmallesttextencoderdecoder';
 ```
 `apps/mobile/src/app/_layout.tsx`：第 1 行 `import '../polyfills';`（grep 实测）；模块级 `QueryClient`：**仅** `staleTime 30_000` + **`structuralSharing false`**（`retry 2` / `refetchInterval 30_000` / `refetchIntervalInBackground false` 已移至 home 的 balance `useQuery`，review round 4 MINOR-4）（**防御性**：跳过默认 `replaceEqualDeep` 深比较；v5 缓存不 JSON 序列化、primitive 用 `===` 比较并原样复制，bigint 本安全——review N1 更正，早前「bigint 会被 JSON 序列化破坏」的表述错误）；`<QueryClientProvider client={queryClient}>` 包住 `<SafeAreaProvider>`（keyed Stack 重挂载不重挂 Provider）。
 
-位置口径（O-5）：spec §2.1 写 `apps/mobile/polyfills.ts`，ui-wallet §2.1 要求根 `_layout` 第一行 `import '../polyfills'`（相对 = `src/polyfills.ts`）——取后者的位置（`src/polyfills.ts`），契约顺序不变。
+位置口径（O-5）：spec §2.1 已修订为 `apps/mobile/src/polyfills.ts` + 「根 `_layout.tsx` 第一条 import」；ui-wallet §2.1 的 `import '../polyfills'` 与之一致。
+
+**AC-1 / AC-3 门禁命令（review 轮 1 MAJOR-2 补齐，B.4-2）**：
+```bash
+$ head -1 apps/mobile/src/app/_layout.tsx
+import '../polyfills';                 # exit 0
+$ head -2 apps/mobile/src/polyfills.ts
+import 'react-native-get-random-values';
+import 'fastestsmallesttextencoderdecoder';   # exit 0（顺序断言）
+$ grep -n '{ rank: false }' packages/web3-adapter/src/balance.ts
+16:      { rank: false },               # exit 0（AC-3 代码路径）
+```
+AC-3 的 live-fire 故障注入仍为 **H3**（递延），本行只证明代码路径存在。
 
 ## Task 3 — adapter 源码 + specs/web3-adapter.md 修订
 
@@ -93,11 +105,13 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | # | 命令 | 观察结果 | 判定 |
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
-| 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 新增 adapter 10 例；review round 5 增 store 3 例 = 13；round 6 计数不变——归属更正见 **round 7 MINOR-2**（94c661f）、计数更新见 **round 6 MINOR-5**、门禁再现性见 round 8 MINOR-4） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**。**canonical（clean rebuild，HEAD `22243b9`）**：`npx expo export --platform web --output-dir /tmp/t22-web-canon --clear` → `entry-8182b0df1158772a422795cd43b1cd16.js` = **1,973,511 B**（review round 9 MINOR-5 复现复核）。此前各轮的 1,973,16x B 为**增量构建快照**（Metro 缓存/模块序影响），不再作为门禁数值；每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
-| 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
-| 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
+| 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖）。**审核轮 2 BLOCKER-1 更正**：该行此前为红（`fetch` 缺 DOM lib），已修 `packages/web3-adapter/tsconfig.json`（lib 加 DOM）后复跑 0 | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **3 suites / 25 tests passed**（adapter 10 + web 11 + store 4；审核轮 2 增 stall/timeout、checksum 分歧、web barrel 表面 3 例） | ✓ |
+| 2c | `head -1 apps/mobile/src/app/_layout.tsx` / `head -2 apps/mobile/src/polyfills.ts` / `grep -n '{ rank: false }' packages/web3-adapter/src/balance.ts` | 三条命令 exit 0；输出见 §Task 2 命令块（AC-1 顺序 + AC-3 代码路径） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web-canon4 --clear` | EXPORT_EXIT=0；**15 静态路由**；**canonical（2026-10-22 审核轮 3）**：`entry-828c830cd0e4acaa015173fc3a8a3741.js` = **1,331,901 B**（此前 canon3/`52f35f` 为审核轮 2 历史；较拆分前 1,973,511 B **−641,610 B**）。每轮记录 **hash + bytes**，不作跨构建体积相等断言 | ✓ |
+| 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web-canon4/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
+| 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web-canon4/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
+| 5b | 全图矩阵（canon4 `entry-828c830c…js`，审核轮 3） | `@noble/curves` 0 · `@noble` 0 · `@scure` 0 · `secp256k1` 0 · `createWalletClient` 0 · `signMessage` 0 · `signTransaction` 0 · `HDKey` 0 · `mnemonicToSeedSync` 0 · `viem` 0（R7 web split 达成，AC-6/TC-W3A-006） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
 | 7 | R5 console grep（宪法原文） | R5_EXIT=1（零命中） | ✓ |
 | 8 | `npx expo-doctor`（apps/mobile） | **21/21 checks passed** | ✓ |
@@ -105,7 +119,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 10 | 产物端点断言 | `grep -c eth.drpc.org` = 1；`grep -c eth.llamarpc.com` = 0 | ✓ |
 
 - **H4 implement（T2.1a Handoff）**：`AGENTS.md` B.5 R7 示例命令 `-o dist-web` → `--output-dir dist-web`（行 179），证据用新文本复跑（行 4）。
-- **O-4（review M4 更正，实测矩阵）**：web bundle 的 viem root-barrel surface——`createWalletClient` **3**、`signMessage` **10**、`signTransaction` **10**、`signTypedData` **7**；**密钥材料符号 0**（`privateKeyToAccount` / `mnemonicToAccount` / `hdKey` / `signDigest` / `importMnemonic` / `vault-core`）。viem wallet-action 模块随根导入进入（Metro 不做 tree-shaking），但无账户对象即无法签名；R7 宪法 grep 干净。AC-11 措辞已收窄为「无 vault-core / 密钥材料导出」；T4.x 若需更严（AC-6 子路径收敛），在 T4.1 规划轮处理。
+- **O-4（2026-10-22 复核重写）**：拆分前的 web bundle 曾含 viem root-barrel surface（`createWalletClient` 3、`signMessage` 10、`signTransaction` 10、`signTypedData` 7）与 `@noble/curves`/`@scure` 图——**review 轮 1 MAJOR-1 判为 R7/AC-6 违约**；owner 裁定走 **web split**（方案 a）。现 web 读路径 = `balance.web.ts`（fetch JSON-RPC）+ `chains.web.ts`（纯注册表）+ `address.web.ts`（正则/lowercase），**全矩阵 0**（行 5b），bundle 减 641,809 B；原生仍用 viem（`chains.ts`/`balance.ts`/`address.ts`）。AC-4 措辞已扩为「无 viem 图/签名路径」；T4.x 若需更严（AC-6 子路径收敛），在 T4.1 规划轮处理。
 
 ### 5.1 Review round 1 修复后复跑（2026-10-20 19:0x）
 
@@ -140,7 +154,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 ### 6.3 Web 静态导出路由 smoke（`evidence/web-serve-smoke.txt`）
 
-`npx expo serve --port 8080`（dist = **round-4 导出** `/tmp/t22-web5`，2026-10-22T00:35:41Z = 08:35 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-18dbd8d0…js` 200 / **1,973,116 B**（review round 4 重建；此前的 fd1422/160b 同体积快照为历史记录）。
+`npx expo serve --port 8080`（dist = **审核轮 3 canonical 导出** `/tmp/t22-web-canon4`，2026-10-22T07:12:34Z = 15:12 +08 复跑）：`/` 200、`/home` 200、`/history` 200、`/settings` 200、`/receive` 200、`/send` 200；bundle `entry-828c830c…js` 200 / **1,331,901 B**（证据 `evidence/web-serve-smoke.txt`；此前的 fd1422/160b/18dbd8d0/456faa1f/52f35f21 为历史记录）。
 
 ### 6.4 Android 真机 walk（release APK，零 Metro）
 
@@ -158,6 +172,22 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 持久化 UI dump（review round 2 MINOR-1）：**五份** `evidence/dump-home-{empty,balance-vitalik,balance-anchor1,balance-sepolia,invalid}.xml`；本轮截图**键盘已收起**，Tokens 行在 PNG 与 dump 中**均可见**（10-20 首轮截图被软键盘遮挡的问题已消除）。loading 骨架为瞬时态、em-dash 错误态需断网注入（会切断 adb-over-TCP），两者仍以代码路径 + invalid 态 dump 佐证。
 
 一致性（review N2 复算）：设备显示值 == curl wei 交叉计算值（5.7732）；主网 walk2 transcripts `0x1904a56` = **26,240,727** @19:38:59 → 设备 anchor2 **#26240838**（+111 块 / ~22 min ≈ 5.05 块/分钟 ✓）→ anchor1 **#26240840**（+2 块）；Sepolia 设备 **#11962283** 相对 10-20 19:15 的 `0xb66af3` = 11,954,931 累计 +7,352 块 / ~24.8 h ≈ 4.9 块/分钟 ✓。（10-20 首轮复走数值 26,233,430/433、11,954,933 保留在 §Closure 历史记录中。）
+
+### 6.4b 2026-10-22 当前代码重建复走（审核轮 2 MINOR-6 / 持久 reviewer 轮 4 复走，review round 13）
+
+- 构件：`apps/mobile/android/app/build/outputs/apk/release/app-release.apk` = **46,779,132 B**（arm64-only；sha256 前缀 `26c98930…`；`BUILD SUCCESSFUL in 1m 30s`，2026-10-22 15:19 +08；`JAVA_HOME=/home/superguo/tools/jdk-17`）；源码 = **`ff80939`**（review round 12 / 持久 reviewer 轮 3 修复后的代码修订；构建时工作树仅多出文档提交，app 代码一致），零 Metro。
+- 设备：Pixel 6a / Android 17（adb `10.42.0.139:42409`）；输入法 = Gboard **English** 子类型（本轮中途一度复现中文拼音组合乱码，切回 English 后逐字正确）。
+
+| # | 操作 | 观察（UI dump，2026-10-22 15:19–15:21 +08，键盘收起） | 证据 |
+|---|---|---|---|
+| 1 | 冷启动 → Shell preview（无地址） | `Chain · Ethereum` / `Total Balance` / **`Not configured`**（无假数据） | `shell-home-empty.png` + `dump-home-empty.xml` |
+| 2 | 输入 `0x9858…Eda94` + ENTER | **`0 ETH`**；`Ethereum · Block #26246622` | `shell-home-balance-anchor1.png` + `dump-home-balance-anchor1.xml` |
+| 3 | 输入 `0xd8dA…6045` + ENTER | **`5.7732 ETH`**；`Ethereum · Block #26246623`；Tokens 行 `ETH / 5.7732` | `shell-home-balance-anchor2.png` + `dump-home-balance-anchor2.xml` |
+| 4 | 点按链 pill → Sepolia（字段仍 `0xd8dA…`） | `Chain · Sepolia`；**`61.595 ETH`**；`Sepolia · Block #11968019` | `shell-home-balance-sepolia.png` + `dump-home-balance-sepolia.xml` |
+| 5 | 清空字段 + ENTER | **`Not configured`**（三处），无残留余额 | `shell-home-cleared.png` + `dump-home-cleared.xml` |
+| 6 | 输入 `0x123` + ENTER | 输入框 **`Invalid address`**；Total Balance / Tokens **`Not configured`** | `shell-home-invalid.png` + `dump-home-invalid.xml` |
+
+§6.4 表（2026-10-21，源码 `3943f28`）仍保留为历史证据。§6.4b 首轮（14:55，源码 `87e6d8e`，数值 `#26246506` / `#26246508` / `#11967905`）**已被本表替换**——对应 `shell-home-*` / `dump-home-*` 文件同样被覆盖，旧值仅存于 git 历史（review round 14 MINOR-1 / 持久 reviewer 轮 5）。本表为审核 HEAD（`ff80939` 代码）的当前复走，用于回应 review round 13 MINOR-1（持久 reviewer 轮 4）。
 
 ### 6.5 设备输入方法注记（复走期间）
 
@@ -180,6 +210,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | 锚点2 `0xd8dA…6045` | **5.7732 ETH** · `Ethereum · Block #26240962`（curl 交叉值 5.7732 ✓） | `web-walk-anchor2.png` |
 | 链 pill → Sepolia（字段内仍为 `0xd8dA…`） | `Chain · Sepolia` · **61.095 ETH** · `Sepolia · Block #11962401` | `web-walk-sepolia.png` |
 | 清空字段 | `Not configured`（无假数据） | `web-walk-cleared.png` |
+
+  **2026-10-22 14:36 +08（R7 web split 后）复跑**：五步全 PASS——anchor1/anchor2 `Ethereum · Block #26246406`（0 ETH / **5.7732 ETH**）、Sepolia `61.595 ETH` @ `#11967802`（字段内仍为 `0xd8dA…`）、清空 `Not configured`；身份仍为 Chrome/155.0.8059.85，view 1280×900。**附加：AC-6 RPC error 态**（同轮 CDP `Network.setBlockedURLs` 拦截 `*drpc.org*`/`*publicnode.com*`）→ UI 显示 **`RPC unavailable` + `Retry`**、Tokens `—`，证据 `evidence/web-walk-rpc-error.{png,txt}`（2026-10-22T06:33:30Z）。
 
   转录：`evidence/web-walk-transcript.txt`（头含 browser/UA/viewport；五步全文 + 时间戳）。上表数值为 **20:26 复跑**：`#26,240,962` / Sepolia `#11,962,401`，相对 19:38 基线 26,240,727 为 +235 块 / ~48 分钟 ≈ 4.9 块/分钟 ✓。**MAN-017 判定：通过**；**H9 关闭**。（注：Sepolia 步骤余额属于当时仍在输入框内的 `0xd8dA…6045` → `61.095 ETH`，如实记录。）
 
@@ -278,6 +310,69 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-8** | H10 行无行尾换行 | 已补 | validation |
 
 复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由；canonical 见 §Task 5）、R1/R5/R7 exit 1。修复提交：**`6a4b6e7`**（main）。
+## Review round 10（2026-10-22，review-fix 循环轮 7 / 持久 reviewer 轮 1 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | web bundle 仍含 viem 签名/派生图（`@noble/curves`、`@scure`、wallet actions）→ 违反 AC-6/R7 | **owner 裁定方案 a（web split）**：新增 `chains.base.ts` / `chains.web.ts` / `balance.web.ts`（fetch JSON-RPC + 顺序 failover）/ `format.ts` / `address.web.ts`；原生仍 viem。web 全矩阵 **0**、bundle **−641,809 B**；新增 8 例 web 测试 | §Task 5 行 3/5b；`apps/mobile/src/web3-adapter-web.test.ts` |
+| **MAJOR-2** | AC-1/AC-3 门禁缺命令原文与退出码 | §Task 2 增命令块（`head -1 _layout`、`head -2 polyfills`、`grep '{ rank: false }'`），§Task 5 增行 2c | §Task 2 / §Task 5 |
+| **MINOR-3** | R4 记录称 `@noble`/`@scure` 「仅 devDependency」、viem 位置错 | tech-stack 行 + doc/dependencies viem/@noble 行更正：viem 传递生产副本（curves 1.9.1 等，native）；web chunk 经 split 后为 0 | `specs/tech-stack.md`；`doc/dependencies.md` |
+| **MINOR-4** | FR-7/plan 仍写 AC-9..AC-11 | 改为 **AC-9..AC-12** | requirements FR-7；plan Task 3 |
+| **MINOR-5** | spec §2.1 仍写 `apps/mobile/polyfills.ts` + entry 前 import | §2.1 改为 `apps/mobile/src/polyfills.ts` + 根 `_layout` 第一条 import；AC-1 行同步 | `specs/web3-adapter.md` §2.1/AC-1 |
+| **MINOR-6** | AC-6 RPC-error 态无 UI 证据 | CDP `Network.setBlockedURLs`（`*drpc.org*`/`*publicnode.com*`）实测：`RPC unavailable` + `Retry`、Tokens `—`；证据 `evidence/web-walk-rpc-error.{png,txt}` | §Task 7；AC-6 |
+| **MINOR-7** | AGENTS 轮次标注混乱 + 阶段证据缺 T2.2 | 统一为「review 轮 N = 循环轮 N−3」；阶段证据补 T2.2 validation 路径 | AGENTS Part A |
+| **NIT-8** | Home 提交逻辑两处重复 | 抽出 `commitAddress(value, showError)`，typing 与 blur/submit 共用 | `home.tsx` |
+| **NIT-9** | store 无地址不变量 | `setWatchedAddress` 归一化后写入、非法忽略；store 测试 +1（共 4） | `observer.ts`；`observer.test.ts` |
+| **NIT-10** | chain pill / Retry 触控目标 < 48dp | 两处加 `hitSlop={tokens.spacing.sm}` | `home.tsx` |
+
+复跑：tsc 双形态 0（**更正：该提交的形态 2 实为红——adapter 缺 DOM lib，见 §Review round 11 BLOCKER-1**）、jest **3 suites / 22 tests**、export 0（**15 路由**；`entry-456faa1f…js` **1,331,702 B**）、全图矩阵 0、web smoke 六路由 200、五态 + RPC-error 态 CDP 走查 PASS、R1/R5/R7 exit 1。修复提交：**`6563ff6`**（main）。
+## Review round 11（2026-10-22，review-fix 循环轮 8 / 持久 reviewer 轮 2 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **BLOCKER-1** | `pnpm -r --if-present run typecheck` 红：adapter tsconfig 无 DOM lib，`fetch` 未声明；而 validation 记为 0 | `packages/web3-adapter/tsconfig.json` lib 加 **DOM**；双形态复跑均 0；§Task 5 行 2 更正并记录历史失败 | §Task 5 行 2 |
+| **MINOR-2** | web fetch 无超时，stalled RPC 会让查询永远 loading | `AbortSignal.timeout(10s)`（可覆盖 `timeoutMs`）+ 新增 stall 测试 | `balance.web.ts`；web test |
+| **MINOR-3** | web 无 EIP-55（混合大小写 checksum 错误也接受），与原生/文档不一致 | 在 spec §2.5 明确平台分歧（原生 viem 含 checksum；web 正则+lowercase）、原生 docstring 注明；新增 checksum-invalid 用例 | `specs/web3-adapter.md` §2.5；`address.ts`；web test |
+| **MINOR-4** | FR-1 仍写旧路径与「冲突」 | 重写为「`src/app/_layout.tsx` 第一条 import」+ 无遗留冲突 | requirements FR-1 |
+| **MINOR-5** | R4 记录仍称 `@noble 2.4.x` 直装 `packages/vault-core`（该路径不存在） | 删除该虚构 dev 依赖/位置；保留 viem 传递生产版本（curves 1.9.1 等），注明 2.4.x 仅 `/tmp` 一次性核验 | tech-stack；doc/dependencies |
+| **MINOR-6** | Android 证据仍是 `3943f28` 旧构建 | **当前代码重建 release APK**（46,778,748 B）并复走五态 + invalid 态，记录于 §6.4b | §6.4b；`evidence/shell-home-*.png` / `dump-home-*.xml` |
+| **NIT-7** | web 测试绕过 `index.web` 映射 | 新增静态 `import * as webBarrel from 'web3-adapter/src/index.web'` 表面断言 | web test |
+
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-52f35f21…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、Android 五态+invalid 复走通过、R1/R5/R7 exit 1。修复提交：**`87e6d8e`**（main）。
+## Review round 12（2026-10-22，review-fix 循环轮 9 / 持久 reviewer 轮 3 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | web 独有第三参导致公开签名平台不一致，`RpcOptions` 未导出/未文档 | 新增平台中立 `types.ts`（`RpcOptions.timeoutMs`），**两平台同签名**（原生映射 `http(timeout)`，Web 映射 `AbortSignal.timeout`），`RpcOptions` 由 barrel 导出；spec §2.5 + FR-3 记录 | `types.ts`；`balance.ts`；`public-api.ts`；spec/FR-3 |
+| **MINOR-2** | 门禁行 3/4/5 指向 canon2 而 canonical 实为 canon3，新 hash 无法从记录命令复现 | 重导 **canon4**（`entry-828c830c…js`，1,331,901 B）；行 3/4/5/5b 全部改为 canon4 并标注矩阵来源；§6.3 smoke 同步 | §Task 5；§6.3；`evidence/web-serve-smoke.txt` |
+| **MINOR-3** | requirements AC-2/AC-9 仍写 22 tests | 改为 **3 suites / 25 tests**（adapter 10 + web 11 + store 4） | requirements AC-2/AC-9 |
+| **MINOR-4** | H10/MAN-017/AGENTS/§6.4b 仍指向旧 APK/旧走查；§6.4b 未记源码修订 | H10 改为「当前代码 APK 已在设备（46,778,748 B，源码 `87e6d8e`）可跑 MAN-018」；MAN-017/AGENTS 补 2026-10-22 复走；§6.4b 记源码 `87e6d8e` + 构建时间/hash | H10；MAN-017；AGENTS；§6.4b |
+| **NIT-5** | web barrel 测试只是表面 smoke，不证明平台映射 | 测试内注明「surface smoke；映射门禁 = export matrix」，validation 同步 | web test；§Task 5 |
+
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（15 路由；`entry-828c830c…js` **1,331,901 B**）、全矩阵 0、web smoke 六路由 200、R1/R5/R7 exit 1（**Android 证据的当前化见 §Review round 13：按 `ff80939` 代码重建并复走**）。修复提交：**`ff80939`**（main）。
+## Review round 13（2026-10-22，review-fix 循环轮 10 / 持久 reviewer 轮 4 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | `ff80939` 改动了 native `balance.ts`（`RpcOptions`/`http(timeout)`），但 APK 与五态走查仍来自 `87e6d8e`，H10/§6.4b/MAN-017/AGENTS 却称「当前代码」 | **按 `ff80939` 代码重建 release APK**（46,779,132 B / sha256 `26c98930…`，15:19）并复走五态 + invalid（`#26246622` / `#26246623` / `#11968019`）；§6.4b、H10、MAN-017、AGENTS 同步为 `ff80939` | §6.4b；MAN-017；H10；AGENTS |
+
+复跑：tsc 双形态 0、jest **3 suites / 25 tests**、export 0（`entry-828c830c…js` 1,331,901 B）、矩阵 0、smoke 200、Android 五态+invalid（`ff80939` 代码）通过、R1/R5/R7 exit 1。修复提交：**`78c85bb`**（main）。
+## Review round 14（2026-10-22，持久 reviewer 轮 5 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MINOR-1** | §6.4b 首轮（87e6d8e）声称「保留为历史证据」，但表格与证据文件已被 15:19 复走覆盖 | 改为「已被本表替换，`#26246506`/`#26246508`/`#11967905` 仅存于 git 历史」；§6.4 的 `3943f28` 表仍保留 | §6.4b |
+| **NIT-2** | §6.4b 标题仍写「审核轮 2 MINOR-6」，与当前 ff80939 复走不符 | 标题改为「审核轮 2 MINOR-6 / 审核轮 4 复走」 | §6.4b 标题 |
+
+仅文档修订（无 app 代码变更），门禁沿用审核轮 13 复跑结果（tsc 0/0、jest 25、canon4 1,331,901 B、矩阵 0）。修复提交：**`78bf133`**（main）。
+## Review round 15 — 零发现轮与关闭裁定（2026-10-22）
+
+**持久 reviewer（`7f7338dd…`）复审 `e5c0375..43e683f`（HEAD `43e683f`；工作树干净、未改动仓库）后结论：`No findings.`**
+
+- 复审范围含 11 轮修复后的全部代码与记录；评审自跑门禁：form-1 `tsc` 0、form-2 `pnpm -r --if-present run typecheck` 0、jest **3 suites / 25 tests**、canonical `/tmp/t22-web-canon4/entry-828c830c…js` **1,331,901 B**、R7 全符号矩阵 **0**、R1/R5/R7 grep 干净、Android 五态 + invalid 证据（`ff80939` 代码、APK 46,779,132 B）。
+- **关闭门禁 AC-1..9 全部满足**：AC-1/AC-3 命令与退出码（§Task 2/§Task 5 行 2c）；AC-2 只读契约（25 tests + tsc 双形态）；AC-4/AC-6 web 产物矩阵 0（`entry-828c830c…`）；AC-5 格式化与 curl 交叉表；AC-7 两侧 walk；AC-8 R1/R5 + Not configured；AC-9 双形态 tsc / jest / export 全 0。
+- **AC-10（a11y MAN-018）不纳入关闭门禁**，由 H10 跟踪（Android 当前代码 APK 已就绪；iOS 待合格设备）；MAN-017 已通过（2026-10-21 CDP + 2026-10-22 当前代码 Android 复走）。
+- **裁定：T2.2 恢复「已关闭」**（2026-10-22）。关闭依据 = 持久 reviewer 零发现轮；此前 2026-10-20 的关闭曾因评审未完成于 2026-10-21 撤回，本轮为评审验收后的重关。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
@@ -355,4 +450,4 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | H7 | WalletConnect(Reown) 桥接 | v2 计划 | v2 | spec §7 |
 | H8 | T2.1a H2/H3/H5/H6（filled 图标 / web glyph / 18 屏 / 地址等宽+渐变） | B.7-2 replan | T4.x（H3/H6 各自 R4 提案） | 见 requirements §Handoff |
 | H9 | ~~MAN-017 的 Web 浏览器走查~~ **已完成（2026-10-21）** | — | **关闭**：真实 Chrome 155/macOS 经 CDP 走查五态通过（§Task 7） | MAN-017 |
-| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录），Android 可立即执行（需构建含 `a8db6eb` 的当前代码 APK；旧的 `3943f28` APK 不含 announce） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |
+| H10 | **MAN-018 无障碍播报的设备验证**（TalkBack/VoiceOver 恰好一次） | 需真机 + 读屏软件人工确认；iOS 侧无合格 iPhone（MAN-013 记录）。**Android 条件已满足**：当前代码 release APK 已在设备上（**46,779,132 B**，源码 `ff80939`，§6.4b），可直接跑 MAN-018（旧 `3943f28`/`87e6d8e` 构建为历史） | Android：Pixel 6a 上完成 MAN-018；iOS：待 iPhone 到位后补（T4.x 前的前置）。**AC-10 不计入 T2.2 关闭门禁** | TC-UI-011 / MAN-018 / AC-10 |

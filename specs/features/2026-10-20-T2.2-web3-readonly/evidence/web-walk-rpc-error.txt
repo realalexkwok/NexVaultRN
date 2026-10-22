@@ -1,0 +1,35 @@
+# RPC-error state walk — real Chrome via CDP (:9222), 2026-10-22T06:33:30.983Z
+# Network.setBlockedURLs: *drpc.org*, *publicnode.com*
+# url: http://127.0.0.1:8080/home
+
+Chain · Ethereum
+▾
+Watch address
+Total Balance
+RPC unavailable
+Retry
+Not configured
+1D
+7D
+1M
+3M
+ALL
+↑
+Send
+↓
+Receive
+⇄
+Swap
+Tokens
++ Add Token
+—
+⌂
+Home
+◷
+History
+◎
+DApp
+▣
+NFT
+⚙
+Settings

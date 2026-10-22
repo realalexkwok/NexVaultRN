@@ -10,3 +10,4 @@ export {
   normalizeAddress,
 } from './balance';
 export { W3AError, isW3AError, type W3AErrorCode } from './errors';
+export type { RpcOptions } from './types';
