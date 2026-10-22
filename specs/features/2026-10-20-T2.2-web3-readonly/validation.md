@@ -46,9 +46,9 @@ $ pnpm --filter mobile add -D @jest/globals@^29.7.0            # +5 packages
 $ pnpm install                                                 # exit 0; 'Lockfile is up to date'; supply-chain policy pass
 $ pnpm audit                                                   # 6 advisories (4 moderate / 2 high), pre-existing toolchain
 ```
-- 实测版本：jest **29.7.0** / jest-expo **57.0.6** / @jest/globals **29.7.0**；安装位置 **apps/mobile devDependencies**。
-- lockfile package key：**1,032 → 1,384（+352）**；`@jest/globals` 在 `6ca3885` 为 **0** 处，现 **5** 处。
-- `pnpm audit`：2 high（node-forge、braces）+ 4 moderate（uuid、decode-uri-component、sprintf-js、PostCSS）——均来自既有 expo/metro/tailwind 工具链，**不在 jest 依赖路径**；R4 禁止顺手升级，本轮不处置。
+- 实测版本：jest **29.7.0** / jest-expo **57.0.6** / @jest/globals **29.7.0**（package.json 已钉精确版本）；安装位置 **apps/mobile devDependencies**。
+- lockfile `packages`：**647 → 862（+215）**（复现命令：`git show 6ca3885:pnpm-lock.yaml | sed -n "/^packages:/,/^[a-z]/p" | grep -c '^  [^ ]'`；`pnpm audit --json` → `totalDependencies: 862`）；`@jest/globals` 在 `6ca3885` 为 **0** 处，现 **5** 处。（此前记录的 1,032→1,384 无复现命令，**已撤回**——review round 6 MINOR-2。）
+- `pnpm audit`：2 high（node-forge、braces）+ 4 moderate（uuid、decode-uri-component、**sprintf-js**、**postcss-selector-parser**）。**更正（review round 6 MAJOR-1）**：`sprintf-js@1.0.3` 在 `6ca3885` 不存在，由 jest 引入（`@jest/transform → babel-plugin-istanbul → @istanbuljs/load-nyc-config → js-yaml → argparse → sprintf-js`，dev-only，无补丁版本）；braces 既有（tailwind/chokidar），jest 另增 `@jest/core → micromatch → braces` 路径；其余为既有 toolchain。**处置：接受为 dev-only 残余风险**（不进入 web/native 产物；jest 仅开发/CI 运行），依据 owner 2026-10-22「Add Jest tests now」批准；显式 advisory 确认已于同日 ask（10 分钟窗口）未获回复，记录备查，revert 路径保留（评审选项 c）。
 - 记录更正（review round 2 MAJOR-1）：此前「零新包 / 零新解析」**不成立**；逐行记录见 `specs/tech-stack.md` jest 行与 `doc/dependencies.md`（jest / @jest/globals 两行）。
 
 ## Task 2 — polyfill 契约 + Query Provider
@@ -94,8 +94,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | FORM1_EXIT=0 | ✓ |
 | 2 | `pnpm -r --if-present run typecheck` | FORM2_EXIT=0（adapter 委派脚本执行 `pnpm --filter mobile exec tsc --noEmit -p ../../packages/web3-adapter/tsconfig.json`；mobile 无 typecheck script 由形态 1 覆盖） | ✓ |
-| 2b | `pnpm --filter mobile exec jest --ci` | **1 suite / 10 tests passed**（review round 4 MAJOR-1 新增；`apps/mobile/src/web3-adapter.test.ts`） | ✓ |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 4 = 1,973,116 B；round 5 = **1,973,195 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
+| 2b | `pnpm --filter mobile exec jest --ci` | **2 suites / 13 tests passed**（review round 4 MAJOR-1 新增 adapter 10 例；review round 6 增 store 3 例） | ✓ |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | EXPORT_EXIT=0；**15 静态路由**；entry 体积以**当轮重建**为准（round 5 = 1,973,195 B；round 6 = **1,973,171 B**）。**filename hash 是构建快照**：同一代码 clean rebuild 体积相同、hash 可不同（差异限于 Expo Router NativeTabs CSS 类图键序）——引用以**体积**为准（review NIT-5） | ✓ |
 | 4 | `grep -rE 'signDigest|importMnemonic|vault-core' /tmp/t22-web/_expo/static/js/` | R7_EXIT=1（零命中） | ✓ |
 | 5 | `grep -rE 'signPrepared|signAndBroadcast|privateKeyToAccount|mnemonicToAccount' /tmp/t22-web/_expo/static/js/` | SIGN_EXIT=1（零命中） | ✓ |
 | 6 | `grep -rnEi 'mnemonic|privateKey|secretKey|seedPhrase|xprv' apps/mobile packages --include='*.ts' --include='*.tsx' --exclude-dir=node_modules \| grep -v 'packages/vault-core'` | R1_EXIT=1（零命中） | ✓ |
@@ -113,8 +113,8 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 |---|---|---|
 | 1 | `pnpm --filter mobile exec tsc --noEmit` | 0 |
 | 2 | `pnpm -r --if-present run typecheck` | 0 |
-| 2b | `pnpm --filter mobile exec jest` | 10/10 tests pass（review round 4 MAJOR-1） |
-| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 5 = 1,973,195 B；filename hash 为构建快照，NIT-5） |
+| 2b | `pnpm --filter mobile exec jest` | **2 suites / 13 tests pass**（review round 4 起；round 6 增至 13） |
+| 3 | `npx expo export --platform web --output-dir /tmp/t22-web` | 0；15 路由；entry 体积以当轮重建为准（round 6 = 1,973,171 B；filename hash 为构建快照，NIT-5） |
 | 4 | R7 / R1 / R5 grep | 全部 exit 1（零命中） |
 | 5 | `expo-doctor` | 21/21 |
 | 6 | **M2 平台 barrel 实证** | ① **生产 source map**（`npx expo export --platform web --output-dir /tmp/t22-web-map --source-maps external`，exit 0）：`entry-160b032e…js.map` 含 `packages/web3-adapter/src/index.web.ts` ×1、**不含 `index.ts`**（`chains.ts`/`balance.ts`/`errors.ts` 各 ×1）；② dev bundle `entry-387a433f…js` 模块路径同结论。证据 `evidence/m2-web-barrel-proof.txt`（review NIT-1 更正：`expo export` **确有** `-s, --source-maps external`，早前「无 source-map 旗标」的表述错误） |
@@ -201,7 +201,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 | # | 评审发现 | 处置 | 证据 |
 |---|---|---|---|
-| **MAJOR-1** | adapter 无可执行测试（仅 typecheck），AC-2/AC-5 却绑定 TC | **owner 裁定「Add Jest tests now」**：安装已核准的 jest 29.7 + jest-expo 57.0.6（+ 工具链成员 `@jest/globals`；lockfile **+352** package keys——round 2 MAJOR-1 更正了「零新解析」的错误表述），新增 `apps/mobile/src/web3-adapter.test.ts`（未知链/格式化/地址/注册表 10/10），`test` script + AC-2/AC-5/AC-9 与 H6 同步 | `apps/mobile/jest.config.js`；`apps/mobile/src/web3-adapter.test.ts`；`pnpm --filter mobile exec jest` 10/10 |
+| **MAJOR-1** | adapter 无可执行测试（仅 typecheck），AC-2/AC-5 却绑定 TC | **owner 裁定「Add Jest tests now」**：安装已核准的 jest 29.7 + jest-expo 57.0.6（+ 工具链成员 `@jest/globals`；lockfile **+215** packages（647→862）——review-fix 循环轮 2 更正了「零新解析」的错误表述，轮 3 更正了 delta 数字），新增 `apps/mobile/src/web3-adapter.test.ts`（未知链/格式化/地址/注册表 10/10），`test` script + AC-2/AC-5/AC-9 与 H6 同步 | `apps/mobile/jest.config.js`；`apps/mobile/src/web3-adapter.test.ts`；`pnpm --filter mobile exec jest` 10/10 |
 | **MINOR-2** | AC-7/§Task 7 仍写 ☐ 待走查，与 MAN-017 ☑ 矛盾 | AC-7 最终同步为「MAN-017 通过（真实 Chrome via CDP）」；§Task 7 历史条目改为「状态（历史）」+「手工侧（已完成）」 | requirements AC-7；§Task 7 |
 | **MINOR-3** | plan.md 仍沿用 `main: src/index.ts`、bigint 理由、死端点 | plan 顶部新增 **Post-review divergences** 块（逐项指向 FR-2/FR-5、spec §2.2、validation M2/O-3/O-6），并就地修正 4 处 | plan.md |
 | **MINOR-4** | `retry`/`refetchInterval` 是全局默认，所有查询都轮询 | 移至 balance `useQuery`；全局默认仅保留 `staleTime` + `structuralSharing` | `_layout.tsx`；`home.tsx` |
@@ -217,7 +217,7 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 
 | # | 评审发现 | 处置 | 证据 |
 |---|---|---|---|
-| **MAJOR-1** | R4 记录不实：`@jest/globals` 无 dependencies 行、`doc/dependencies.md` 未同步、lockfile +352、validation 无 install/policy/audit，且「零新包/零新解析」表述错误 | ① `doc/dependencies.md` 新增 @jest/globals 行并更新 jest 行（版本/位置 apps/mobile/audit/审批）；② tech-stack 行改为实测版本 + 位置 + lockfile delta + audit；③ validation Task 1 记录 install/policy/audit 实测（jest 29.7.0 / jest-expo 57.0.6 / @jest/globals 29.7.0；1,032 → 1,384 keys；6 条既有 advisory）；④ requirements §R4 改为「原五行零修订 + 2026-10-22 owner 批准 jest 工具链」；⑤「零新解析」表述已在 §Review round 4 更正 | `specs/tech-stack.md`；`doc/dependencies.md`；validation §Task 1 / §Review round 4 |
+| **MAJOR-1** | R4 记录不实：`@jest/globals` 无 dependencies 行、`doc/dependencies.md` 未同步、lockfile delta 不可复现、validation 无 install/policy/audit，且「零新包/零新解析」表述错误 | ① `doc/dependencies.md` 新增 @jest/globals 行并更新 jest 行（版本/位置 apps/mobile/audit/审批）；② tech-stack 拆分为 typescript / jest 工具链 / eslint（未安装）三行；③ validation Task 1 记录 install/policy/audit 实测；④ requirements §R4 改为「原五行零修订 + 2026-10-22 owner 批准 jest 工具链」；⑤「零新解析」表述已在 §Review round 4 更正；⑥ **review round 6 再更正**：lockfile `packages` 647→862（+215），此前 1,032→1,384 无复现命令；sprintf-js@1.0.3 为 **jest 新引入**（dev-only，无补丁），非「既有」 | `specs/tech-stack.md`；`doc/dependencies.md`；validation §Task 1 / §Review round 4/6 |
 | **MINOR-1** | FR-2/FR-5、validation Task 2/3、spec §2.5、plan Task 3 仍是旧形态（全局 retry/refetch、双 barrel） | FR-2 增 `public-api.ts`；FR-5 改为仅 staleTime+structuralSharing（retry/refetch 在 home query）；Task 2/3 与 spec §2.5 同步单 barrel；plan Task 3 增 public-api + tests | requirements；validation §Task 2/3；`specs/web3-adapter.md` §2.5；plan Task 3 |
 | **MINOR-2** | jest testMatch 只含 `*.test.ts`，未来 tsx/__tests__ 会被静默跳过 | 扩为 `**/*.test.{ts,tsx}` + `**/__tests__/**/*.{ts,tsx}` | `apps/mobile/jest.config.js` |
 | **MINOR-3** | AGENTS 仍写完成条件 = review round 3，且缺 round 4 记录 | 改为「独立评审 review-fix 循环零发现轮」；补 round 4 修复 `a239aeb` 记录 | AGENTS Part A 两处 |
@@ -229,17 +229,31 @@ $ grep -rnE 'AsyncStorage|SecureStore|expo-secure-store' apps/mobile/src/store a
 | **NIT-3** | 「仍prescribe」拼写、Task 2/3 陈旧 | 改为「仍沿用」；Task 2/3 已同步（见 MINOR-1） | validation |
 
 复跑：tsc 双形态 0、jest **13/13**、export 0（15 路由，entry 1,973,195 B）、R1/R5/R7 exit 1。修复提交：**`56b7f48`**（main）。
+## Review round 6（2026-10-22，review-fix 循环轮 3 → 修复）
+
+| # | 评审发现 | 处置 | 证据 |
+|---|---|---|---|
+| **MAJOR-1** | R4 audit 记录失实：sprintf-js 由 jest 新引入（dev-only，无补丁）、braces 经 jest 可达、advisory 名写作 PostCSS | 重新记录实测：`sprintf-js@1.0.3` 路径（`pnpm why sprintf-js`）、braces 路径、`postcss-selector-parser` 正名；**处置 = 接受 dev-only 残余风险**（依据 owner 2026-10-22 批准 jest 工具链；显式确认 ask 超时未答，标记备查；revert 路径保留） | doc/dependencies.md jest 行；validation §Task 1 |
+| **MINOR-2** | lockfile delta 1,032→1,384 不可复现 | 改为 **647 → 862（+215）** + 复现命令 + `pnpm audit --json` totalDependencies=862；旧数字撤回 | §Task 1 |
+| **MINOR-3** | iOS announce 未按平台门控，Android 可能重复播报 | 改为 `Platform.OS === 'ios'` 才 announce；Android 走既有 live region | `home.tsx` |
+| **MINOR-4** | 注释把 round-5 findings 标为「review round 2」 | 统一为「review-fix loop 2 / review round 5」；validation 的轮次引用同步 | `home.tsx`、`jest.config.js`、两测试文件、validation |
+| **MINOR-5** | AC-9 与 Task-5 门禁仍写 10/10 | 更新为 **2 suites / 13 tests**（AC-9、Task 5、§5.1） | requirements AC-9；validation |
+| **MINOR-6** | closure 条件仍写「review round 3 通过」 | 两处改为「独立评审 review-fix 循环零发现轮」并标注 2026-10-21 原文已过时 | validation §Status correction / §Closure |
+| **MINOR-7** | `@jest/globals` 文档写「精确」但 manifest 是 `^29.7.0` | 两者都钉 **29.7.0**（jest 同）；pnpm install up to date；文档与 manifest 一致 | package.json；doc/dependencies.md |
+| **MINOR-8** | tech-stack 行把 eslint-config-expo 的位置一并改错；该包未安装 | tech-stack 拆三行：typescript / jest 工具链 / **eslint-config-expo（未安装，B.6-2 待接线）**；doc/dependencies.md 同步 | specs/tech-stack.md；doc/dependencies.md |
+
+复跑：tsc 双形态 0、jest **13/13**、`pnpm install` up to date、export 0（15 路由，entry **1,973,171 B**）、R1/R5/R7 exit 1。修复提交：`<pending6>`。
 ## Status correction（2026-10-21，owner 裁定 Option B）
 
 - **发现**：T2.2 于 2026-10-20 在评审验收前即按任务行的「close with Part A board line + git per B.3」执行关闭（board 行 + `--no-ff` 合并 `82addd0` + push + 删分支）；同一时点 MAN-017 以 **agent 自走查**记为「通过」，reviewer M1 判为无效并回退（后经真实 Chrome CDP 走查补正并通过）。
-- **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = review round 3 通过**；通过后恢复「已关闭」board 行。
+- **裁定**：**T2.2 改回「复核中」**——代码与全部评审修复保留在 `main`（不重写历史）；**完成条件 = 独立评审 review-fix 循环的零发现轮**（2026-10-21 原文写「review round 3 通过」，已随 review-fix 循环启动而过时——2026-10-22 更正）；通过后恢复「已关闭」board 行。
 - **保留不变**：合并 `82addd0`；round 1–2 修复 `3943f28` / `f198711`；MAN-017 真实通过 `c90bf08`（真实 Chrome 155/macOS via CDP 五态）与键盘收起复走 `0099af9`（Tokens 行 PNG+dump 均可见）。
 - **治理教训（本条记录）**：关闭必须晚于评审验收；手工用例的「通过」只能来自真机/真实浏览器走查（B.4-2），不得由 agent 自证替代。
 - **分支恢复（2026-10-21，owner 裁定 Option A；同日推送）**：`feature/T2.2-web3-readonly` 恢复到 **`d3f773f`**（合并前尖端），并已**推送 origin**（`origin/feature/T2.2-web3-readonly` = `d3f773f`），另在 `d3f773f` 打注释 tag **`T2.2-pre-review`** 标名 pre-review snapshot；评审修复（`3943f28`/`f198711`）与全部记录在 `main`，`git diff feature/T2.2-web3-readonly..main` 即评审轮改动。**快照注记（review round 3 NIT-4）**：该分支内嵌的 `validation.md`/`AGENTS.md` 是评审前版本（仍写 MAN-017 通过 / T2.2 已关闭），以 `main` 的记录为准。
 
 ## Closure（2026-10-20）
 
-> **2026-10-21 状态更正**：本节降级为「关闭候选记录」——T2.2 现处「复核中」，直至 review round 3 通过（见上节）。
+> **2026-10-21 状态更正**：本节降级为「关闭候选记录」——T2.2 现处「复核中」，直至**独立评审 review-fix 循环零发现轮**（原文「review round 3」已过时，2026-10-22 更正；见上节与 AGENTS）。
 
 
 - **关闭依据**：owner 指令「Plan + implement T2.2 … close with Part A board line + git per B.3」（2026-10-20）；plan 经 `exit_plan_mode` `approved: true`；Q/A 推荐答案随批准生效（无 override）。

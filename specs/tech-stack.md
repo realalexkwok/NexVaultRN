@@ -44,7 +44,9 @@
 | @bam.tech/react-native-app-security | 1.0.0 | apps/mobile | TLS 双 SPKI pinning |
 | expo-updates | ~57（随 SDK） | apps/mobile | 版本变更即触发 R3 热更禁区 |
 | eas-cli | CI 钉版 | CI 环境 | 签名私钥永不入 CI/仓库（R2） |
-| typescript / jest+jest-expo / eslint-config-expo | ~5.9.x / 随 SDK 模板 | apps/mobile（dev；2026-10-22 更正，原记 root） | strict 与零 error 为质量门禁（B.6）。**T2.2 实测（2026-10-22，owner 批准「Add Jest tests now」）**：jest **29.7.0** + jest-expo **57.0.6** + `@jest/globals` **29.7.0**（jest 工具链成员，直接 importer）；lockfile package key **1,032 → 1,384（+352）**；`pnpm --filter mobile exec jest` **13/13**；`pnpm audit` 6 条既有 advisory（详见 doc/dependencies.md 两行） |
+| typescript | ~6.0.3 | apps/mobile（dev） | strict 模式与 B.6-1 门禁；实测 6.0.3 |
+| jest + jest-expo + @jest/globals | **29.7.0 / 57.0.6 / 29.7.0（精确钉版）** | apps/mobile（dev；2026-10-22 更正，原记 root） | **2026-10-22 owner 批准「Add Jest tests now」**（B.6-3）；lockfile `packages` **647 → 862（+215）**；`pnpm --filter mobile exec jest` **2 suites / 13 tests**；audit：**sprintf-js@1.0.3 为新引入（moderate，dev-only，无补丁）**、braces 既有（jest 另增一条 `@jest/core→micromatch→braces` 路径）、其余既有——详见 doc/dependencies.md jest / @jest/globals 两行 |
+| eslint-config-expo | 随 SDK 模板（**未安装**） | apps/mobile（dev，待安装） | **B.6-2 lint 门禁尚未接线**：package.json 无该依赖、lockfile 无记录；待 R4 提案/安装后更新本行（2026-10-22 评审发现） |
 | pnpm | ≥9（isolated 安装） | 工具链 | 异常时回退 hoisted + 双层屏蔽 |
 | modules/vault-core | 自写（Kotlin+Swift） | modules/ | 四方法闭环；roadmap：libsecp256k1 v0.7.0 经 CMake |
 | junit / androidx.test（modules/vault-core 测试） | junit 4.13.2；androidx.test.ext:junit 1.3.0；androidx.test:runner / rules / core 1.7.0 | modules/vault-core/android（test + androidTest） | **T1.2 R4 修宪（owner 2026-10-14 批准）**；BIP39 前 4 向量自动门禁；版本参照原 NexVault 仓库 + Expo SDK 57 自身测试用法（dependencies.md §6a） |

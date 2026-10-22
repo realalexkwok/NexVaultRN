@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, Text, View } from 'react-native';
 import {
   formatNativeBalance,
   getChainConfig,
@@ -45,9 +45,12 @@ export default function HomeScreen() {
   const chain = getChainConfig(selectedChainId);
 
   useEffect(() => {
-    // accessibilityLiveRegion is Android-only; announce the inline error explicitly on iOS
-    // (review round 2 NIT-1). announceForAccessibility is a no-op on platforms without it.
-    if (inputError) AccessibilityInfo.announceForAccessibility(inputError);
+    // The error Text already carries accessibilityLiveRegion (Android). Announce explicitly on
+    // iOS only, otherwise TalkBack may speak the same error twice (review-fix loop 2 / round 5
+    // NIT-1). Pressable event handlers keep this effect inert on web.
+    if (inputError && Platform.OS === 'ios') {
+      AccessibilityInfo.announceForAccessibility(inputError);
+    }
   }, [inputError]);
 
   const balanceQuery = useQuery({

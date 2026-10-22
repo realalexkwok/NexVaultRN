@@ -1,4 +1,4 @@
-// Store invariant tests (review round 2 MINOR-4): setSelectedChain is the only guard against
+// Store invariant tests (review-fix loop 2 / review round 5 MINOR-4): setSelectedChain is the only guard against
 // Home rendering getChainConfig() with an unregistered id (which would throw during render).
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { SUPPORTED_CHAINS } from 'web3-adapter';

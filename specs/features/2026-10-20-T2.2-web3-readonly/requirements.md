@@ -63,14 +63,14 @@
 | AC | 内容 | 绑定用例/门禁 | 验证方式（B.4） |
 |---|---|---|---|
 | AC-1 | polyfill 顺序：`_layout.tsx` 第一行 `import '../polyfills'`；polyfills.ts 内 random-values 在 textencoder 前 | TC-W3A-001 | grep（入口文件断言）+ 退出码 |
-| AC-2 | adapter 只读 API 契约 + `E_W3A_UNKNOWN_CHAIN` 机器可读 | TC-W3A-009/010 | **jest（`web3-adapter.test.ts`，10/10）** + tsc 双形态 + grep |
+| AC-2 | adapter 只读 API 契约 + `E_W3A_UNKNOWN_CHAIN` 机器可读 | TC-W3A-009/010 | **jest（adapter 10 例 + store 3 例 = 13/13）** + tsc 双形态 + grep |
 | AC-3 | RPC 顺序 failover 机制在代码路径中（`fallback(..., {rank:false})`）；live-fire 演练递延 | TC-W3A-011 | grep + Handoff 记录 |
 | AC-4 | Web 只读：导出产物无 vault-core 绑定与任何**密钥材料**导出（`signDigest`/`importMnemonic`/`privateKeyToAccount`/`mnemonicToAccount`/`hdKey` = 0；viem wallet-action 模块随根导入存在但无账户对象——review M4/NIT-1 收窄） | TC-W3A-012 / R7 | export + grep 退出码 |
 | AC-5 | 余额正确性：UI 格式化值 == curl `eth_getBalance` wei 的 `formatUnits` 截断值；非零但低于显示精度 → `<0.0001`（review NIT-9） | TC-W3A-013 | **jest 格式化用例** + curl 转录 + 交叉计算表 |
 | AC-6 | Home 四态 + 首帧零 RPC 阻塞（骨架先行） | TC-UI-010 + TC-W3A-008（部分） | 截图/UI dump + 代码路径 |
 | AC-7 | balance walk：Web + Android 两锚点均返回余额与区块号 | MAN-017 | 自动侧：RPC curl 转录 + `expo serve` 路由 200（Web）、设备 UI dump/截图（Android）；手工侧：**MAN-017 通过（2026-10-21，真实 Chrome/155 via CDP）**，证据见 validation §Task 7 与 `evidence/web-walk-*` |
 | AC-8 | R1/R5 干净；无地址时显示 "Not configured"（无假数据） | R1/R5 门禁 | grep 退出码 + 走查证据 |
-| AC-9 | `pnpm --filter mobile exec tsc --noEmit` 与 `pnpm -r --if-present run typecheck` 双形态 exit 0；`pnpm --filter mobile exec jest` exit 0（10/10）；`expo export --platform web --output-dir` exit 0 | B.6-1 / B.6-3 / R7 | 命令 + 退出码 |
+| AC-9 | `pnpm --filter mobile exec tsc --noEmit` 与 `pnpm -r --if-present run typecheck` 双形态 exit 0；`pnpm --filter mobile exec jest` exit 0（**2 suites / 13 tests**）；`expo export --platform web --output-dir` exit 0 | B.6-1 / B.6-3 / R7 | 命令 + 退出码 |
 
 ## 记录偏差
 

@@ -39,7 +39,8 @@ describe('getChainConfig (TC-W3A-010)', () => {
     expect(SUPPORTED_CHAINS.length).toBeGreaterThanOrEqual(2);
     for (const chain of SUPPORTED_CHAINS) {
       expect(chain.rpcUrls.length).toBeGreaterThanOrEqual(2);
-      // Distinct hostnames, and at least two distinct operator domains (review round 2 MINOR-5).
+      // Distinct hostnames, and at least two distinct operator domains (review-fix loop 2 /
+      // review round 5 MINOR-5).
       const hostnames = chain.rpcUrls.map((url) => new URL(url).hostname);
       expect(new Set(hostnames).size).toBe(chain.rpcUrls.length);
       const operatorDomains = new Set(hostnames.map((host) => host.split('.').slice(-2).join('.')));
