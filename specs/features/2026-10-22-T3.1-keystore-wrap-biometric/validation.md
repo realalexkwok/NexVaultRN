@@ -124,7 +124,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 
 ### MAN-018（TalkBack）
 
-状态：待 owner 在场（需人耳确认「恰好一次」播报）。
+状态：**owner 2026-10-23 裁定 defer —— 整体移至 roadmap 最末项（阶段 3 收尾）**，不纳入 T3.1 关闭门禁。T2.2 的 AC-10/H10 记录同步为「replan → roadmap 阶段 3 末」；下列 runbook 保留，届时直接执行即可。
 
 **预置 runbook（可在 owner 就绪时直接执行）**：
 1. 设备当前安装的 T2.2 应用 = `io.github.realalexkwok.nexvault`（release APK，源码 `ff80939`）。
@@ -261,5 +261,6 @@ Status：`[ ]`（待 MAN-019/020/018 完成后执行）
 | H-T3.1-3 | StrongBox per-use AES 复测（Titan M2 拒绝 auth token） | 2026-10-22 设备发现；TEE 为当前路径 | T5.x | AC-2 / spec §2.1 |
 | H-T3.1-4 | attestation 验证安全级别（UNVERIFIED 语义） | D9 裁定 a | T5.x | AC-2 / R6 |
 | H-T3.1-5 | iOS 真机/Mac 验证（MS-1..MS-4） | 无 Xcode/合格 iPhone | 设备到位后 | AC-10 |
-| H-T3.1-6 | MAN-018 Android 腿（TalkBack）+ MAN-019 未录入手指腿 + MAN-020 | 需 owner 在场 | 本轮完成或顺延 | MAN-018/019/020 |
+| H-T3.1-6 | 无障碍（MAN-018 / H10，Android + iOS 两腿） | owner 2026-10-23 裁定 defer | **replan → roadmap 阶段 3 末** | MAN-018 / AC-10 |
+| H-T3.1-8 | MAN-020 phase 2（生物特征变更失效） | 需 owner 新增 1 枚指纹；owner 表示稍后添加 | 指纹就绪后立即执行（phase1 已完成，键在 TEE） | AC-5 / MAN-020 |
 | H-T3.1-7 | D6 前创建的旧 wrap key（DEVICE_CREDENTIAL auth 类型）迁移 | AES 无 KeyInfo、无法原地改参数 | T3.2 启动时检测并重建 | AC-2 |

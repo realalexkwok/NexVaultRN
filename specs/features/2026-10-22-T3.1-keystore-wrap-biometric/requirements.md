@@ -17,7 +17,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 |---|---|---|---|
 | D1 | R4 gate：minSdk 预检 = 24 < 28 → androidx.biometric | **批准 androidx.biometric:biometric:1.1.0**（maven-metadata 最新 stable；1.2.0/1.4.0 仅 alpha，R4 排除） | 2026-10-22 两轮 ask_user_question 超时（owner 不在场）后 owner 回复 All default 确认全部推荐项；计划经 exit_plan_mode 批准（2026-10-22）；安装前 C.1 Round B 复核 |
 | D2 | iOS 范围 | **本期撰写 Swift + 安装 expo-secure-store ~57.0.4**（tech-stack 既有批准行执行）；Mac 侧编译/验证走 T1.5 MAC-HANDOFF 模式；状态 [~] | Linux 无 Xcode；iOS [P] 标注生效条件 = Mac/真机轮 |
-| D3 | T2.2 H10 裁定（B.7-2） | **Android 腿在 T3.1 真机轮顺带实施**（MAN-018 TalkBack 走查）；iOS 腿 replan → T4.x | 其余 H1–H9 维持 T2.2 记录（见 §3） |
+| D3 | T2.2 H10 裁定（B.7-2） | **2026-10-23 owner 修订：无障碍（MAN-018 / H10，Android TalkBack + iOS VoiceOver）整体 defer 至 roadmap 最末项**（阶段 3「工程化演进」收尾），不再于 T3.1 真机轮顺带；两腿同址 | 其余 H1–H9 维持 T2.2 记录（见 §3） |
 | D4 | 附加真机走查 | **纳入 MAN-020**（新增指纹 → E_SEC_KEY_INVALIDATED） | 证明 setInvalidatedByBiometricEnrollment(true) |
 | D5 | plans 行 61 措辞 | **追加 v1.4 追记**：T3.1 = native-internal wrap/unwrap + 最小 JS 面；原「锁屏后调 signDigest 弹生物识别」门禁措辞与 E_VAULT_SECURITY_GATE 耦合移入 T3.2 | plans 只增不改 |
 | D6（review M1） | 设备凭据成功路径回传 null cryptoObject | **裁定 a（owner 2026-10-22「all recommended」）：生物识别-only** | key spec 与 prompt 均移除 DEVICE_CREDENTIAL；spec §2.4 偏差注已加；实现 `setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)` + 提示仅 BIOMETRIC_STRONG（negative button 常驻） |
@@ -38,7 +38,7 @@ Android Keystore AES-256-GCM wrap key + per-use BiometricPrompt（CryptoObject �
 | H7 WalletConnect | 待 | replan（不变） | v2 |
 | H8 T2.1a H2/H3/H5/H6 | replan 记录 | replan（不变） | T4.x |
 | H9 MAN-017 Web 走查 | 已关闭（2026-10-21） | 确认关闭 | — |
-| H10 MAN-018 a11y 走查 | 待（Android 可执行；iOS 无设备） | **implement（Android 腿，本期真机轮）** + iOS 腿 replan | T3.1 真机轮 + T4.x |
+| H10 MAN-018 a11y 走查 | 待（Android 可执行；iOS 无设备） | **replan（owner 2026-10-23）：整体移至 roadmap 最末项**（阶段 3 收尾；含 iOS 腿） | roadmap 阶段 3 末 |
 
 ## 4. 功能需求（FR）
 
