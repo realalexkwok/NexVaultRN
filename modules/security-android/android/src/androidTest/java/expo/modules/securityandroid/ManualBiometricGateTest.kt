@@ -86,6 +86,53 @@ class ManualBiometricGateTest {
     }
   }
 
+  /**
+   * Supplementary device check for the clauses that do not need a wrong finger: wrap → unwrap
+   * roundtrip byte equality, then unwrap with a wrong AAD expecting E_SEC_BLOB_CORRUPT. All three
+   * prompts take the registered finger.
+   */
+  @Test
+  fun roundtripAndWrongAadWithRegisteredFinger() = runBlocking {
+    Assume.assumeTrue(
+      "manual walk only: pass -e t3_1_manual 1",
+      InstrumentationRegistry.getArguments().getString("t3_1_manual") == "1"
+    )
+    ActivityScenario.launch(TestBiometricActivity::class.java).use { scenario ->
+      var host: FragmentActivity? = null
+      scenario.onActivity { activity -> host = activity }
+      val activity = requireNotNull(host)
+      val manager = WrapKeyManager(context)
+      manager.deleteKey()
+      manager.ensureKey()
+
+      val plaintext = ByteArray(32) { index -> (index + 3).toByte() }
+      val expected = plaintext.copyOf()
+      val aad = "0x9858EfFD232B4033E47d90003D41EC34EcaEda94|demo-user".toByteArray()
+
+      banner(activity, "1/3 WRAP: press the REGISTERED finger ONCE")
+      Log.i(TAG, "SUPP 1/3 WRAP: enter a CORRECT fingerprint")
+      val blob = manager.wrap(activity, plaintext, aad)
+      assertArrayEquals("wrap must wipe its plaintext input", ByteArray(32), plaintext)
+
+      banner(activity, "2/3 UNWRAP: press the REGISTERED finger ONCE")
+      Log.i(TAG, "SUPP 2/3 UNWRAP: enter a CORRECT fingerprint")
+      val recovered = manager.unwrap(activity, blob, aad)
+      assertArrayEquals("roundtrip must return the original plaintext", expected, recovered)
+      recovered.fill(0)
+      Log.i(TAG, "ROUNDTRIP OK")
+
+      banner(activity, "3/3 WRONG AAD: press the REGISTERED finger ONCE (an error is expected)")
+      Log.i(TAG, "SUPP 3/3 WRONG AAD: enter a CORRECT fingerprint; expect E_SEC_BLOB_CORRUPT")
+      val wrongAad = "0x9858EfFD232B4033E47d90003D41EC34EcaEda94|another-user".toByteArray()
+      val corrupt = runCatching { manager.unwrap(activity, blob, wrongAad) }.exceptionOrNull()
+      assertTrue("expected E_SEC_BLOB_CORRUPT, got " + corrupt, corrupt is BlobCorruptException)
+      wrongAad.fill(0)
+      Log.i(TAG, "WRONG-AAD OK code=E_SEC_BLOB_CORRUPT")
+      expected.fill(0)
+      Unit
+    }
+  }
+
   private fun banner(activity: FragmentActivity, text: String) {
     activity.runOnUiThread { (activity as TestBiometricActivity).showInstruction(text) }
     Thread.sleep(400)

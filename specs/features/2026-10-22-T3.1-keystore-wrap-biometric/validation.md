@@ -107,7 +107,9 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 8. **2026-10-23 07:38–07:50 晨间复跑（3 次自动化 + 1 次带字幕）**：每次 step 1 通过、step 2 的 per-use 提示均出现，但操作者只按 1 次**已录入手指**（日志 `Succeeded(isStrongBiometric=true)`）→ unwrap 认证成功，**「3 次错误指纹」序列从未被执行**；截图 `man019-subtitle.png` 显示设备当时在前台播放 bilibili 视频（提示被顺手按掉）。
    - 结论：**MAN-019 仍缺这一条**，需要 owner 刻意用**未录入手指连续按 3 次**（每次应被拒）；其余链路（提示、per-use 新 AuthSession、取消 → fail-closed、明文清零）均已取证。
    - 若 owner 判定无法/不便执行该动作，可由 owner 书面同意改用「取消路径 + JVM 失败计数」替代（该替代证据已在手），届时 MAN-019 按 owner 裁定记录偏差。
-9. **2026-10-23 08:41–08:49 追加三次复跑**（owner 选 A 后：常规指纹、置桌/另一只手、指关节三法）：每次 step 2 仍由**首触认证**（日志 `Succeeded(isStrongBiometric=true)`）→ unwrap 成功、断言失败。三次「错误指纹」拒绝序列始终未发生（本机仅录入 1 枚指纹，操作者未能以未录入手指/指关节产生拒绝事件）。**MAN-019 保持打开**，等待 owner 选择：继续尝试（需产生真实拒绝）或书面同意替代证据。
+9. **2026-10-23 08:41–08:49 追加三次复跑**（owner 选 A 后：常规指纹、置桌/另一只手、指关节三法）：每次 step 2 仍由**首触认证**（日志 `Succeeded(isStrongBiometric=true)`）→ unwrap 成功、断言失败。三次「错误指纹」拒绝序列始终未发生（本机仅录入 1 枚指纹，操作者未能以未录入手指/指关节产生拒绝事件）。
+10. **owner 裁定（2026-10-23 09:23）：选项 B — MAN-019 的「3 次错误指纹」条款以书面偏差关闭**：替代证据 = 设备取消路径 fail-closed（`BiometricCancelDeviceTest`：`OK (1 test)`，`E_SEC_BIOMETRIC_CANCELLED` + 明文清零）+ JVM 三次失败计数契约（`PromptFailureGateTest`）。**MAN-019 状态 = 通过（偏差经 owner 批准）**；roundtrip / 错误 AAD 的设备半侧改由补充用例 `roundtripAndWrongAadWithRegisteredFinger`（3 次常规指纹提示）取证。
+11. **补充设备用例通过（2026-10-23 09:28）**：`roundtripAndWrongAadWithRegisteredFinger` → `OK (1 test)`（9.757s）；logcat：`ROUNDTRIP OK`、`WRONG-AAD OK code=E_SEC_BLOB_CORRUPT`。即 **wrap、unwrap 字节级 roundtrip、错误 AAD → E_SEC_BLOB_CORRUPT** 均已在真机取证（3 次常规指纹）。证据：`evidence/supp-roundtrip-run.txt` + `supp-roundtrip-logcat.txt`。
 
 ### 设备发现（真实缺陷 → 修复，记录）
 
@@ -115,9 +117,14 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 
 修复（测试驱动）：安全级别改为「生成路径来源」——StrongBox 尝试成功 → STRONGBOX；TEE 回退或进程重启后重开 → TRUSTED_ENVIRONMENT，这是**未验证下限（unverified floor）而非 attestation**：软件后端的真实设备会被标为 TEE（D9 待裁定，T5.x attestation 验证）；模拟器 → SOFTWARE_DEBUG（非 debug 构建直接抛 E_SEC_SOFTWARE_KEYSTORE）。级别只缓存在进程内、不落盘（R5 落盘白名单仅地址与 SecureStore/Keychain 密文）。修复后 4/4 通过。
 
-### MAN-019 / MAN-020 / MAN-018
+### MAN-020（生物特征变更失效）
 
-待 owner 在场走查（本轮暂停点）。走查完成后补本节。
+- **phase 1（2026-10-23 09:28）**：`ManualEnrollmentInvalidationTest#phase1PrepareKeyForEnrollmentWalk` → `OK (1 test)`；logcat `PHASE 1 OK level=TRUSTED_ENVIRONMENT — now enroll a NEW fingerprint in Settings, then run phase2`。键已创建（TEE），`existingSecurityLevel()` 非空断言通过。
+- **待办**：owner 在设置中新增 1 枚指纹 → 运行 phase2（期望 `E_SEC_KEY_INVALIDATED` + delete/ensure 恢复）。
+
+### MAN-018（TalkBack）
+
+待 owner 在场（需开启 TalkBack 并人耳确认恰好一次播报）。
 
 ## R6 标注（T3.1；三级标注禁止拔高）
 
