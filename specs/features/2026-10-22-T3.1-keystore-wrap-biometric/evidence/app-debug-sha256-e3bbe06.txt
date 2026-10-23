@@ -1,2 +1,2 @@
-de1cc6616e11a540eb4010a6e3b9b9babb71bbfdbe4895977f73497d9d9578c6  apps
-237600965
+de1cc6616e11a540eb4010a6e3b9b9babb71bbfdbe4895977f73497d9d9578c6  apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+237600965  apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk

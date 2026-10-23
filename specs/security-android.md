@@ -27,7 +27,7 @@ export type SecurityLevel = 'STRONGBOX' | 'TEE' | 'SOFTWARE_DEBUG'; // SOFTWARE 
 export interface WrapKeyInfo {
   alias: string;                 // 'nexvault.wrap.v1'，别名含版本号支持轮换
   securityLevel: SecurityLevel;
-  strongBoxBacked: boolean;      // KeyInfo.isInsideSecureHardware() 校验值
+  strongBoxBacked: boolean;      // 生成路径来源；T3.1 恒为 false（TEE 路径，StrongBox 尝试已移除）；STRONGBOX 值保留给 T5.x
   attested: boolean;             // 生成时是否带 attestation challenge
 }
 export function getCapabilities(): Promise<{
@@ -40,7 +40,7 @@ export function unwrapKey(blob: ArrayBuffer, aad: ArrayBuffer): Promise<ArrayBuf
 export function deleteWrapKey(): Promise<void>;
 ```
 
-> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（D9 裁定 a：接受来源模型），验证属 T5.x attestation。**2026-10-22 设备发现**：Pixel 6a / Android 17 的 StrongBox per-use AES 密钥可生成，但每次带认证的使用都在 Titan M2 KeyMint（citadel）失败（`KEY_USER_NOT_AUTHENTICATED`，StrongBox 要求硬件 auth token）；T3.1 的 wrap key 因此走 **TEE** 路径（§2.4「StrongBox 优先」的偏差，StrongBox 复测入 T5.x Handoff）。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
+> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（T3.1 恒为 false：TEE 路径，StrongBox 尝试已移除；`STRONGBOX` 值保留给 T5.x），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（D9 裁定 a：接受来源模型），验证属 T5.x attestation。**2026-10-22 设备发现**：Pixel 6a / Android 17 的 StrongBox per-use AES 密钥可生成，但每次带认证的使用都在 Titan M2 KeyMint（citadel）失败（`KEY_USER_NOT_AUTHENTICATED`，StrongBox 要求硬件 auth token）；T3.1 的 wrap key 因此走 **TEE** 路径（§2.4「StrongBox 优先」的偏差，StrongBox 复测入 T5.x Handoff）。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
 
 ### 2.2 完整性/环境检测子模块（TS 面，全部异步、结果入 SecurityStateCache）
 

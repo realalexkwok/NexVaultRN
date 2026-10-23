@@ -270,7 +270,7 @@ MINOR-3 修复：把关闭门禁证据重跑到最终代码上（此前 app buil
 |---|---|---|
 | MINOR-1 | FR-1 / AC-4 / spec §2.4 / KDoc 仍写旧 flag 集（DEVICE_CREDENTIAL + StrongBox） | **已修**：FR-1/AC-4/§2.4/KDoc 改为终稿；删除 buildSpec 的 StrongBox 分支；`SecurityLevel.STRONGBOX` 保留给 T5.x 并注明不产生 |
 | MINOR-2 | 关闭记录自相矛盾（Task 6 引用不存在的 Post-review 节；「仍开放」块仍列 D6–D9/MAN/Task 7） | **已修**：本节 + 「关闭状态」块；AGENTS 关闭行注明 No findings. 覆盖范围 |
-| MINOR-3 | 关闭门禁证据停留在最终代码之前 | **已修**：在最终代码上重跑并归档（见 Task 5 末行 + `evidence/final-*`） |
+| MINOR-3 | 关闭门禁证据停留在最终代码之前 | **已修**：在最终代码上重跑并归档（见「最终修订证据（`e3bbe06`）」+ `evidence/*-e3bbe06.*`，含 `device-lifecycle-e3bbe06.txt` / `jvm-*-e3bbe06.xml` / `app-debug-sha256-e3bbe06.txt` / `test-apk-sha256-e3bbe06.txt`） |
 | MINOR-4 | D7 门禁未覆盖 vault-core wrapper、未登记 B.6-1 | **已修**：`include: ["../../modules/**/*.ts"]`（exit 0）+ AGENTS B.6-1 登记 |
 | MINOR-5 | H10 defer 目标在 roadmap 无条目 | **已修**：roadmap 阶段 3 增加「无障碍验收（TalkBack/VoiceOver）」条目 |
 | NIT-1..5 | MAN-020 状态、探针注、R6 条件、AGENTS 手工行、H-T3.1-7 措辞 | **已修**（逐条） |
