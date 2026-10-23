@@ -124,7 +124,20 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 
 ### MAN-018（TalkBack）
 
-待 owner 在场（需开启 TalkBack 并人耳确认恰好一次播报）。
+状态：待 owner 在场（需人耳确认「恰好一次」播报）。
+
+**预置 runbook（可在 owner 就绪时直接执行）**：
+1. 设备当前安装的 T2.2 应用 = `io.github.realalexkwok.nexvault`（release APK，源码 `ff80939`）。
+2. 开启 TalkBack（可逆）：
+   ```bash
+   adb shell settings put secure enabled_accessibility_services com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService
+   adb shell settings put secure accessibility_enabled 1
+   ```
+3. 启动应用并进入 Home 地址输入（T2.2 走查路径：`am start -n io.github.realalexkwok.nexvault/.MainActivity`，必要时用 deep link `nexvault://home`）。
+4. 输入非法地址 `0x123` → 失焦/提交（`adb shell input text 0x123`，随后 `input keyevent 66`）；owner 人耳确认 `Invalid address` 播报**恰好一次**（无重复、无静默）。
+5. 恢复：`adb shell settings put secure accessibility_enabled 0`（并按需清空 `enabled_accessibility_services`）。
+
+**当前状态（2026-10-23 09:28）**：已创建 MAN-020 的 wrap key（TEE）；已通知 owner 在设置中新增指纹，设备侧 `dumpsys fingerprint` 仍为 `count:1`（尚未新增）——新增完成后运行 phase2。
 
 ## R6 标注（T3.1；三级标注禁止拔高）
 
