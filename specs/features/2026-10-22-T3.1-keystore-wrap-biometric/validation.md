@@ -182,7 +182,7 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 
 ## Task 6 — review-fix 循环
 
-Status：`[ ]`
+Status：`[x]`（持久 reviewer round 1–5；round 5 `No findings.`（`e6b7489`）；其后代码变更（StrongBox→TEE、D6/D7、测试补充）另起一轮复核，见「Post-review 变更复核」）
 
 ## Review round 1（独立评审 2026-10-22；range 56e950f..607bfe7）
 
@@ -251,7 +251,7 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 
 ## Task 7 — 收尾
 
-Status：`[ ]`（待 MAN-019/020/018 完成后执行）
+Status：`[x]`（2026-10-23 收尾：MAN-019 经 owner 选项 B 关闭；MAN-020 通过；MAN-018/H10 按 owner 裁定 defer 至 roadmap 末项；合并 `277cd65` 已入 main）
 
 **Handoff 清单（T3.1 → T3.2 / T5.x）**
 
