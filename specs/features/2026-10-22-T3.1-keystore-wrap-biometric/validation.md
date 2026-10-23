@@ -246,6 +246,22 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 
 **D6 迁移注**：D6 之前创建的旧 wrap key 仍带 `AUTH_DEVICE_CREDENTIAL` 认证类型，且 TEE 切换前可能存在 StrongBox 密钥，均无法原地改参数（AES 无 KeyInfo 可查）——测试/演示均显式 delete + ensure 重建；T3.2 迁移须以持久化 schema/版本标记或**无条件重建**实现（不可依赖「检测」旧键；见 Handoff H-T3.1-7）。
 
+## 最终修订证据（`e3bbe06`，2026-10-23 11:44–11:46）
+
+MINOR-3 修复：把关闭门禁证据重跑到最终代码上（此前 app build / lifecycle / JVM 的归档属于更早修订）。
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| modules gate | `pnpm --filter mobile exec tsc -p tsconfig.modules.json` | exit 0（`modules/**/*.ts`，含 vault-core） |
+| tsc form-1 | `pnpm --filter mobile exec tsc --noEmit` | exit 0 |
+| tsc form-2 | `pnpm -r exec tsc --noEmit` | exit 0（根 filter 提示同 B.6-1） |
+| R1 / R5 | 宪法原文 grep | exit 1（干净） |
+| jest | `pnpm --filter mobile exec jest` | 25/25（1.669s） |
+| JVM | `:security-android:testDebugUnitTest --rerun` | BUILD SUCCESSFUL；**12/12**（AesGcmEnvelope 9 + PromptFailureGate 2 + SecurityErrorCodes 1），XML 归档 `evidence/jvm-*-e3bbe06.xml` |
+| 设备 lifecycle | `WrapKeyManagerDeviceTest`（Pixel 6a / Android 17） | **OK (4 tests)**（0.251s） |
+| app build | `:app:assembleDebug` | BUILD SUCCESSFUL；`app-debug.apk` **237,600,965 B**，sha256 `de1cc6616e11a540eb4010a6e3b9b9babb71bbfdbe4895977f73497d9d9578c6` |
+| test APK | `assembleDebugAndroidTest` | sha256 `0ae55f4508d4c7fab064fce50b77f21f9eb165a5ab8266e9cf9be5ee98604c41` |
+
 ## Post-review 变更复核（2026-10-23；`e6b7489..07f66f5`）
 
 零发现轮（`e6b7489`）之后落地的变更（StrongBox→TEE、D6、D7、测试补充：PromptFailureGate/JVM、BiometricCancelDeviceTest、supplementary roundtrip/AAD、banner、MAN-019/020 记录）经持久 reviewer 追加审计。结论：**无 BLOCKER / MAJOR**；5 MINOR + 5 NIT 全部处置：
