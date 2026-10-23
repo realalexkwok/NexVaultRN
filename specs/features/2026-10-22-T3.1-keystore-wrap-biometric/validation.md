@@ -120,7 +120,8 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 ### MAN-020（生物特征变更失效）
 
 - **phase 1（2026-10-23 09:28）**：`ManualEnrollmentInvalidationTest#phase1PrepareKeyForEnrollmentWalk` → `OK (1 test)`；logcat `PHASE 1 OK level=TRUSTED_ENVIRONMENT — now enroll a NEW fingerprint in Settings, then run phase2`。键已创建（TEE），`existingSecurityLevel()` 非空断言通过。
-- **待办**：owner 在设置中新增 1 枚指纹 → 运行 phase2（期望 `E_SEC_KEY_INVALIDATED` + delete/ensure 恢复）。
+- **phase 2（2026-10-23 11:25）**：设备指纹数 1 → **2**（owner 新增）；`#phase2AddingABiometricInvalidatesTheWrapKey` → **`OK (1 test)`**（0.086s）；logcat `ENROLLMENT INVALIDATION OK code=E_SEC_KEY_INVALIDATED`。前置断言（phase 1 建的键仍存在）通过；失效后 delete + ensureKey 恢复硬件级键。证据：`evidence/man020-phase2-logcat.txt`。**MAN-020 = 通过**。
+- 说明：本次新增指纹同时使**旧 wrap key 永久失效**——这正是 `setInvalidatedByBiometricEnrollment(true)` 的设计语义；恢复流在用例内执行（delete + re-ensure）。
 
 ### MAN-018（TalkBack）
 
@@ -143,7 +144,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 
 | 机制 | 标注 | 依据 / 生效条件 |
 |---|---|---|
-| Android Keystore AES-256-GCM wrap key（StrongBox→TEE 来源）+ per-use BiometricPrompt（CryptoObject，3 次失败 fail-closed） | **[P]**（生效条件：MAN-019/020 走查通过） | 验收设备 Pixel 6a 自动侧：密钥生成/级别/删除幂等 4/4；提示与 3 错 fail-closed 需 owner 真人指纹（MAN-019/020 待走查）。**未走查前不得对外宣称已验证** |
+| Android Keystore AES-256-GCM wrap key（TEE 来源）+ per-use BiometricPrompt（CryptoObject，3 次失败 fail-closed） | **[P]**（2026-10-23 生效） | 真机证据：密钥生成/级别/删除幂等 4/4；每次 wrap/unwrap 新建 AuthSession（per-use）；取消 → `E_SEC_BIOMETRIC_CANCELLED` + 明文清零（自动用例）；roundtrip 字节相等 + 错误 AAD → `E_SEC_BLOB_CORRUPT`（补充用例）；生物特征变更 → `E_SEC_KEY_INVALIDATED` + 恢复（MAN-020）。**3 次错误指纹序列经 owner 裁定（选项 B）以取消路径 + JVM 计数替代**（偏差已记录） |
 | SOFTWARE_DEBUG（模拟器/调试构建）路径 | **[C]** | 仅模拟器/debug 可得；非 debug 构建直接抛 `E_SEC_SOFTWARE_KEYSTORE`，永不静默降级、永不标 [P] |
 | iOS Keychain KEK（.biometryCurrentSet ACL + WHEN_UNLOCKED_THIS_DEVICE_ONLY） | **[P]**（生效条件：MS-4 真机 + MS-2 XCTest 在 Mac 通过） | 本机无 Xcode，当前状态 `[~]`；实现依据 spec §2.2 与 expo-secure-store 57.0.4 源码坐标 |
 | wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]**（生效条件：MAN-019 第 4 步通过） | JVM 已证静态路径（AAD 篡改/ct/tag 翻转/截断/空明文全负例）；设备侧待 MAN-019 第 4 步复验 |
