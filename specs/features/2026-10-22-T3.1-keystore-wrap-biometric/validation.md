@@ -275,6 +275,8 @@ MINOR-3 修复：把关闭门禁证据重跑到最终代码上（此前 app buil
 | MINOR-5 | H10 defer 目标在 roadmap 无条目 | **已修**：roadmap 阶段 3 增加「无障碍验收（TalkBack/VoiceOver）」条目 |
 | NIT-1..5 | MAN-020 状态、探针注、R6 条件、AGENTS 手工行、H-T3.1-7 措辞 | **已修**（逐条） |
 
+**复核（2026-10-23；HEAD `b50004c`）**：reviewer 确认 5 MINOR + 5 NIT 全关、最终修订证据一致（JVM 12/12 XML、app APK sha/size、test APK sha、设备 transcript）。随后三项 NIT residual（Post-review MINOR-3 证据指针、sha 文件产物路径、`strongBoxBacked` 描述）修复 → **最终复审 `No findings.`**（`b50004c`，delta clean）。
+
 ## Task 7 — 收尾
 
 Status：`[x]`（2026-10-23 收尾：MAN-019 经 owner 选项 B 关闭；MAN-020 通过；MAN-018/H10 按 owner 裁定 defer 至 roadmap 末项；合并 `277cd65` 已入 main）
