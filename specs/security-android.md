@@ -40,6 +40,8 @@ export function unwrapKey(blob: ArrayBuffer, aad: ArrayBuffer): Promise<ArrayBuf
 export function deleteWrapKey(): Promise<void>;
 ```
 
+> **2026-10-22 T3.1 交付偏差（owner D1/D2 批准）**：§2.1 的 TS 面为 T3.2 目标；T3.1 只交付最小 JS 面（`getCapabilities` / `ensureWrapKey` / `deleteWrapKey`），`wrapKey`/`unwrapKey` 为 native-internal（T3.2 与 vault-core 耦合后上移，见 `specs/features/2026-10-22-T3.1-keystore-wrap-biometric/`）。实现值：`SecurityLevel = STRONGBOX | TRUSTED_ENVIRONMENT | SOFTWARE_DEBUG`（旧写法 `TEE` 即 `TRUSTED_ENVIRONMENT`）；`strongBoxBacked` = 生成路径来源（StrongBox 尝试成功），不是 KeyInfo 读取——keystore2 只对私钥暴露 KeyInfo（2026-10-22 设备实证），AES 密钥的硬件归属不可事后查询，`TRUSTED_ENVIRONMENT` 是**未验证下限（unverified floor）而非 attestation 断言**：软件后端的真实设备也可能被标为 TEE（D9 裁定 a：接受来源模型），验证属 T5.x attestation。**2026-10-22 设备发现**：Pixel 6a / Android 17 的 StrongBox per-use AES 密钥可生成，但每次带认证的使用都在 Titan M2 KeyMint（citadel）失败（`KEY_USER_NOT_AUTHENTICATED`，StrongBox 要求硬件 auth token）；T3.1 的 wrap key 因此走 **TEE** 路径（§2.4「StrongBox 优先」的偏差，StrongBox 复测入 T5.x Handoff）。`getCapabilities.hasGms/isEmulator` 与 `ensureWrapKey(opts.attestationChallenge)` 属 T3.2/T5.x。
+
 ### 2.2 完整性/环境检测子模块（TS 面，全部异步、结果入 SecurityStateCache）
 
 ```ts
@@ -78,7 +80,8 @@ object WrapKeyManager {
 }
 // KeyGenParameterSpec 四联 flag：
 // setUserAuthenticationRequired(true)
-// setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG or AUTH_DEVICE_CREDENTIAL)  // 窗口=0，per-use
+// setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)  // 窗口=0，per-use；D6 裁定生物识别-only
+//   （2026-10-22：设备凭据成功的 cryptoObject 为 null，PIN 回退无法 unwrap，故不纳入）
 // setInvalidatedByBiometricEnrollment(true)
 // setIsStrongBoxBacked(true)  // 失败降级 TEE
 // setUnlockedDeviceRequired(true) 仅 API ≥35；API 28–34 因官方明示 bug 默认关 [^2^]
@@ -99,6 +102,7 @@ internal object BundleSelfCheck { fun verifyHermesBundleHash(): Boolean }
 | `E_SEC_GATE_DENIED` | fail-closed 门控拦截签名材料释放 |
 | `E_SEC_INTEGRITY_UNAVAILABLE` | Play Integrity 不可用（无 GMS/网络）→ 降级 Key Attestation，不阻断读操作 |
 | `E_SEC_UNSUPPORTED_OPERATION` | Web 端调用 |
+| `E_SEC_BLOB_CORRUPT` | wrap blob 版本/长度/GCM tag/AAD 校验失败（零明文输出）；2026-10-22 T3.1 补登（实现已在用；TC-SA-010/011/013） |
 
 ## 3. 威胁模型
 
@@ -213,6 +217,60 @@ Then UI 动作面符合 §3 矩阵（L2 限额弹二次认证；L3 起 C/D/E 按
 Given 冷启动 Perfetto trace
 When 检查首帧前主线程与后台线程
 Then 无文件 I/O 扫描、无网络 attestation 调用；首个检测任务出现在首帧之后
+```
+
+### TC-SA-010 wrap blob 结构（JVM）
+
+```gherkin
+Given 软件 AES-256-GCM 测试密钥与固定 IV
+When AesGcmEnvelope.seal/open 一轮
+Then blob = version(1B)=1 ‖ IV(12B) ‖ ciphertext ‖ tag(16B)，IV 与注入值一致
+And 版本字节错误或截断 blob 抛 E_SEC_BLOB_CORRUPT
+```
+
+### TC-SA-011 wrap 完整性（AAD 绑定 / IV 唯一 / 篡改负例，JVM）
+
+```gherkin
+Given 同一 plaintext 与 AAD
+When 两次 seal（随机 IV）后分别 open
+Then 两次密文不同、roundtrip 字节一致
+And AAD 篡改或 ciphertext/tag 翻转 1 字节均抛 E_SEC_BLOB_CORRUPT 且零明文输出
+And 0 字节明文可 roundtrip（29 字节 blob，与 iOS TC-SI-010 同布局）
+```
+
+### TC-SA-012 wrap 输入清零（JVM）
+
+```gherkin
+Given 32 字节 plaintext 缓冲区
+When seal 返回
+Then 输入缓冲区全 0（AC-7；unwrap 输出由 native 签名窗口负责清零）
+```
+
+### TC-SA-013 错误模板白名单（JVM + 真机）
+
+```gherkin
+Given 七个 E_SEC_* 错误
+When 构造并检查 code/message
+Then code 与 §2.5 一致，message 为固定模板、不含密钥/AAD/密文片段
+```
+
+### TC-SA-014 设备级 wrap key 生命周期与门禁（instrumentation + MAN-019）
+
+```gherkin
+Given Pixel 6a（安全锁屏 + 已录入指纹）
+When ensureWrapKey → wrap/unwrap（BiometricPrompt CryptoObject）
+Then securityLevel ∈ {STRONGBOX, TRUSTED_ENVIRONMENT}；roundtrip 字节一致
+And 连续 3 次错误指纹 fail-closed（E_SEC_BIOMETRIC_CANCELLED、无明文、下次重新弹窗）
+And 删除后 encrypt/decrypt 抛 E_SEC_KEY_INVALIDATED
+```
+
+### TC-SA-015 生物特征变更失效（instrumentation + MAN-020）
+
+```gherkin
+Given 已创建 wrap key
+When 系统设置新增 1 枚指纹后再初始化加密 cipher
+Then 抛 E_SEC_KEY_INVALIDATED（KeyPermanentlyInvalidatedException）
+And delete + ensure 恢复硬件级密钥
 ```
 
 ## 6. 依赖与红线

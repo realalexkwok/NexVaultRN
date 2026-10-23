@@ -61,7 +61,8 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "runtimeVersion": {
       "policy": "fingerprint"

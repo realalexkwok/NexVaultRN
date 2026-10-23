@@ -1,0 +1,2 @@
+--------- beginning of main
+10-22 22:18:49.296 23614 23627 I T3.1-DEMO: STEP 1/5 WRAP: enter a CORRECT fingerprint

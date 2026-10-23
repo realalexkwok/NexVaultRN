@@ -50,7 +50,7 @@
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
 |---|---|---|---|---|---|---|
-| expo-secure-store | ~57（随 SDK） | Keystore/Keychain 封装的 KV 密文存储（存 wrap key/凭据，不存 k1 私钥） | apps/mobile | 高（Expo 官方随 SDK 发版） | 无已知公告 | 信任依据：官方模块。风险点：Web 不支持（架构上 Web 本不持密钥）；值上限 ~2048B；生物识别在 Expo Go 不可用。缓解：Development Build 起步；k1 一律走 vault-core native（R1）。[^13^] |
+| expo-secure-store | ~57（随 SDK；SDK 解析 ~57.0.4） | Keystore/Keychain 封装的 KV 密文存储（存 wrap key/凭据，不存 k1 私钥） | apps/mobile | 高（Expo 官方随 SDK 发版） | 无已知公告 | 信任依据：官方模块。风险点：Web 不支持（架构上 Web 本不持密钥）；值上限 ~2048B；生物识别在 Expo Go 不可用。缓解：Development Build 起步；k1 一律走 vault-core native（R1）。**2026-10-22 T3.1 规划轮 D2（owner 批准）执行安装**——T3.1 iOS KEK 条目（requireAuthentication + WHEN_UNLOCKED_THIS_DEVICE_ONLY）经本模块存储；wrap/unwrap 明文不经本模块。[^13^] |
 | expo-screen-capture | ~57.0.4 | Android FLAG_SECURE 防截屏/最近任务空白；iOS app switcher 模糊 | apps/mobile | 高（官方） | 无 CVE；已知 bug expo/expo#48985（iOS 重复 prevent 黑屏） | 缓解：统一默认 key、幂等调用。安全级别：[C]（提高肩窥/截图成本）。[^14^] |
 | @expo/app-integrity | alpha（**锁版使用**） | Play Integrity / App Attest 官方封装，双端设备证明 | apps/mobile | 官方但 alpha，频繁 breaking change | 无已知公告 | 信任依据：官方。风险点：alpha 破坏性变更。缓解：**钉死精确版本**，升级走修宪；STRONG verdict 不硬卡（误伤旧补丁设备）；服务端验 JWT。[^15^] |
 | @bam.tech/react-native-app-security | 1.0.0 | TLS 双 SPKI pinning（iOS TrustKit / Android OkHttp CertificatePinner），带 config plugin | apps/mobile | 中（225★，2026-04 发 1.0） | OSV 查询未发现包级直接漏洞 | 信任依据：3 天窗口内风险/工程量最平衡。风险点：社区体量小、Web 端无法应用层 pinning。缓解：pin 轮换预案 + [C] 级标注。[^16^] |
@@ -137,6 +137,14 @@
 | babel-preset-expo | ~57.0.15（devDependency，SDK 解析） | Babel 预设（NativeWind v4 babel preset 前置） | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元（与 expo 57.0.30 同线）；仅在构建期使用。[^2^] |
 | @babel/plugin-transform-react-jsx | 7.29.7（精确；构建期） | Babel JSX 转换；Gradle release 打包（`export:embed`）在 pnpm isolated 下按 app 根解析插件，缺此直接行会报 `Cannot find module` | apps/mobile（devDependency） | 高（Babel 官方） | 无 | 与 babel-preset-expo@57.0.15 的传递依赖同版；提升为直接行仅新增 importer 条目、零新包下载；构建期专用，不进运行时 bundle；**2026-10-19 T2.1a R4 修宪（owner 批准）**。[^2^] |
 | expo-font | ~57.0.4（SDK 解析） | 字体加载（useFonts）：Inter 4 权重 TTF（regular/medium/semibold/bold）——原仓库 core/core-ui/src/main/res/font 复制 + res/raw/inter_ofl_license.txt 随包（OFL）；T2.1a 视觉对齐 | apps/mobile | 高（Expo 官方） | 无 | SDK 57 绑定单元：expo 基座依赖 ^57.0.4 已在 lockfile（L597），提升为直接行仅新增 importer 条目、依赖图不变；**2026-10-19 T2.1a 规划轮 R4 修宪（owner 批准，D1）**。[^2^] |
+## 6e. Android 生物识别提示依赖（modules/security-android，T3.1 R4 修宪）
+
+> **修宪说明（2026-10-22，T3.1 规划轮 D1，owner 批准）：** T3.1 preflight 实测解析 minSdkVersion = **24**（SDK 57 默认，app.json 未设）——低于框架 BiometricPrompt 可用下限 API 28，T3.1 skill 的 GATE-R4-ANDROIDX-BIOMETRIC 开启；owner 裁定引入 androidx.biometric 稳定线 1.1.0（1.2.0/1.4.0 均为 alpha，按 R4 排除）。安装前经 C.1 Round B 复核。
+
+| 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
+|---|---|---|---|---|---|---|
+| androidx.biometric:biometric | **1.1.0 精确钉版**（dl.google.com maven-metadata.xml 2026-10-22 读取：release=1.4.0-alpha07；stable 最新 = 1.1.0） | BiometricPrompt 兼容层（API 24–27 backport；API 28+ 委托框架实现）+ 弹窗宿主（传递 androidx.fragment）；T3.1 的 wrap/unwrap per-use 生物识别门控 + instrumentation 真机 demo 宿主 Activity | modules/security-android/android（`implementation`） | 高（Google AndroidX 官方） | 无已知公告（安装后 OSV 复核随记录） | 信任依据：Google AndroidX 官方制品 + 精确钉版；传递依赖 androidx.fragment ~1.1+ / androidx.core / androidx.lifecycle（安装后 `./gradlew :security-android:dependencies` 记录实测版本）；风险点：仅作「弹窗+门控」用途，密钥仍由 Keystore 硬件持有（wrap key 语义不变）。[^26^] |
+
 ## 7. 工程化（root / CI）
 
 | 包名 | 版本 | 用途 | 安装位置 | 维护活跃度 | 已知 CVE 与处理 | 安全审计备注 |
@@ -191,3 +199,4 @@
 [^22^]: Expo 官方 monorepo 指南 https://docs.expo.dev/guides/monorepos/ + SDK 55 pnpm 实战案例；`research/nexvault-rn_dim02.md` §4。
 [^24^]: Maven Central `org.bouncycastle:bcprov-jdk18on/1.86`（`maven-metadata.xml` lastUpdated 20260911045244；jar sha256 `2af190b300cbb0b35e248ccf5f4a06b6072030aeb3da7a98ec73abe5b4cb371f`）+ OSV API 查询（1.86 受影响公告 0 条，全包 12 条均在 ≤1.85 修复）+ `specs/vault-core.md` §2.2/§6；T1.3 owner 批准（2026-10-15）。
 [^23^]: 原 NexVault 仓库 `/home/superguo/Projects/NexVault/gradle/libs.versions.toml` 与 `specs/tech-stack.md`（JUnit 4.13.2 / androidx.test 1.3.0 / 1.7.0）；本仓库安装的 `expo-modules-core@57.0.22` `android/build.gradle` 测试配置；T1.2 owner 批准（2026-10-14）。
+[^26^]: dl.google.com/android/maven2/androidx/biometric/biometric/maven-metadata.xml（2026-10-22 读取：release=1.4.0-alpha07，stable 最新 = 1.1.0）+ developer.android.com BiometricPrompt/KeyGenParameterSpec 官方参考（API 28+ 框架能力；setUserAuthenticationParameters 的 API 30 下限）；androidx.biometric 1.1.0 为 Google AndroidX 官方 backport。

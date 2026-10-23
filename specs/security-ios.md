@@ -44,6 +44,8 @@ export function attestDevice(serverChallenge: ArrayBuffer): Promise<{ keyId: str
 export function generateAssertion(serverChallenge: ArrayBuffer, payloadHash: ArrayBuffer): Promise<string>;        // 敏感请求逐次
 ```
 
+> **2026-10-22 T3.1 交付偏差（owner D2 批准）**：T3.1 的 JS 面仅 `ensureKek`/`deleteKek`（`src/index.ts`，expo-secure-store 57.0.4）；`wrapKey`/`unwrapKey` 为 native-internal Swift（CryptoKit AES.GCM + Keychain KEK），随 T3.2 的 vault-core 耦合上移。KEK 以 **hex 字符串**存于 expo-secure-store（`requireAuthentication: true` + `WHEN_UNLOCKED_THIS_DEVICE_ONLY`）；条目坐标取自安装依赖 `SecureStoreModule.swift`：service = `(keychainService ?? "app") + ":auth"`、account = `kSecAttrGeneric = Data(key.utf8)`。完整 KEK 走查（TC-SI-009）随 T3.2 JS 面，见 T3.1 Handoff。
+
 ### 2.2 Keychain 条目配置（expo-secure-store 调用面）
 
 ```ts
@@ -177,6 +179,33 @@ Then 为精确版本且与 tech-stack.md 登记一致；任何 bump 需修宪记
 Given 冷启动 Instruments trace
 When 检查首帧前主线程
 Then 无 dyld 遍历、无 /var/jb stat、无 App Attest 网络调用
+```
+
+### TC-SI-009 Keychain KEK 生命周期（真机/Mac）
+
+```gherkin
+Given 合格 iPhone 与 expo-secure-store 条目（requireAuthentication + WHEN_UNLOCKED_THIS_DEVICE_ONLY）
+When ensureKek → wrap → unwrap → deleteKek
+Then 条目经生物识别放出 KEK；roundtrip 一致；deleteKek 后读取抛 E_SEC_IOS_KEK_MISSING
+```
+
+### TC-SI-010 跨平台 blob 结构 parity（XCTest）
+
+```gherkin
+Given 与 Android TC-SA-010 相同的布局向量（version/IV/ciphertext/tag）
+When CryptoKit AES.GCM seal/open
+Then 布局一致、AAD 绑定一致
+And 错误 AAD / 篡改 / 截断均抛 E_SEC_IOS_BLOB_CORRUPT
+And 0 字节明文可 roundtrip（29 字节 blob，与 Android TC-SA-011 同布局）
+```
+
+### TC-SI-011 KEK 坐标契约（测试侧，Mac/simulator）
+
+```gherkin
+Given 已安装的 expo-secure-store 57.0.4（requireAuthentication 条目坐标 service="app:auth"、account=Data(key.utf8)）
+When 断言 KeychainKek.service == "app:auth" 且 account == "nexvault.kek.v1"
+And 在 test-only 坐标写入同一编码的 hex 值并经 loadKek(service:account:) 读回
+Then 字面量契约与 Data-account 编码/hex 解码均被验证（不触碰生产 KEK 条目）
 ```
 
 ## 6. 依赖与红线

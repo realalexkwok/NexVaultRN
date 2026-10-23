@@ -1,0 +1,45 @@
+
+expo.modules.securityandroid.BiometricCancelDeviceTest:
+Error in backKeyCancellationFailsClosedAndWipesPlaintext(expo.modules.securityandroid.BiometricCancelDeviceTest):
+java.lang.AssertionError: expected a typed fail-closed error, got null
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at expo.modules.securityandroid.BiometricCancelDeviceTest$backKeyCancellationFailsClosedAndWipesPlaintext$1.invokeSuspend(BiometricCancelDeviceTest.kt:41)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:46)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at expo.modules.securityandroid.BiometricCancelDeviceTest.backKeyCancellationFailsClosedAndWipesPlaintext(BiometricCancelDeviceTest.kt:28)
+
+
+Time: 6.085
+There was 1 failure:
+1) backKeyCancellationFailsClosedAndWipesPlaintext(expo.modules.securityandroid.BiometricCancelDeviceTest)
+java.lang.AssertionError: expected a typed fail-closed error, got null
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at expo.modules.securityandroid.BiometricCancelDeviceTest$backKeyCancellationFailsClosedAndWipesPlaintext$1.invokeSuspend(BiometricCancelDeviceTest.kt:41)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:46)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(dex-id-3c380d3dd417b32783065638fda8877ea30c94a4:1)
+	at expo.modules.securityandroid.BiometricCancelDeviceTest.backKeyCancellationFailsClosedAndWipesPlaintext(BiometricCancelDeviceTest.kt:28)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+

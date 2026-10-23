@@ -1,0 +1,8 @@
+
+expo.modules.securityandroid.ManualBiometricGateTest:.
+
+Time: 9.757
+
+OK (1 test)
+
+

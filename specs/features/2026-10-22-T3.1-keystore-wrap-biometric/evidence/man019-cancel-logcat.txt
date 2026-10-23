@@ -1,0 +1,2 @@
+--------- beginning of main
+10-22 22:52:34.993 30738 30751 I T3.1-DEMO: CANCEL TEST: prompt showing, waiting for BACK-key cancellation
