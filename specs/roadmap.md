@@ -38,3 +38,4 @@
 ## 阶段 3 — 工程化演进（持续）
 
 - xprem 自建 OTA 迁移（触发条件：拒付 Production $199/月 或数据主权要求，§5.1）；Fastlane 商店 metadata 自动化（§5.5.2）；密钥轮换演练制度化（spec: ota-update §7-3）；EAS 档位随 MAU 演进（$0/≈$54/≈$449 三档，§5.4）。
+- **无障碍验收（TalkBack / VoiceOver）**：MAN-018 的 Android TalkBack + iOS VoiceOver 两腿（`Invalid address` 恰好一次播报；T2.2 AC-10 / TC-UI-011）。owner 2026-10-23 裁定：整体 defer 至本阶段收尾（T3.1 H10 / H-T3.1-6）；设备到位即可执行，runbook 见 T3.1 validation。

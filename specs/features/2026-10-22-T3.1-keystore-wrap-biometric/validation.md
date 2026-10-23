@@ -138,7 +138,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 4. 输入非法地址 `0x123` → 失焦/提交（`adb shell input text 0x123`，随后 `input keyevent 66`）；owner 人耳确认 `Invalid address` 播报**恰好一次**（无重复、无静默）。
 5. 恢复：`adb shell settings put secure accessibility_enabled 0`（并按需清空 `enabled_accessibility_services`）。
 
-**当前状态（2026-10-23 09:28）**：已创建 MAN-020 的 wrap key（TEE）；已通知 owner 在设置中新增指纹，设备侧 `dumpsys fingerprint` 仍为 `count:1`（尚未新增）——新增完成后运行 phase2。
+**当前状态（2026-10-23 11:25）**：phase 2 已通过（见 Task 4（续）§MAN-020）；MAN-020 走查完成。
 
 ## R6 标注（T3.1；三级标注禁止拔高）
 
@@ -147,7 +147,7 @@ MAN-019/020 仍待 owner 在场（交互式指纹；用例已加 `-e t3_1_manual
 | Android Keystore AES-256-GCM wrap key（TEE 来源）+ per-use BiometricPrompt（CryptoObject，3 次失败 fail-closed） | **[P]**（2026-10-23 生效） | 真机证据：密钥生成/级别/删除幂等 4/4；每次 wrap/unwrap 新建 AuthSession（per-use）；取消 → `E_SEC_BIOMETRIC_CANCELLED` + 明文清零（自动用例）；roundtrip 字节相等 + 错误 AAD → `E_SEC_BLOB_CORRUPT`（补充用例）；生物特征变更 → `E_SEC_KEY_INVALIDATED` + 恢复（MAN-020）。**3 次错误指纹序列经 owner 裁定（选项 B）以取消路径 + JVM 计数替代**（偏差已记录） |
 | SOFTWARE_DEBUG（模拟器/调试构建）路径 | **[C]** | 仅模拟器/debug 可得；非 debug 构建直接抛 `E_SEC_SOFTWARE_KEYSTORE`，永不静默降级、永不标 [P] |
 | iOS Keychain KEK（.biometryCurrentSet ACL + WHEN_UNLOCKED_THIS_DEVICE_ONLY） | **[P]**（生效条件：MS-4 真机 + MS-2 XCTest 在 Mac 通过） | 本机无 Xcode，当前状态 `[~]`；实现依据 spec §2.2 与 expo-secure-store 57.0.4 源码坐标 |
-| wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]**（生效条件：MAN-019 第 4 步通过） | JVM 已证静态路径（AAD 篡改/ct/tag 翻转/截断/空明文全负例）；设备侧待 MAN-019 第 4 步复验 |
+| wrap blob 完整性（AES-GCM tag/AAD 绑定，`E_SEC_BLOB_CORRUPT` 零明文） | **[P]**（2026-10-23 生效） | JVM 已证静态路径（AAD 篡改/ct/tag 翻转/截断/空明文全负例）；设备侧由补充用例 `roundtripAndWrongAadWithRegisteredFinger` 复验（`WRONG-AAD OK code=E_SEC_BLOB_CORRUPT`） |
 | 清零：wrap 入参（含认证失败路径）/ AAD 副本 / unwrap 输出（调用方） | **[C]** | JVM 断言成功路径清零；认证失败路径由 MAN-019 第 5 步断言；ART/Hermes GC 副本不可控（如实标注） |
 | iOS Swift `Data`/`SymmetricKey` COW 零化 | **[C]** | 值类型复制不可控；best-effort 清零 |
 | iOS JS 面 KEK 物化（ensureKek 读取 hex 字符串回 JS，不可清零） | **[C]**（+ T3.2 Handoff：改为 native 存在性检查/创建） | spec §2.2 的既定调用面；k1 明文永不过 JS（R1 边界不变） |
@@ -178,7 +178,7 @@ Status：`[x]`（自动侧；doctor 的两条告警为既有 SDK patch 建议，
 
 **post-review 复核（HEAD `0e1afd8`，2026-10-22 21:4x）**：`pnpm --filter mobile exec tsc --noEmit` **exit 0**；`pnpm -r exec tsc --noEmit` **exit 0**（根目录 filter 提示同 B.6-1）；R1 grep **exit 1（干净）**；R5 grep **exit 1（干净）**；jest **3 suites / 25 tests** 全通过。
 
-**modules TS 探针（D7 证据，未落盘为门禁）**：临时 tsconfig（`extends ./tsconfig.json`；`include: ["../../modules/*/src/**/*.ts", "../../modules/security-android/index.ts"]`；`paths` 指向 `./node_modules/expo` 与 `./node_modules/expo-secure-store`）→ `npx tsc -p … --noEmit` **exit 0，零类型错误**。即 D7 option (b) 的模块 tsconfig 门禁可直接通过；待 owner 裁定后正式落盘（临时文件已删除，未入库）。
+**modules TS 门禁（D7，已落盘）**：`apps/mobile/tsconfig.modules.json`（extends app config；`include: ["../../modules/**/*.ts"]`，含 vault-core 的 `index.ts`；paths 指向 expo / expo-secure-store）+ `package.json` script `typecheck:modules` → `pnpm --filter mobile exec tsc -p tsconfig.modules.json` **exit 0**（覆盖全部模块 TS，含 vault-core 公共 wrapper）。
 
 ## Task 6 — review-fix 循环
 
@@ -233,10 +233,7 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 
 **评审结论（非递延范围）**：持久 reviewer `b75d6157-6d3b-4daa-90ac-edb389caa2cb` 对最终 HEAD `e6b7489` 报告 **No findings.**；round 1 的 BLOCKER/MAJOR/MINOR/NIT 与 round 2–4 的后续发现全部处置完毕，证据（JVM 10/10、设备 4/4、APK sha、OSV、app 构建）在修复后复跑并复核通过。
 
-**仍开放（关闭门禁差项）**：
-1. **D6–D9**（review M1/M4/M6/M7）——owner 三轮问询超时未答，记录于 requirements §2；实现按裁定收敛。
-2. **真机走查**：MAN-019（5 步，含取消的 wrap 明文清零）、MAN-020（两阶段）、MAN-018（TalkBack 顺带）——需 owner 在场；`-e t3_1_manual 1` 门控已就位。
-3. **Task 7 收尾**：validation 定稿 → AGENTS Part A 关闭行 → B.3 merge/push/分支清理（待 1、2 完成后执行）。
+**关闭状态（2026-10-23）**：D6–D9 已由 owner 裁定并落地（见下节）；MAN-019 经 owner 选项 B 关闭；MAN-020 通过（指纹 1→2）；MAN-018/H10 按 owner 裁定 defer 至 roadmap 末项；Task 7 已完成（合并 `277cd65`，main 已推进）。Round 1–5 的零发现轮针对 `e6b7489`；其后的 StrongBox→TEE / D6 / D7 / 测试变更由追加复核（`e6b7489..07f66f5`）审计：无 BLOCKER/MAJOR，5 MINOR + 5 NIT 已处置（见 Post-review 节）。
 
 ## Owner decisions D6–D9（2026-10-22 裁定「all recommended」）
 
@@ -247,7 +244,20 @@ reviewer 判定：无新 BLOCKER；round-1 非递延项全部确认修复且证�
 | D8 | TC-SI-009 随 T3.2 JS 面 | AC-10 仅绑 TC-SI-010/011；Handoff H-T3.1-1 |
 | D9 | 接受生成路径来源模型 + 措辞 | KDoc/validation/spec 统一「unverified floor」；T5.x attestation Handoff |
 
-**D6 迁移注**：D6 之前创建的旧 wrap key 仍带 `AUTH_DEVICE_CREDENTIAL` 认证类型，无法原地改参数（AES 无 KeyInfo 可查）——测试/演示均显式 delete + ensure 重建；T3.2 需在启动流程做一次「旧键检测→重建」迁移（Handoff H-T3.1-7）。
+**D6 迁移注**：D6 之前创建的旧 wrap key 仍带 `AUTH_DEVICE_CREDENTIAL` 认证类型，且 TEE 切换前可能存在 StrongBox 密钥，均无法原地改参数（AES 无 KeyInfo 可查）——测试/演示均显式 delete + ensure 重建；T3.2 迁移须以持久化 schema/版本标记或**无条件重建**实现（不可依赖「检测」旧键；见 Handoff H-T3.1-7）。
+
+## Post-review 变更复核（2026-10-23；`e6b7489..07f66f5`）
+
+零发现轮（`e6b7489`）之后落地的变更（StrongBox→TEE、D6、D7、测试补充：PromptFailureGate/JVM、BiometricCancelDeviceTest、supplementary roundtrip/AAD、banner、MAN-019/020 记录）经持久 reviewer 追加审计。结论：**无 BLOCKER / MAJOR**；5 MINOR + 5 NIT 全部处置：
+
+| # | 发现 | 处置 |
+|---|---|---|
+| MINOR-1 | FR-1 / AC-4 / spec §2.4 / KDoc 仍写旧 flag 集（DEVICE_CREDENTIAL + StrongBox） | **已修**：FR-1/AC-4/§2.4/KDoc 改为终稿；删除 buildSpec 的 StrongBox 分支；`SecurityLevel.STRONGBOX` 保留给 T5.x 并注明不产生 |
+| MINOR-2 | 关闭记录自相矛盾（Task 6 引用不存在的 Post-review 节；「仍开放」块仍列 D6–D9/MAN/Task 7） | **已修**：本节 + 「关闭状态」块；AGENTS 关闭行注明 No findings. 覆盖范围 |
+| MINOR-3 | 关闭门禁证据停留在最终代码之前 | **已修**：在最终代码上重跑并归档（见 Task 5 末行 + `evidence/final-*`） |
+| MINOR-4 | D7 门禁未覆盖 vault-core wrapper、未登记 B.6-1 | **已修**：`include: ["../../modules/**/*.ts"]`（exit 0）+ AGENTS B.6-1 登记 |
+| MINOR-5 | H10 defer 目标在 roadmap 无条目 | **已修**：roadmap 阶段 3 增加「无障碍验收（TalkBack/VoiceOver）」条目 |
+| NIT-1..5 | MAN-020 状态、探针注、R6 条件、AGENTS 手工行、H-T3.1-7 措辞 | **已修**（逐条） |
 
 ## Task 7 — 收尾
 
@@ -264,4 +274,4 @@ Status：`[x]`（2026-10-23 收尾：MAN-019 经 owner 选项 B 关闭；MAN-020
 | H-T3.1-5 | iOS 真机/Mac 验证（MS-1..MS-4） | 无 Xcode/合格 iPhone | 设备到位后 | AC-10 |
 | H-T3.1-6 | 无障碍（MAN-018 / H10，Android + iOS 两腿） | owner 2026-10-23 裁定 defer | **replan → roadmap 阶段 3 末** | MAN-018 / AC-10 |
 | H-T3.1-8 | MAN-020 phase 2（生物特征变更失效） | 需 owner 新增 1 枚指纹；owner 表示稍后添加 | 指纹就绪后立即执行（phase1 已完成，键在 TEE） | AC-5 / MAN-020 |
-| H-T3.1-7 | D6 前创建的旧 wrap key（DEVICE_CREDENTIAL auth 类型）迁移 | AES 无 KeyInfo、无法原地改参数 | T3.2 启动时检测并重建 | AC-2 |
+| H-T3.1-7 | 旧 wrap key 迁移（D6 前 `DEVICE_CREDENTIAL` 认证类型；TEE 切换前的 StrongBox 密钥） | AES 无 KeyInfo，旧类型/归属无法检测；只能重建或重包裹 | T3.2：持久化 schema/版本标记（wrap blob version + key-schema tag）或**无条件 delete + ensure 重建**（随后重包裹并重新认证）；不得假设可「检测」旧键 | AC-2 |

@@ -43,20 +43,24 @@ internal data class WrapCapabilities(
 /**
  * T3.1 wrap-key manager (spec: security-android sections 2.1 / 2.4).
  *
- * The AES-256-GCM key lives in the Android Keystore and is created with the spec's
- * user-authentication flag set: per-use window 0, enrollment invalidation, StrongBox with a TEE
- * retry, and unlockedDeviceRequired only on API 35+ (documented 28-34 bug). wrap/unwrap stay
+ * The AES-256-GCM key lives in the Android Keystore and is created with the final flag set:
+ * per-use window 0 (owner decision D6: BIOMETRIC_STRONG only, no device-credential fallback),
+ * enrollment invalidation, and unlockedDeviceRequired only on API 35+ (documented 28-34 bug).
+ * The key takes the **TEE** path: the StrongBox attempt was removed after the 2026-10-22 device
+ * finding (Titan M2 rejects every authenticated use of a StrongBox per-use AES key with
+ * KEY_USER_NOT_AUTHENTICATED); StrongBox stays a T5.x investigation. wrap/unwrap stay
  * native-internal; only the instrumentation suite drives them today and T3.2 wires them to
  * vault-core behind the minimal JS face.
  *
  * Provenance of the security level (device finding 2026-10-22): keystore2 exposes KeyInfo only for
  * private keys, so an AES key's hardware backing cannot be queried after the fact. The level is
- * therefore the generation path's provenance, cached in memory: a successful StrongBox attempt ->
- * STRONGBOX; the TEE path or a later process re-open -> TRUSTED_ENVIRONMENT. TRUSTED_ENVIRONMENT
- * is an **unverified floor** for non-emulator devices, not an attestation claim: a device whose
- * Keystore is software-backed would be labelled TRUSTED_ENVIRONMENT (owner decision D9, open);
- * verification belongs to the T5.x attestation work. Emulator -> SOFTWARE_DEBUG, refused on a
- * non-debuggable build. No level marker is persisted (R5's on-disk whitelist is addresses and
+ * therefore the generation path's provenance, cached in memory: the TEE path (or a later process
+ * re-open) -> TRUSTED_ENVIRONMENT; [SecurityLevel.STRONGBOX] is reserved for the T5.x StrongBox
+ * investigation and is never produced today. TRUSTED_ENVIRONMENT is an **unverified floor** for
+ * non-emulator devices, not an attestation claim: a device whose Keystore is software-backed would
+ * be labelled TRUSTED_ENVIRONMENT (owner decision D9: accepted provenance model); verification
+ * belongs to the T5.x attestation work. Emulator -> SOFTWARE_DEBUG, refused on a non-debuggable
+ * build. No level marker is persisted (R5's on-disk whitelist is addresses and
  * SecureStore/Keychain ciphertext only).
  *
  * Honest boundary: the Keystore and BiometricPrompt paths cannot run on the JVM; the pure blob
@@ -185,10 +189,10 @@ internal class WrapKeyManager(private val context: Context) {
    */
   private fun generateKey(): SecurityLevel {
     if (isEmulator()) {
-      generateWithSpec(buildSpec(strongBox = false))
+      generateWithSpec(buildSpec())
       return SecurityLevel.SOFTWARE_DEBUG
     }
-    generateWithSpec(buildSpec(strongBox = false))
+    generateWithSpec(buildSpec())
     return SecurityLevel.TRUSTED_ENVIRONMENT
   }
 
@@ -198,7 +202,7 @@ internal class WrapKeyManager(private val context: Context) {
     generator.generateKey()
   }
 
-  private fun buildSpec(strongBox: Boolean): KeyGenParameterSpec {
+  private fun buildSpec(): KeyGenParameterSpec {
     val builder = KeyGenParameterSpec.Builder(
       ALIAS,
       KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
@@ -208,10 +212,7 @@ internal class WrapKeyManager(private val context: Context) {
       .setKeySize(256)
       .setUserAuthenticationRequired(true)
       .setInvalidatedByBiometricEnrollment(true)
-
-    if (strongBox && Build.VERSION.SDK_INT >= 28) {
-      builder.setIsStrongBoxBacked(true)
-    }
+    // setIsStrongBoxBacked is deliberately not used: see the T5.x StrongBox finding in the KDoc.
     if (Build.VERSION.SDK_INT >= 30) {
       // D6 (owner 2026-10-22): biometric-only. The per-use CryptoObject flow cannot be authorised
       // by the device credential (androidx 1.1.0 delivers a null crypto object for a correct PIN),

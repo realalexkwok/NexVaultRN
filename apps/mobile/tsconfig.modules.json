@@ -8,5 +8,5 @@
       "expo-secure-store": ["./node_modules/expo-secure-store"]
     }
   },
-  "include": ["../../modules/*/src/**/*.ts", "../../modules/security-android/index.ts"]
+  "include": ["../../modules/**/*.ts"]
 }

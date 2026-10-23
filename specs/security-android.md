@@ -83,7 +83,7 @@ object WrapKeyManager {
 // setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)  // 窗口=0，per-use；D6 裁定生物识别-only
 //   （2026-10-22：设备凭据成功的 cryptoObject 为 null，PIN 回退无法 unwrap，故不纳入）
 // setInvalidatedByBiometricEnrollment(true)
-// setIsStrongBoxBacked(true)  // 失败降级 TEE
+// setIsStrongBoxBacked 不启用（T3.1）  // 2026-10-22 设备发现：StrongBox per-use AES 在 Titan M2 上不可用（KEY_USER_NOT_AUTHENTICATED）；改走 TEE；StrongBox 复测属 T5.x
 // setUnlockedDeviceRequired(true) 仅 API ≥35；API 28–34 因官方明示 bug 默认关 [^2^]
 internal object SignatureSelfCheck { fun verifyApkSignatureEmbedded(): Boolean }   // .so 内，不经 PackageManager
 internal object BundleSelfCheck { fun verifyHermesBundleHash(): Boolean }
