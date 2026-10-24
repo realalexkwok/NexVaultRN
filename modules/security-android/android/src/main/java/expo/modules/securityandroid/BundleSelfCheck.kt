@@ -32,6 +32,9 @@ internal object BundleSelfCheck {
       return null
     } catch (e: IOException) {
       return null
+    } catch (e: Exception) {
+      // Same honesty rule as the signature read: an evaluation that cannot run is "not evaluated".
+      return null
     }
     return HashHex.matches(expected, actual)
   }

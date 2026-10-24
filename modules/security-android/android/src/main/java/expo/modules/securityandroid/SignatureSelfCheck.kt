@@ -44,7 +44,10 @@ internal object SignatureSelfCheck {
       info.signatures?.firstOrNull()
     }
     first?.toByteArray()?.let(HashHex::sha256Hex)
-  } catch (e: PackageManager.NameNotFoundException) {
+  } catch (e: Exception) {
+    // A read that cannot complete is reported as "not evaluated" (null), never as a pass or a
+    // match: the report carries signatureEvaluated=false. Hiding the check by hooking the
+    // PackageManager read is inside the [C] boundary of this cost-raiser (spec section 3 T-SA-3).
     null
   }
 }

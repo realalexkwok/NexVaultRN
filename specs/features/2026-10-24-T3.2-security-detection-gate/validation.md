@@ -125,6 +125,10 @@ adb -s 10.42.0.139:45791 shell am instrument -w -e class expo.modules.securityan
 
 **边界与修复记录（B.4 不静默）**：库模块的 androidTest APK 是 **self-targeted**（其 manifest `targetPackage` = 测试包本身，`aapt2 dump xmltree` 实证），因此测试进程不是 app 进程：(1) 首跑 `signatureMatch=null` —— 期望资源在 app 包内而测试上下文读不到 → 用 `createPackageContext(<applicationId>)` 取真实 app context；(2) 第二次 `NameNotFoundException` —— Android 11+ 包可见性 → 两个模块的 androidTest manifest 增 `<queries><package …/></queries>`；(3) 第三次 app context 下 `Bip39` 词表 `R.raw` id 属测试 APK 资源表 → mnemonic 路径用测试 context，gate/detection 断言用 app context。三轮失败均留档在 transcript，最终全绿。
 
+### 5.3 JS 桥接边界（如实）
+
+`runDetection` / `getCachedRiskLevel` / `assertSigningAllowed` / `wrapKey` / `unwrapKey` 的 **TS 面**由三处 tsc 门禁 + 代码评审覆盖；**JS 桥接调用本身未在设备上执行**（T1.2 先例：AsyncFunction 需 RN 宿主）。作用域口径：Android 侧生产行为由 `TC-T32-006/007` 以「AsyncFunction 实际执行的同一方法」真机验证；桥接端到端属 T4.1 的真实导入/签名流程（与 T1.3-H8 同源）。
+
 ### 5.3 iOS XCTest（撰写侧）
 
 `modules/security-ios/ios/Tests/SecurityIosTests.swift` 新增 8 例（合计 15）：TC-SI-009 完整 KEK 生命周期（test-only 坐标）、越狱 collector fixtures 正负例、gate deny fixture。**本机无 Xcode 未运行** → 状态 `[~]`，Mac 轮必跑（MAC-HANDOFF §5 MS-6）。
