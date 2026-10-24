@@ -58,7 +58,7 @@ class SecurityAndroidModule : Module() {
           "full" -> DetectionScope.FULL
           else -> throw SecurityUnsupportedException()
         }
-        reportToMap(DetectionRunner.run(parsed, context()))
+        reportToMap(DetectionRunner.run(parsed, context()), parsed)
       }
     }
 
@@ -76,8 +76,15 @@ class SecurityAndroidModule : Module() {
     // prompt work; the manager wipes the plaintext buffer on every path (AC-7/R1).
     AsyncFunction("wrapKey") Coroutine { plaintext: ByteArray, aad: ByteArray ->
       withContext(Dispatchers.Default) {
-        SecurityGate.assertSigningAllowed(context())
-        manager.wrap(requireActivity(), plaintext, aad)
+        try {
+          SecurityGate.assertSigningAllowed(context())
+          manager.wrap(requireActivity(), plaintext, aad)
+        } catch (error: Throwable) {
+          // R1: the manager wipes on its own paths; this covers failures before it is reached
+          // (gate denial, missing activity), where the bridged copy would otherwise survive.
+          plaintext.fill(0)
+          throw error
+        }
       }
     }
 
@@ -90,17 +97,19 @@ class SecurityAndroidModule : Module() {
   }
 
   /**
-   * Wire shape: booleans stay non-null and each self-check carries an explicit "evaluated" flag so
-   * "not evaluated" (debug build without an embedded bundle) can never be read as "passed" (R6).
+   * Wire shape: a check that could not be evaluated reports match=false plus evaluated=false --
+   * never a false "match" (R6). [scope] tells the consumer that a fast pass did not look at
+   * root/Frida/anti-debug, so empty signal lists in a fast report mean "not checked".
    */
-  private fun reportToMap(report: DetectionReport): Map<String, Any> = mapOf(
-    "signatureMatch" to (report.signatureMatch ?: true),
+  private fun reportToMap(report: DetectionReport, scope: DetectionScope): Map<String, Any> = mapOf(
+    "signatureMatch" to (report.signatureMatch ?: false),
     "signatureEvaluated" to (report.signatureMatch != null),
-    "bundleHashMatch" to (report.bundleHashMatch ?: true),
+    "bundleHashMatch" to (report.bundleHashMatch ?: false),
     "bundleEvaluated" to (report.bundleHashMatch != null),
     "rootSignals" to report.rootSignals,
     "fridaSignals" to report.fridaSignals,
     "debuggerAttached" to report.debuggerAttached,
+    "scope" to scope.name.lowercase(),
     "evaluatedAt" to report.evaluatedAt,
     "riskLevel" to SecurityState.cachedLevel().name
   )

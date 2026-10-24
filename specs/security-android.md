@@ -50,13 +50,19 @@ export interface DetectionReport {
   signatureMatch: boolean;        // native 签名块自解析证书 SHA-256 == 编译期嵌入指纹
   signatureEvaluated: boolean;    // 2026-10-24 T3.2：false = 构建未注入期望值（"未评估" ≠ "通过"）
   bundleHashMatch: boolean;       // assets/index.android.bundle SHA-256 自检
-  bundleEvaluated: boolean;       // 2026-10-24 T3.2：debug 包不内嵌 bundle → false（不计入风险）
+  bundleEvaluated: boolean;       // 2026-10-24 T3.2：debug 包不内嵌 bundle → evaluated=false
   rootSignals: string[];          // 命中的向量 ID（不落明文细节）
-  fridaSignals: string[];
+  fridaSignals: string[];         // 同上
   debuggerAttached: boolean;
+  scope: 'fast' | 'full';         // 2026-10-24 review 修复：fast 不检查 root/Frida/反调试
   evaluatedAt: number;
-  riskLevel: RiskLevel;           // 本次评估后的缓存级别（T3.2 子集：L0 / L4）
+  riskLevel: RiskLevel;           // 门控使用的缓存级别（T3.2 子集：L0 / L4）
 }
+// 2026-10-24 review 修复（语义契约）：
+// - 未评估的自检上报 match=false + evaluated=false，**禁止**上报 false "match"；
+// - scope='fast' 时 root/Frida/debugger 的空值/false 表示「未检查」，不是「干净」；
+// - SecurityState 缓存**单调**（FAST 不得覆盖/降低 FULL 结果），gate 在未缓存 FULL 时先跑一次 FULL。
+//
 export function runDetection(scope: 'fast' | 'full'): Promise<DetectionReport>; // fast=首帧后最小集；full=后台
 export function getCachedRiskLevel(): RiskLevel;          // 热路径只读缓存，<1ms
 /** fail-closed 门控：供 vault-core 在 importMnemonic/signDigest 前调用；不通过则不释放密钥材料 */

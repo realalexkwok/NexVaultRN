@@ -23,7 +23,13 @@ export interface WrapCapabilities {
   securityLevel: SecurityLevel | null;
 }
 
-/** Detection pass result (T3.2 subset; full L0-L5 attestation matrix lands with T5.x). */
+/**
+ * Detection pass result (T3.2 subset; full L0-L5 attestation matrix lands with T5.x).
+ *
+ * A check that could not be evaluated reports `false` **and** `evaluated: false` -- never a
+ * false "match" (R6). `scope: 'fast'` means root/Frida/anti-debug were not checked, so their
+ * empty/false values are "not checked", not "clean".
+ */
 export interface DetectionReport {
   signatureMatch: boolean;
   signatureEvaluated: boolean;
@@ -32,6 +38,7 @@ export interface DetectionReport {
   rootSignals: string[];
   fridaSignals: string[];
   debuggerAttached: boolean;
+  scope: 'fast' | 'full';
   evaluatedAt: number;
   riskLevel: RiskLevel;
 }

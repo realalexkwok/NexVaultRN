@@ -148,3 +148,24 @@ Time: 0.302
 OK (1 test)
 
 
+== REVIEW-FIX build: DetectionDeviceTest ==
+
+Time: 0.403
+
+OK (3 tests)
+
+
+== REVIEW-FIX build: SecurityGateCouplingDeviceTest ==
+
+Time: 0.396
+
+OK (1 test)
+
+
+== REVIEW-FIX build: WrapKeyManagerDeviceTest ==
+
+Time: 0.116
+
+OK (4 tests)
+
+

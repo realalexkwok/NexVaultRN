@@ -159,7 +159,7 @@ Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证�
 - **Stage 1**（`/tmp/t32-release2.log`，arm64）：`:app:assembleRelease` **BUILD SUCCESSFUL in 5m 48s**；`app-release.apk` 内嵌 `assets/index.android.bundle`（4,139,416 B 条目）。
 - 回填：`node scripts/update-security-hashes.mjs apps/mobile/android/app/build/outputs/apk/release/app-release.apk` → `certSha256=fac61745…3b9c`、`bundleSha256=7b64b3b5…dbfe`（`apksigner verify --print-certs` + `unzip` 取 bundle；keytool 无 v1 签名的解析失败已记录并改用 apksigner）。
 - **Stage 2**：`expo prebuild --clean` 写入资源（`nexvault_expected_bundle_sha256 = 7b64b3b5…`）→ `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel` **BUILD SUCCESSFUL in 8m 29s**（第 2 次 daemon 崩溃后按 `-Dkotlin.daemon.jvmargs=-Xmx1280m` 收紧内存重跑成功）。
-- 产物：`app-release.apk` **46,957,479 B**，sha256 `dc707008fe41dce1aec849c3d618ce16353d2a77d7e1cd5d16e99197ca0ae957`（最终构建，含自检异常加固 + 检测快照原子化；`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
+- 产物：`app-release.apk` **46,957,479 B**，sha256 `114c0c0e8aa21d011f2c0b8a45d22a78f794d93bd32b3014285a39beedc47cdb`（最终构建，含 Review round 1 全部修复；`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
 - **真机（Pixel 6a / Android 17）release 装机**：`adb install -r` → Success；`DetectionDeviceTest` 对 release app context **OK (2 tests)**（签名 match + **bundle evaluated+match**）；`SecurityGateCouplingDeviceTest` **OK (1 test)**。
 - **MAN-021 走查**：`nexvault://settings` 深链 → Settings 显示 **L0** + `Signature check: match · Bundle check: match` + R6 标注；截图/UI dump/14s 录屏归档 `evidence/man021-*`（agent 走查、owner 未在场，录屏可复核）。
 
@@ -195,20 +195,25 @@ Status：`[~]`（**评审轮阻塞**：reviewer 基础设施 4 次尝试超时�
 
 关闭备注：H-T3.1-7 已由本条目实现（schema tag + 无条件重建）；H-T3.1-8 保持已关闭（MAN-020）；H-T3.1-1/2 已实现（iOS 撰写 `[~]` / Android JS 面 + 同名 gate，设备用例 TC-T32-007/008 覆盖 Android 侧）。
 
-### 7.2 Review-fix loop（**未完成 → 阻塞**）
+### 7.2 Review-fix loop（进行中）
 
-2026-10-24 尝试 4 次独立评审，均未产出任何 finding 结论（reviewer 子代理运行 20–60 分钟无输出，随后被中断；最后一次为「内联代码 + 无工具」的 5–10 分钟限制评审，同样 7 分钟无输出）：
+**尝试记录（前 5 次因 reviewer 基础设施无输出被中断）**：`09876d6d`（全量，~60 min）、`03112054`（限工具，~25 min）、`da82c174`（限 6 文件，~6 min）、`9ad76493`（内联无工具，~7 min）、`5ec951c4`（限 15 工具调用，~28 min）——均无结论。**第 6 次 `cf714148`（4 文件 + ≤3 次读取）在约 12 分钟时返回 5 条 finding**（reviewer 需长时间才会输出，故后续按「不打断 + 长窗口」执行）。
 
-| # | reviewer | 形式 | 结果 |
+**Review round 1（`cf714148`，4 文件聚焦：DetectionAggregator / SecurityAndroidModule / VaultCoreModule / security-android index.ts）**
+
+| # | 级别 | 发现 | 处置 |
 |---|---|---|---|
-| 1 | `09876d6d` | 全量范围 `3862902..bd4db7a`，可读全仓 | ~60 min 无输出 → 中断 |
-| 2 | `03112054` | 同上，限 ~30 工具调用 | ~25 min 无输出 → 中断 |
-| 3 | `da82c174` | 仅 6 个文件、≤6 工具调用 | ~6 min 无输出 → 中断 |
-| 4 | `9ad76493` | 内联关键代码、禁止工具 | ~7 min 无输出 → 中断 |
+| R1-1 | **HIGH** | `SecurityState.update` 无条件覆盖快照：JS 可调的 `runDetection('fast')` 会把 FULL 的 L4 降级为 L0（FAST 不检查 root/Frida/反调试）→ gate 放行 | **已修**：缓存**单调**（level 不降；同级别时 FULL 优先于 FAST，FAST 不得覆盖 FULL）；`DetectionScope` 公开 |
+| R1-2 | **HIGH** | `SecurityGate` 无缓存时只跑 FAST（无 root/Frida/反调试信号）→ rooted/Frida 设备在未跑过 FULL 时 fail-open | **已修**：gate 在缓存不是 FULL 时**总是先跑 FULL**，再判 ≥L3 |
+| R1-3 | MEDIUM | JS 线上 `signatureMatch ?: true` 把「未评估」变成「match」（契约：null = 未评估） | **已修**：wire 上未评估上报 `false` + `evaluated=false`（绝不 false match）；TS 类型注释与 spec §2.2 同步 |
+| R1-4 | LOW | FAST 报告的 `debuggerAttached=false` 无「未检查」标记 | **已修**：wire 增 `scope: 'fast'\|'full'`（fast 的空信号 = 未检查，非干净） |
+| R1-5 | LOW | `wrapKey` 在 `requireActivity()` 抛错时，桥接明文 ByteArray 未进 manager 即未清零 | **已修**：wrap 路径 try/catch 全路径 `plaintext.fill(0)`（幂等双清） |
 
-**裁定**：这是 reviewer 基础设施（子代理模型执行）不可用的环境阻塞，不是代码或发现问题的结论。按 review-fix-loop 纪律**不得**以「开发者自审」冒充独立评审、**不得**记为 `No findings.`。因此：Task 7 状态 `[~]`（实现完成，评审轮待执行）；**未合并 `main`、未 push**（B.3 收尾在评审零发现轮之后）。恢复评审后的动作：同一分支重跑 reviewer → 修复 → 零发现轮 → 执行 §7.3 收尾清单。
+reviewer 明确 **no findings** 的项：mnemonic 拒绝路径清零、`E_VAULT_SECURITY_GATE` 翻译、gate 在 importMnemonic/signDigest 的排序、wrap/unwrap gate 前置、JS wrapKey 输入清零、无信号细节日志。
 
-开发者自查（**不作为独立评审**，仅记录已做核对）：三处 tsc 门禁、JVM 28+37、设备 3 套件、R1/R5 grep、依赖面、release 两段回填与 L0 演示均绿；`SecurityState.debugApplyForTest` 为 `BuildConfig.DEBUG` 守卫且 JS 不可达；gate 在 importMnemonic/signDigest 的首行执行且拒绝路径输入清零（设备用例断言）。
+**修复提交**：`ef73d83`（快照原子化，自查发现：report/level 非原子发布可让 gate 读到新 report + 旧 level）、本轮修复提交（R1-1..R1-5 + 新 JVM/设备回归用例 + spec 修订）。回归门禁：JVM `fastPassCannotDowngradeOrReplaceAFullReport`（新增）、设备 `fastPassCannotDowngradeADeviceDenial`（新增）、`DetectionDeviceTest` 的 bundle 断言改为「evaluated ⇒ match / 未评估 ⇒ null」。
+
+**Round 2（进行中）**：`e52981f5`（bug-focused，未打断长窗口）——返回后按同规则处置并追加记录。
 
 ### 7.3 收尾清单（B.3 / Part A）
 
@@ -223,8 +228,8 @@ Status：`[~]`（**评审轮阻塞**：reviewer 基础设施 4 次尝试超时�
 
 | 门禁 | 命令/动作 | 结果 |
 |---|---|---|
-| release 重建 | `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel`（含 `SignatureSelfCheck`/`BundleSelfCheck` 异常加固提交后） | **BUILD SUCCESSFUL in 2m 11s**；APK 46,957,479 B，sha256 `dc707008…`（`evidence/release-apk-sha256.txt`） |
-| 设备 L0（release app context） | `DetectionDeviceTest` | **OK (2 tests)** |
+| release 重建 | `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel`（含 `SignatureSelfCheck`/`BundleSelfCheck` 异常加固提交后） | **BUILD SUCCESSFUL in 2m 11s**；APK 46,957,479 B，sha256 `114c0c0e…`（`evidence/release-apk-sha256.txt`） |
+| 设备 L0（release app context） | `DetectionDeviceTest` | **OK (3 tests)**（含 FAST 不得降级用例） |
 | 设备耦合（[P] 证据） | `SecurityGateCouplingDeviceTest` | **OK (1 test)** |
 | T3.1 回归 | `WrapKeyManagerDeviceTest` | **OK (4 tests)** |
-| MAN-021 复走 | 深链 `nexvault://settings` → Settings | **L0** + `Signature check: match · Bundle check: match`；`evidence/man021-settings-l0.{png,xml}`（png sha256 `3e4ab2cb…`）、`evidence/man021-l0.mp4`（sha256 `b4bec1bb…`） |
+| MAN-021 复走 | 深链 `nexvault://settings` → Settings | **L0** + `Signature check: match · Bundle check: match`；`evidence/man021-settings-l0.{png,xml}`（png sha256 `5d2ad5e9…`）、`evidence/man021-l0.mp4`（sha256 `74df820f…`） |

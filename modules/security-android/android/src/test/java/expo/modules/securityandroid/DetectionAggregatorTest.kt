@@ -51,9 +51,32 @@ class DetectionAggregatorTest {
     SecurityState.debugApplyForTest(report(rootSignals = listOf(RootPure.ID_SU_BIN)))
     assertTrue(SecurityState.hasReport())
     assertEquals(RiskLevel.L4, SecurityState.cachedLevel())
+    assertEquals(DetectionScope.FULL, SecurityState.cachedScope())
     assertEquals(listOf(RootPure.ID_SU_BIN), SecurityState.cachedReport()?.rootSignals)
     SecurityState.resetForTest()
     assertEquals(RiskLevel.L0, SecurityState.cachedLevel())
     assertNull(SecurityState.cachedReport())
+  }
+
+  /**
+   * Review finding 1 (HIGH): a JS-callable runDetection('fast') carries no environment signals, so
+   * publishing it over a FULL report would downgrade an L4 device to L0. The cache must be monotonic
+   * and must keep the FULL scope.
+   */
+  @Test
+  fun fastPassCannotDowngradeOrReplaceAFullReport() {
+    SecurityState.resetForTest()
+    SecurityState.debugApplyForTest(report(rootSignals = listOf(RootPure.ID_SU_BIN)), DetectionScope.FULL)
+    assertEquals(RiskLevel.L4, SecurityState.cachedLevel())
+
+    SecurityState.debugApplyForTest(report(signatureMatch = true, bundleHashMatch = true), DetectionScope.FAST)
+    assertEquals("a fast pass must never lower the cached level", RiskLevel.L4, SecurityState.cachedLevel())
+    assertEquals(DetectionScope.FULL, SecurityState.cachedScope())
+
+    SecurityState.resetForTest()
+    SecurityState.debugApplyForTest(report(signatureMatch = true, bundleHashMatch = true), DetectionScope.FULL)
+    SecurityState.debugApplyForTest(report(signatureMatch = true, bundleHashMatch = true), DetectionScope.FAST)
+    assertEquals("an equal-level fast pass must not erase the full scope", DetectionScope.FULL, SecurityState.cachedScope())
+    SecurityState.resetForTest()
   }
 }

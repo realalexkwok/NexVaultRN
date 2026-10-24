@@ -27,7 +27,8 @@ data class DetectionReport(
   val evaluatedAt: Long
 )
 
-internal enum class DetectionScope { FAST, FULL }
+/** Detection pass size: FAST = signature + bundle only; FULL adds root/Frida/anti-debug. */
+enum class DetectionScope { FAST, FULL }
 
 internal object DetectionPure {
   /** Section 3 action matrix: column C (signing) is denied from L3 upward. */
@@ -54,27 +55,42 @@ internal object DetectionPure {
  */
 object SecurityState {
   /**
-   * Report and level are published as ONE immutable value: a reader can never observe a fresh
-   * report next to a stale level (the gate's pass/deny decision must come from a single consistent
-   * snapshot).
+   * Report, level and pass size are published as ONE immutable value: a reader can never observe a
+   * fresh report next to a stale level (the gate's pass/deny decision must come from a single
+   * consistent snapshot).
    */
-  class Snapshot(val report: DetectionReport, val level: RiskLevel)
+  class Snapshot(val report: DetectionReport, val level: RiskLevel, val scope: DetectionScope)
 
   @Volatile private var snapshot: Snapshot? = null
 
-  fun update(report: DetectionReport) {
-    snapshot = Snapshot(report, DetectionPure.evaluate(report))
+  /**
+   * Fail-closed cache rule: a cheaper pass can never erase a stronger cached result. A FAST report
+   * carries no environment signals (root/Frida/anti-debug), so publishing it over a FULL report
+   * would silently downgrade an L4 device to L0 -- a JS caller of runDetection('fast') must not be
+   * able to do that. The level is therefore monotonic within the process, and at equal level a
+   * FULL report outranks a FAST one.
+   */
+  fun update(report: DetectionReport, scope: DetectionScope) {
+    val level = DetectionPure.evaluate(report)
+    val current = snapshot
+    if (current != null) {
+      if (level < current.level) return
+      if (level == current.level && current.scope == DetectionScope.FULL && scope == DetectionScope.FAST) return
+    }
+    snapshot = Snapshot(report, level, scope)
   }
 
   fun cachedLevel(): RiskLevel = snapshot?.level ?: RiskLevel.L0
 
   fun cachedReport(): DetectionReport? = snapshot?.report
 
+  fun cachedScope(): DetectionScope? = snapshot?.scope
+
   fun hasReport(): Boolean = snapshot != null
 
-  fun debugApplyForTest(report: DetectionReport) {
+  fun debugApplyForTest(report: DetectionReport, scope: DetectionScope = DetectionScope.FULL) {
     if (!BuildConfig.DEBUG) return
-    update(report)
+    update(report, scope)
   }
 
   fun resetForTest() {
@@ -98,7 +114,7 @@ internal object DetectionRunner {
       debuggerAttached = debugger,
       evaluatedAt = System.currentTimeMillis()
     )
-    SecurityState.update(report)
+    SecurityState.update(report, scope)
     return report
   }
 }
@@ -111,8 +127,11 @@ internal object DetectionRunner {
  */
 object SecurityGate {
   fun assertSigningAllowed(context: Context) {
-    if (!SecurityState.hasReport()) {
-      DetectionRunner.run(DetectionScope.FAST, context)
+    // Fail-closed: the cached pass must include the environment signals. A FAST report (the
+    // after-first-frame UI scan) cannot decide whether signing is safe, so the gate always runs a
+    // FULL pass unless one is already cached.
+    if (SecurityState.cachedScope() != DetectionScope.FULL) {
+      DetectionRunner.run(DetectionScope.FULL, context)
     }
     if (DetectionPure.isDenied(SecurityState.cachedLevel())) {
       throw GateDeniedException()

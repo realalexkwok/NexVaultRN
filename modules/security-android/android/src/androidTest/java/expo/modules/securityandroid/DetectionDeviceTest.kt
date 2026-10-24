@@ -42,19 +42,31 @@ class DetectionDeviceTest {
       ) != 0
     )
     assertEquals("dev-signed build must match the injected cert constant", true, report.signatureMatch)
-    // Release embeds the bundle -> evaluated and matching; debug loads it from Metro -> null
-    // ("not evaluated", asserted as such). A false value always fails the clean-device gate.
-    assertEquals(
-      "bundle self-check must pass when evaluated and be not-evaluated without an embedded asset",
-      true,
-      report.bundleHashMatch ?: true
-    )
+    // Release embeds the bundle -> evaluated and matching; debug loads it from Metro -> the wire
+    // value is false with evaluated=false (never a false "match"). Assert the pair, not the boolean.
+    when (report.bundleHashMatch) {
+      null -> Unit // no embedded asset (debug/Metro): "not evaluated", never as a false match
+      true -> Unit
+      false -> org.junit.Assert.fail("bundle self-check failed on the demo build")
+    }
     assertEquals(emptyList<String>(), report.rootSignals)
     assertEquals(emptyList<String>(), report.fridaSignals)
     assertFalse(report.debuggerAttached)
     assertEquals(RiskLevel.L0, SecurityState.cachedLevel())
 
     SecurityGate.assertSigningAllowed(context) // must not throw on a clean device
+  }
+
+  @Test
+  fun fastPassCannotDowngradeADeviceDenial() {
+    SecurityState.resetForTest()
+    SecurityState.debugApplyForTest(
+      DetectionReport(null, null, listOf(RootPure.ID_SU_BIN), emptyList(), false, 0L),
+      DetectionScope.FULL
+    )
+    DetectionRunner.run(DetectionScope.FAST, context) // a JS-visible fast scan must not clear it
+    assertEquals(RiskLevel.L4, SecurityState.cachedLevel())
+    SecurityState.resetForTest()
   }
 
   @Test
