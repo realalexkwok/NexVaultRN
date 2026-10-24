@@ -19,7 +19,7 @@
 |---|---|---|---|
 | D1 | GATE-R4-IOSSECURITYSUITE：security-ios.md §2.3 原写 IOSSecuritySuite（不在 tech-stack） | **自写基础向量**（/var/jb 路径族 + dyld 可疑库 + sysctl），零新依赖；§2.3 同步修订为自研；完整 Dopamine 对抗 → roadmap | b) R4 修宪引入该库；c) iOS 检测整体 defer |
 | D2 | Magisk 测试机（MAN-004 拒绝演示）是否就位 | **若就位** → 真机真实 Root 信号拒绝演示 + 录屏；**若无** → [P] 耦合在干净 Pixel 6a 经文档化 debug-only 测试注入口验证（真实 assert→throw 链路），MAN-004 保持待走查、设备到位补录屏 | c) Magisk 模拟器录屏（B.4-5 仅辅助） |
-| D3 | 期望哈希注入（签名证书 SHA-256 + bundle SHA-256） | **自写 CNG config plugin** apps/mobile/plugins/withSecurityHashes.js（gradle 任务从 variant signingConfig 读证书、hash bundle 产物 → string resource） | b) 硬编码常量 + 两段构建脚本 |
+| D3 | 期望哈希注入（签名证书 SHA-256 + bundle SHA-256） | **自写 CNG config plugin** apps/mobile/plugins/withSecurityHashes.js（prebuild 时由 `apps/mobile/security-hashes.json` 生成 string resource；值经两段构建回填——**2026-10-24 实现裁定 D3(b) 回退**，理由见 FR-7） | b) 硬编码常量 + 两段构建脚本（= 实际采用的回填机制） |
 | D4 | iOS 侧交付形态（本机无 Xcode） | **撰写 + XCTest + MAC-HANDOFF [~]**（T1.5/T3.1 模式），不标 [P] | b) iOS 腿整体 defer（须 owner 改判 H-T3.1-1） |
 | D5 | 演示子集口径 | **确认**：MAN-021（干净机 L0）+ MAN-004（Magisk 拒绝）两段录屏；反调试/bundle 篡改/重签名 → T5.4 视频；完整多信号链 → roadmap | b) 扩大演示范围 |
 

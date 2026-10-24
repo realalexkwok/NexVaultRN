@@ -135,7 +135,7 @@ adb -s 10.42.0.139:45791 shell am instrument -w -e class expo.modules.securityan
 
 ## Task 6 — 门禁与演示
 
-Status：`[~]`（静态/自动化门禁全绿；release 演示取证进行中）
+Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证完成）
 
 ### 6.1 自动化门禁
 
