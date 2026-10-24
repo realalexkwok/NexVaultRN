@@ -63,6 +63,29 @@ class DetectionAggregatorTest {
    * publishing it over a FULL report would downgrade an L4 device to L0. The cache must be monotonic
    * and must keep the FULL scope.
    */
+  /**
+   * Review round 2 (MEDIUM): the monotonic rule is check-then-act. Hammer it from two threads so a
+   * fast L0 pass can never publish after a full L4 pass.
+   */
+  @Test
+  fun concurrentFastPassNeverBeatsFullDenial() {
+    repeat(200) {
+      SecurityState.resetForTest()
+      val full = Thread {
+        SecurityState.update(report(rootSignals = listOf(RootPure.ID_SU_BIN)), DetectionScope.FULL)
+      }
+      val fast = Thread {
+        SecurityState.update(report(signatureMatch = true, bundleHashMatch = true), DetectionScope.FAST)
+      }
+      full.start()
+      fast.start()
+      full.join()
+      fast.join()
+      assertEquals(RiskLevel.L4, SecurityState.cachedLevel())
+    }
+    SecurityState.resetForTest()
+  }
+
   @Test
   fun fastPassCannotDowngradeOrReplaceAFullReport() {
     SecurityState.resetForTest()

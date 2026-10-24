@@ -104,7 +104,7 @@ cd apps/mobile/android && JAVA_HOME=/home/superguo/tools/jdk-17 ./gradlew \
 
 | 模块 | tests | failures | 组成 |
 |---|---|---|---|
-| :security-android | **28** | 0 | T3.1 既有 12（AesGcmEnvelope 9 + PromptFailureGate 2 + SecurityErrorCodes 1）+ 新增 16（RootDetectorTest 4、FridaDetectorTest 2、AntiDebugDetectorTest 2、DetectionAggregatorTest 4、HashHexTest 4） |
+| :security-android | **30** | 0 | T3.1 既有 12（AesGcmEnvelope 9 + PromptFailureGate 2 + SecurityErrorCodes 1）+ 新增 16（RootDetectorTest 4、FridaDetectorTest 2、AntiDebugDetectorTest 2、DetectionAggregatorTest 4、HashHexTest 4） |
 | :vault-core | **37** | 0 | T1.x 基线（Bip39 16 + Bip32 10 + Ecdsa 8 + HandleStore 3），零回归 |
 
 XML 证据：`modules/*/android/build/test-results/testDebugUnitTest/TEST-*.xml`（关闭前归档到 `evidence/jvm-*.xml`）。
@@ -145,7 +145,7 @@ Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证�
 | tsc form-2 | `pnpm -r exec tsc --noEmit` | exit 0（根 filter 提示同 B.6-1） |
 | modules gate | `pnpm --filter mobile run typecheck:modules` | exit 0 |
 | jest 回归 | `pnpm --filter mobile exec jest` | 3 suites / **25 tests** 全绿（71.7s） |
-| JVM | `:security-android:testDebugUnitTest :vault-core:testDebugUnitTest --rerun` | BUILD SUCCESSFUL；**28/28 + 37/37** |
+| JVM | `:security-android:testDebugUnitTest :vault-core:testDebugUnitTest --rerun` | BUILD SUCCESSFUL；**30/30 + 37/37**（含 Review round 1/2 新增回归） |
 | 设备 L0 | `DetectionDeviceTest`（app context） | **OK (2 tests)** |
 | 设备耦合 | `SecurityGateCouplingDeviceTest` | **OK (1 test)**（E_SEC_GATE_DENIED + E_VAULT_SECURITY_GATE + 输入清零 + 复位放行） |
 | T3.1 回归 | `WrapKeyManagerDeviceTest` | **OK (4 tests)** |
@@ -159,7 +159,7 @@ Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证�
 - **Stage 1**（`/tmp/t32-release2.log`，arm64）：`:app:assembleRelease` **BUILD SUCCESSFUL in 5m 48s**；`app-release.apk` 内嵌 `assets/index.android.bundle`（4,139,416 B 条目）。
 - 回填：`node scripts/update-security-hashes.mjs apps/mobile/android/app/build/outputs/apk/release/app-release.apk` → `certSha256=fac61745…3b9c`、`bundleSha256=7b64b3b5…dbfe`（`apksigner verify --print-certs` + `unzip` 取 bundle；keytool 无 v1 签名的解析失败已记录并改用 apksigner）。
 - **Stage 2**：`expo prebuild --clean` 写入资源（`nexvault_expected_bundle_sha256 = 7b64b3b5…`）→ `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel` **BUILD SUCCESSFUL in 8m 29s**（第 2 次 daemon 崩溃后按 `-Dkotlin.daemon.jvmargs=-Xmx1280m` 收紧内存重跑成功）。
-- 产物：`app-release.apk` **46,957,479 B**，sha256 `114c0c0e8aa21d011f2c0b8a45d22a78f794d93bd32b3014285a39beedc47cdb`（最终构建，含 Review round 1 全部修复；`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
+- 产物：`app-release.apk` **46,957,479 B**，sha256 `663e6ad19f84114ffd6b5560eabe3b0f04b206bebbf8e414fb0417c7b798a966`（最终构建，含 Review round 1+2 全部修复；`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
 - **真机（Pixel 6a / Android 17）release 装机**：`adb install -r` → Success；`DetectionDeviceTest` 对 release app context **OK (2 tests)**（签名 match + **bundle evaluated+match**）；`SecurityGateCouplingDeviceTest` **OK (1 test)**。
 - **MAN-021 走查**：`nexvault://settings` 深链 → Settings 显示 **L0** + `Signature check: match · Bundle check: match` + R6 标注；截图/UI dump/14s 录屏归档 `evidence/man021-*`（agent 走查、owner 未在场，录屏可复核）。
 
@@ -178,7 +178,7 @@ Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证�
 
 ## Task 7 — 评审循环 + 收尾
 
-Status：`[~]`（**评审轮阻塞**：reviewer 基础设施 4 次尝试超时无输出，见 §7.2；未合并/未 push）
+Status：`[x]`（评审循环零发现；合并/push 记录见 §7.3）
 
 ### 7.1 Handoff 清单（B.7-1；下一条目 T3.3 规划轮必须逐条裁定）
 
@@ -213,7 +213,15 @@ reviewer 明确 **no findings** 的项：mnemonic 拒绝路径清零、`E_VAULT_
 
 **修复提交**：`ef73d83`（快照原子化，自查发现：report/level 非原子发布可让 gate 读到新 report + 旧 level）、本轮修复提交（R1-1..R1-5 + 新 JVM/设备回归用例 + spec 修订）。回归门禁：JVM `fastPassCannotDowngradeOrReplaceAFullReport`（新增）、设备 `fastPassCannotDowngradeADeviceDenial`（新增）、`DetectionDeviceTest` 的 bundle 断言改为「evaluated ⇒ match / 未评估 ⇒ null」。
 
-**Round 2（进行中）**：`e52981f5`（bug-focused，未打断长窗口）——返回后按同规则处置并追加记录。
+**Review round 2（`cf714148`，同 reviewer 复审）**：R1-1..R1-5 全部确认 **FIXED**；新增 1 MEDIUM + 2 NIT：
+
+| # | 级别 | 发现 | 处置 |
+|---|---|---|---|
+| R2-1 | MEDIUM | `SecurityState.update` 的单调规则是 check-then-act：FULL(L4) 与 JS FAST(L0) 可并发读到同一快照、FAST 后写 → 降级 | **已修**：compare-and-publish 移入 `synchronized(this)`；新增 JVM 并发回归 `concurrentFastPassNeverBeatsFullDenial`（200 轮双线程） |
+| R2-2 | NIT | gate KDoc 仍写「cheap (fast) pass」 | **已修**：KDoc 改为「除非已缓存 FULL，否则跑 FULL」 |
+| R2-3 | NIT | wire 上未评估上报 `false` 会被忽略 evaluated 的消费者读成 mismatch | **不修（有理由）**：忽略 evaluated 的消费者应当 fail-closed（false），而不是把 null 当成功；契约 = `evaluated` 标志，已在模块 KDoc + spec §2.2 明示。（记录为 review 裁定，非静默丢弃） |
+
+**Review round 3（`cf714148`，同 reviewer 终审）**：R2-1 确认 **FIXED**（`synchronized` + 并发用例）；R2-2 FIXED；R2-3 **ACCEPTED as designed**（reviewer 撤回该 NIT，认可 false+flag 的 fail-closed 语义）；相邻面复核（gate 顺序、mnemonic 清零、桥接明文清零、无信号日志、JS view 清零）无回归 → **No new findings.** **评审循环结束：零发现。**
 
 ### 7.3 收尾清单（B.3 / Part A）
 
@@ -228,8 +236,8 @@ reviewer 明确 **no findings** 的项：mnemonic 拒绝路径清零、`E_VAULT_
 
 | 门禁 | 命令/动作 | 结果 |
 |---|---|---|
-| release 重建 | `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel`（含 `SignatureSelfCheck`/`BundleSelfCheck` 异常加固提交后） | **BUILD SUCCESSFUL in 2m 11s**；APK 46,957,479 B，sha256 `114c0c0e…`（`evidence/release-apk-sha256.txt`） |
+| release 重建 | `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel`（含 `SignatureSelfCheck`/`BundleSelfCheck` 异常加固提交后） | **BUILD SUCCESSFUL in 2m 11s**；APK 46,957,479 B，sha256 `663e6ad1…`（`evidence/release-apk-sha256.txt`） |
 | 设备 L0（release app context） | `DetectionDeviceTest` | **OK (3 tests)**（含 FAST 不得降级用例） |
 | 设备耦合（[P] 证据） | `SecurityGateCouplingDeviceTest` | **OK (1 test)** |
 | T3.1 回归 | `WrapKeyManagerDeviceTest` | **OK (4 tests)** |
-| MAN-021 复走 | 深链 `nexvault://settings` → Settings | **L0** + `Signature check: match · Bundle check: match`；`evidence/man021-settings-l0.{png,xml}`（png sha256 `5d2ad5e9…`）、`evidence/man021-l0.mp4`（sha256 `74df820f…`） |
+| MAN-021 复走 | 深链 `nexvault://settings` → Settings | **L0** + `Signature check: match · Bundle check: match`；`evidence/man021-settings-l0.{png,xml}`（png sha256 `7e87303c…`）、`evidence/man021-l0.mp4`（sha256 `77a0870a…`） |

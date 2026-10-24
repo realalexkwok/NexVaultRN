@@ -72,12 +72,17 @@ object SecurityState {
    */
   fun update(report: DetectionReport, scope: DetectionScope) {
     val level = DetectionPure.evaluate(report)
-    val current = snapshot
-    if (current != null) {
-      if (level < current.level) return
-      if (level == current.level && current.scope == DetectionScope.FULL && scope == DetectionScope.FAST) return
+    // Review round 2 (MEDIUM): the monotonic rule is check-then-act -- two concurrent passes (a
+    // FULL gate pass and a JS runDetection('fast')) could both read the same snapshot and let the
+    // fast write land last, re-introducing the downgrade. Synchronize the compare-and-publish.
+    synchronized(this) {
+      val current = snapshot
+      if (current != null) {
+        if (level < current.level) return
+        if (level == current.level && current.scope == DetectionScope.FULL && scope == DetectionScope.FAST) return
+      }
+      snapshot = Snapshot(report, level, scope)
     }
-    snapshot = Snapshot(report, level, scope)
   }
 
   fun cachedLevel(): RiskLevel = snapshot?.level ?: RiskLevel.L0
@@ -122,8 +127,8 @@ internal object DetectionRunner {
 /**
  * fail-closed gate (AGENTS.md R1/R6: the only [P]-eligible on-device mechanism once device-verified).
  *
- * Called by vault-core before any key material is touched. If no detection pass has happened yet it
- * runs the cheap (fast) pass inline, so a missing report can never fail open.
+ * Called by vault-core before any key material is touched. Unless a FULL pass is already cached it
+ * runs a FULL pass inline, so a missing or fast-only report can never fail open.
  */
 object SecurityGate {
   fun assertSigningAllowed(context: Context) {

@@ -169,3 +169,21 @@ Time: 0.116
 OK (4 tests)
 
 
+== FINAL build (review round 2 fixes): DetectionDeviceTest ==
+Time: 0.153
+
+OK (3 tests)
+
+
+== FINAL build: SecurityGateCouplingDeviceTest ==
+Time: 0.394
+
+OK (1 test)
+
+
+== FINAL build: WrapKeyManagerDeviceTest ==
+Time: 0.096
+
+OK (4 tests)
+
+
