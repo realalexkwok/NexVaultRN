@@ -53,19 +53,24 @@ internal object DetectionPure {
  * (skill invariant 6): it is a no-op unless the app is debuggable and is never reachable from JS.
  */
 object SecurityState {
-  @Volatile private var report: DetectionReport? = null
-  @Volatile private var level: RiskLevel = RiskLevel.L0
+  /**
+   * Report and level are published as ONE immutable value: a reader can never observe a fresh
+   * report next to a stale level (the gate's pass/deny decision must come from a single consistent
+   * snapshot).
+   */
+  class Snapshot(val report: DetectionReport, val level: RiskLevel)
+
+  @Volatile private var snapshot: Snapshot? = null
 
   fun update(report: DetectionReport) {
-    this.report = report
-    this.level = DetectionPure.evaluate(report)
+    snapshot = Snapshot(report, DetectionPure.evaluate(report))
   }
 
-  fun cachedLevel(): RiskLevel = level
+  fun cachedLevel(): RiskLevel = snapshot?.level ?: RiskLevel.L0
 
-  fun cachedReport(): DetectionReport? = report
+  fun cachedReport(): DetectionReport? = snapshot?.report
 
-  fun hasReport(): Boolean = report != null
+  fun hasReport(): Boolean = snapshot != null
 
   fun debugApplyForTest(report: DetectionReport) {
     if (!BuildConfig.DEBUG) return
@@ -74,8 +79,7 @@ object SecurityState {
 
   fun resetForTest() {
     if (!BuildConfig.DEBUG) return
-    report = null
-    level = RiskLevel.L0
+    snapshot = null
   }
 }
 
