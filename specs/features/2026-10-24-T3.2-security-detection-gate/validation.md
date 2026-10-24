@@ -2,7 +2,7 @@
 
 > Feature：`specs/features/2026-10-24-T3.2-security-detection-gate` | Date：2026-10-24
 > 证据纪律：AGENTS.md B.4（命令原文 + 观察结果 + 构件路径）；`[x]` 双侧齐备，`[~]` 已实现未验证。
-> 分支：`feature/T3.2-security-detection-gate`（规划轮提交 `87305bd`；main `3862902`）
+> 分支：`feature/T3.2-security-detection-gate`（规划轮提交 `c90b418`；main `3862902`）
 > 状态：**规划轮完成 → STOP（GATE-MODEL-SWITCH）**；实施 = V4.1-Flash 会话，Tasks 1–8。
 
 ## Task 0 — planning round（preflight + 三件套 + commit）
