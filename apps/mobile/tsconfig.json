@@ -5,6 +5,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "expo": [
+        "./node_modules/expo"
+      ],
+      "expo-secure-store": [
+        "./node_modules/expo-secure-store"
       ]
     }
   },

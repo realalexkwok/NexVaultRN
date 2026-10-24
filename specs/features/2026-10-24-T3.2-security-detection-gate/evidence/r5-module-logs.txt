@@ -1,0 +1,2 @@
+$ grep -rnE "Log\.|println|print\(|NSLog" modules/security-android modules/security-ios --include=*.kt --include=*.swift --exclude-dir=build | grep -v Test
+exit=1

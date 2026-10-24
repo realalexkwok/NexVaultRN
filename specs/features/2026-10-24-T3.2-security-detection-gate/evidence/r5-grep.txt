@@ -1,0 +1,2 @@
+$ grep -rnE console.(log|warn|error|info)(...key terms) (R5, B.5原文)
+exit=1

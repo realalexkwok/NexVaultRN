@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="expo.modules.securityandroid.HashHexTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-24T05:12:12.999Z" hostname="superguo-SQM2270" time="0.014">
+  <properties/>
+  <testcase name="matchSemanticsFailClosedOnUnreadableActual" classname="expo.modules.securityandroid.HashHexTest" time="0.003"/>
+  <testcase name="sha256MatchesTheKnownVector" classname="expo.modules.securityandroid.HashHexTest" time="0.0"/>
+  <testcase name="missingOrPlaceholderExpectedIsNotEvaluated" classname="expo.modules.securityandroid.HashHexTest" time="0.002"/>
+  <testcase name="hexNormalizationStripsSeparatorsAndCase" classname="expo.modules.securityandroid.HashHexTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

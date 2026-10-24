@@ -27,6 +27,7 @@
     },
     "plugins": [
       "./plugins/withVaultCoreTests",
+      "./plugins/withSecurityHashes",
       "expo-router",
       "expo-status-bar",
       [

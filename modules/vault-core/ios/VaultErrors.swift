@@ -12,6 +12,9 @@ public enum VaultErrorCode {
   public static let invalidDigestLength = "E_VAULT_INVALID_DIGEST_LENGTH"
   public static let handleNotFound = "E_VAULT_HANDLE_NOT_FOUND"
   public static let cryptoInternal = "E_VAULT_CRYPTO_INTERNAL"
+  /// T3.2: environment detection refused the operation (spec: vault-core section 2.4; same code as
+  /// the Android SecurityGateException). Fixed template; never carries detection detail (R5).
+  public static let securityGate = "E_VAULT_SECURITY_GATE"
 }
 
 /// The core's coded error. It deliberately does **not** reference ExpoModulesCore: this pod targets

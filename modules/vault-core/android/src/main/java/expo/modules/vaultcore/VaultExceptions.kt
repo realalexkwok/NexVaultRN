@@ -45,3 +45,13 @@ internal class CryptoInternalException : CodedException(
   "Cryptographic operation failed",
   null
 )
+
+/**
+ * T3.2: the security detection gate denied importMnemonic/signDigest (spec: vault-core section
+ * 2.4). Fixed template -- the security module's signal details never cross this boundary (R5).
+ */
+internal class SecurityGateException : CodedException(
+  "E_VAULT_SECURITY_GATE",
+  "Security gate denied signing operation",
+  null
+)

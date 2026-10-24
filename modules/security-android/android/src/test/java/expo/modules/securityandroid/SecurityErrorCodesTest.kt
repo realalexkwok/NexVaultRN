@@ -16,7 +16,10 @@ class SecurityErrorCodesTest {
         "E_SEC_BIOMETRIC_LOCKOUT",
         "E_SEC_BLOB_CORRUPT",
         "E_SEC_SOFTWARE_KEYSTORE",
-        "E_SEC_UNSUPPORTED_OPERATION"
+        "E_SEC_UNSUPPORTED_OPERATION",
+        "E_SEC_GATE_DENIED",
+        "E_SEC_SIG_MISMATCH",
+        "E_SEC_BUNDLE_MISMATCH"
       ),
       SecurityErrorCodes.ALL
     )

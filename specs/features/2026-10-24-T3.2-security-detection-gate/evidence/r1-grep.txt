@@ -1,0 +1,2 @@
+$ grep -rnEi mnemonic|privateKey|secretKey|seedPhrase|xprv apps/mobile packages (R1, B.5原文)
+exit=1

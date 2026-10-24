@@ -48,11 +48,14 @@ export function deleteWrapKey(): Promise<void>;
 export type RiskLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
 export interface DetectionReport {
   signatureMatch: boolean;        // native 签名块自解析证书 SHA-256 == 编译期嵌入指纹
+  signatureEvaluated: boolean;    // 2026-10-24 T3.2：false = 构建未注入期望值（"未评估" ≠ "通过"）
   bundleHashMatch: boolean;       // assets/index.android.bundle SHA-256 自检
+  bundleEvaluated: boolean;       // 2026-10-24 T3.2：debug 包不内嵌 bundle → false（不计入风险）
   rootSignals: string[];          // 命中的向量 ID（不落明文细节）
   fridaSignals: string[];
   debuggerAttached: boolean;
   evaluatedAt: number;
+  riskLevel: RiskLevel;           // 本次评估后的缓存级别（T3.2 子集：L0 / L4）
 }
 export function runDetection(scope: 'fast' | 'full'): Promise<DetectionReport>; // fast=首帧后最小集；full=后台
 export function getCachedRiskLevel(): RiskLevel;          // 热路径只读缓存，<1ms
@@ -119,6 +122,8 @@ internal object BundleSelfCheck { fun verifyHermesBundleHash(): Boolean }
 | T-SA-7 | Frida 插桩 | 多信号并发交叉计分：端口 27042/D-Bus、maps/fd/线程名、rwxp 段、**inline hook 序言字节自检**（ARM64 `B`=0x14xxxxxx）[^11^] | [C] |
 | T-SA-8 | attestation 中继（root 机转发 challenge 到干净设备）[^12^] | 服务端校验 `attestationApplicationId` + 会话内持续签名质询 + 同设备地理/频率聚类 | [C] |
 | T-SA-9 | Play Integrity 绕过（Tricky Store/keybox）或停机 | 双轨：Key Attestation 降级（无频限、可脱 GMS）[^13^]；verdict 仅作风险信号，密钥面 fail-closed 兜底；STRONG 不硬卡（Android 13+ 需 12 个月内补丁，防误伤）[^14^] | [C] |
+
+**2026-10-24 T3.2 子集口径**：本条目只产出 **L0（无命中）** 与 **L4（任一硬信号命中：签名/bundle 不一致、root、Frida、调试器）**，门控在 **≥L3** 拒绝；L1/L2/L3/L5 由 attestation verdict 驱动，随 T5.x 落地。判定为 L4 时不删密钥、不硬退出（恢复流保持可用）。
 
 **L0–L5 分级处置**（动作面：A 只读浏览 / B 收款地址展示 / C 签名交易 / D 导出密钥 / E 改安全设置）[^15^]：
 

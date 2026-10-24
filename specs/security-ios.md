@@ -9,7 +9,7 @@
 范围内：
 - expo-secure-store 落盘包裹（Keychain 条目 + 生物识别 ACL，ACL 校验由 Secure Enclave 硬件强制 [^1^]）
 - AES-256-GCM wrap/unwrap k1（随机 32B KEK 入 Keychain，密文可存文件系统）
-- IOSSecuritySuite + 自补向量的越狱检测（Dopamine rootless `/var/jb` 路径族）
+- 自研越狱检测向量（`/var/jb` rootless 路径族 + dyld 可疑库 + sysctl；Dopamine 对抗的完整面 → roadmap；2026-10-24 D1 裁定不引入 IOSSecuritySuite）
 - PT_DENY_ATTACH 反调试（审核安全形态）
 - App Attest（@expo/app-integrity，alpha 锁版）+ DeviceCheck 兜底
 - 与 Android 一致的 L0–L5 分级处置语义
@@ -46,6 +46,8 @@ export function generateAssertion(serverChallenge: ArrayBuffer, payloadHash: Arr
 
 > **2026-10-22 T3.1 交付偏差（owner D2 批准）**：T3.1 的 JS 面仅 `ensureKek`/`deleteKek`（`src/index.ts`，expo-secure-store 57.0.4）；`wrapKey`/`unwrapKey` 为 native-internal Swift（CryptoKit AES.GCM + Keychain KEK），随 T3.2 的 vault-core 耦合上移。KEK 以 **hex 字符串**存于 expo-secure-store（`requireAuthentication: true` + `WHEN_UNLOCKED_THIS_DEVICE_ONLY`）；条目坐标取自安装依赖 `SecureStoreModule.swift`：service = `(keychainService ?? "app") + ":auth"`、account = `kSecAttrGeneric = Data(key.utf8)`。完整 KEK 走查（TC-SI-009）随 T3.2 JS 面，见 T3.1 Handoff。
 
+> **2026-10-24 T3.2 交付（撰写侧 `[~]`）**：`wrapKey`/`unwrapKey`、`runDetection`/`getCachedRiskLevel`/`assertSigningAllowed` 已入 `src/index.ts`（调用序：gate → Keychain 认证 → crypto）；wire shape 与 Android 对齐，iOS T3.2 无签名/bundle 自检 → `signatureEvaluated=false`/`bundleEvaluated=false`/`rootSignals=[]`，越狱向量以 `jailbreakSignals` 返回。本机无 Xcode，状态 `[~]`，Mac 验证见 MAC-HANDOFF MS-1..MS-6。
+
 ### 2.2 Keychain 条目配置（expo-secure-store 调用面）
 
 ```ts
@@ -61,16 +63,23 @@ const OPTS: SecureStore.SecureStoreOptions = {
 
 ### 2.3 Swift 侧关键签名（检测子模块，自研薄模块）
 
+> **2026-10-24（D1 裁定，GATE-R4-IOSSECURITYSUITE）**：越狱检测改为**自研基础向量**，不引入 IOSSecuritySuite（R4 依赖准入未批准；完整 Dopamine 对抗 → roadmap）。报告只落稳定向量 ID（`JB_PATH_*` / `JB_DYLD_*` / `JB_BOOTTIME`），不含明文路径或库名（R5）。所有检测 = **[C]**（R6）。
+
 ```swift
 enum JailbreakDetector {
-  static func collectSignals() -> [String]   // IOSSecuritySuite + 自补：/var/jb 路径族、dyld 可疑库
-                                             // （systemhook.dylib/Ellekit/FridaGadget/Shadow）、sysctl、
-                                             // kern.boottime 异常、bind mount 异常
-  static func denyDebuggerAttach()           // dlsym(RTLD_DEFAULT, "ptrace")(PT_DENY_ATTACH=31)
-                                             // 必须 dlsym 动态解析（直接链接受 App Store 审核风险）[^5^]
-  static func isDebuggerAttached() -> Bool   // sysctl(KERN_PROC pid) 查 P_TRACED
+  // 纯函数（fixture 可测）：注入路径判定 / 已加载镜像 / 启动时间异常，返回稳定向量 ID
+  static func collectSignals(pathExists: (String) -> Bool, loadedImages: [String], bootTimeAnomaly: Bool) -> [String]
+  static func collectDyldSignals(loadedImages: [String]) -> [String]   // JB_DYLD_FRIDA / JB_DYLD_HOOK
+  static func pathFamilySignals() -> [String]    // /var/jb（rootless）、Cydia、sshd、MobileSubstrate、/etc/apt
+  static func dyldSignals() -> [String]          // _dyld_image_count/_dyld_get_image_name：FridaGadget/frida、systemhook、Ellekit、Shadow、substitute
+  static func isDebuggerAttached() -> Bool       // sysctl(KERN_PROC pid) 查 P_TRACED
+  static func denyDebuggerAttach()               // dlsym(RTLD_DEFAULT, "ptrace")(PT_DENY_ATTACH=31)
+                                                 // 必须 dlsym 动态解析（直接链接受 App Store 审核风险）[^5^]
+  static func isBootTimeAnomalous() -> Bool      // sysctl(KERN_BOOTTIME) vs ProcessInfo.systemUptime（>5 min 判异常）
 }
 ```
+
+> **SecurityGate（同目录 `SecurityGate.swift`）**：`DetectionReport`（jailbreakSignals / fridaSignals / debuggerAttached / evaluatedAt）→ `DetectionPure.evaluate`（任一命中 → L4，否则 L0；L1/L2/L3/L5 属 T5.x attestation）→ `isDenied`（≥L3）→ `SecurityGate.assertSigningAllowed()` 抛 `E_SEC_GATE_DENIED`；无缓存报告时先跑一次 fast 自足检测（不 fail-open）。`SecurityState` 仅内存缓存（不落盘）；`resetForTest` / `debugApplyForTest` 仅 `#if DEBUG`（Release 编译期剔除）。
 
 ### 2.4 错误码表
 
