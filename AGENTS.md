@@ -93,7 +93,14 @@ nexvault-rn/
 2. 分支命名强制：`feature/<item>-<slug>`（与 feature spec 目录同名）。CI 必须校验分支名正则，不符即拒绝构建。
 3. **Agent 被授权执行任意 git 命令（2026-10-14 owner 修订）**，包括但不限于 `git commit` / `git push` / `git tag` / `git stash` / `git checkout` / `git restore` / `git config` 及 hooks 操作。不再要求所有改动必须留在工作树由 owner 亲自提交；执行后仍须记录命令与观察结果（B.4）。
 4. **禁止**修改 `.gitignore` 中与安全相关的条目（如密钥/证书忽略规则，R2/R5）——本禁令不受 git 授权影响；修改需按修宪流程处理。
-5. 决策日期：2026-10-14（修订：2026-10-14，owner 授权 Agent 任意 git 命令）。证据：`research/nexvault-rn_repo_recon.md` ①-4 与 owner 修订指令。
+5. **NEVER close a feature branch or a roadmap item without an explicit owner instruction (never; added 2026-10-24).** These are **owner-gated actions**: merging into `main` (including `--no-ff`), pushing `main`, deleting a feature branch, marking a roadmap item / feature spec closed (status `[x]`, Part A "已关闭" stage row or closure record, validation closure checklist), and marking the session goal `complete`.
+   - Authorization must be an explicit instruction from the owner **in the current conversation** (e.g. "close it", "merge and push", "delete the branch").
+   - Planning text such as "close with … per B.3", an active goal objective that mentions "closure", and a reviewer's zero-findings round are **NOT** authorization. Do not infer consent from silence, from earlier task wording, or from the goal engine's "continue".
+   - When no closure instruction has been given, implementation ends with a status report and an explicit request for the closure instruction ("implementation done; may I close/merge/push/delete?").
+   - Execute exactly what was authorized, one action at a time (merge ≠ push ≠ delete ≠ board line ≠ goal completion); if the owner authorizes only part of the closure, stop after that part and ask again.
+   - Every executed action is recorded with command + observed result per B.4.
+   - Rationale: added after the 2026-10-24 T3.2 branch was merged, pushed and deleted on the strength of the original task's "close with … git per B.3" wording instead of an explicit owner go-ahead; the owner flagged that this wording implied no closure.
+6. 决策日期：2026-10-14（修订：2026-10-14 owner 授权 Agent 任意 git 命令；2026-10-24 新增 B.3-5 关闭授权门）。证据：`research/nexvault-rn_repo_recon.md` ①-4 与 owner 修订指令（2026-10-24 owner 指令："DO NOT close the branch / roadmap item until I tell you to explicitly"）。
 
 ### B.4 验证纪律（核心，never）
 
@@ -217,13 +224,14 @@ nexvault-rn/
 1. 先读本文件 Part A 公告板与 Part B 宪法，再读 `specs/mission.md` → `specs/roadmap.md`（当前条目）→ 对应 feature 三件套 → `specs/pending-manual-test-cases.md`。
 2. 动手写代码前，必须完成 ask-user 轮：需求确认（requirements Q/A 表）、计划确认（plan.md）、验收确认（AC 与测试编号）。**每次落盘前必须有 ask-user-question 轮。**
 3. 实现中对照 B.5 红线自查；每完成一个 Task 立即在 validation.md 记录命令与观察结果（趁热，不补记）。
-4. 收尾：更新状态三档 → 登记/核销 MAN 用例 → 写 Handoff 清单 → 更新 Part A 公告板 → 按 B.3 处理工作树（Agent 可执行任意 git 命令，含 commit；执行后记录命令与结果）。
+4. 收尾（**owner-gated, AGENTS.md B.3-5**）：**仅在 owner 于当前对话明确下令后**执行——更新状态三档 → 登记/核销 MAN 用例 → 写 Handoff 清单 → 更新 Part A 公告板 → 按口令逐项执行 git 动作（合并 / push / 删分支）并记录命令与结果。**未获口令时**：停在「implementation done + status report + request for the closure instruction」，不合并、不 push、不删分支、不写「已关闭」、不把 goal 标 complete（普通 `commit` 仍可执行）。
 
 ### C.2 常见禁令速查
 
 | 禁令 | 条款 |
 |---|---|
 | 修改 `.gitignore` 安全忽略条目 | B.3-4 |
+| 未经 owner 当前对话明确口令：合并 / push 主干 / 删 feature 分支 / 标「已关闭」/ 关 goal | B.3-5 |
 | 无命令+观察结果写 done / [x] | B.4-3 |
 | 跳 roadmap 条目 / 并行开两个 feature | B.2-2 |
 | JS 层 string/Uint8Array 持有私钥助记词 | R1 |

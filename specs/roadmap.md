@@ -2,6 +2,7 @@
 
 > Status: active | Date: 2026-10-14 | Constitution: yes
 > 纪律：**Roadmap 顺序权威**（AGENTS.md B.2-2）——不得跳项、不得并行开两个 feature；认为顺序有误时先修本文件（=修宪）再动工。
+> 关闭纪律（2026-10-24，AGENTS.md B.3-5）：**任何条目（含其 feature 分支）在 owner 于当前对话明确下令前一律不得关闭**——不得合并、push 主干、删除分支、在本文件/公告板标注「已关闭」或把 goal 标 complete；顺序权威不构成关闭授权。
 
 ## 阶段 0 — 预研（✅ 已完成，2026-10-14）
 
