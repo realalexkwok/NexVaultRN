@@ -225,9 +225,9 @@ reviewer 明确 **no findings** 的项：mnemonic 拒绝路径清零、`E_VAULT_
 
 ### 7.3 收尾清单（B.3 / Part A）
 
-- [ ] AGENTS.md Part A 追加 T3.2 关闭行 + 阶段行更新（下一步 = T3.3 / 并行项）
-- [ ] `--no-ff` 合并入 main + push + 删除 feature 分支
-- [ ] validation 状态 `[x]`、Handoff 清单定稿
+- [x] AGENTS.md Part A 追加 T3.2 关闭行 + 阶段行更新（下一步 = T3.3；T4.1 依赖 T3.2/T3.3）—— 2026-10-24
+- [x] `--no-ff` 合并入 main（merge commit **`bf03386`**）+ push `e747712..bf03386 main -> main`；feature 分支已删除
+- [x] validation 状态 `[x]`、Handoff 清单定稿（§7.1）
 
 ## Task 8 — 风险降级预案
 
