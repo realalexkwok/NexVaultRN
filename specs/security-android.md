@@ -48,12 +48,21 @@ export function deleteWrapKey(): Promise<void>;
 export type RiskLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
 export interface DetectionReport {
   signatureMatch: boolean;        // native 签名块自解析证书 SHA-256 == 编译期嵌入指纹
+  signatureEvaluated: boolean;    // 2026-10-24 T3.2：false = 构建未注入期望值（"未评估" ≠ "通过"）
   bundleHashMatch: boolean;       // assets/index.android.bundle SHA-256 自检
+  bundleEvaluated: boolean;       // 2026-10-24 T3.2：debug 包不内嵌 bundle → evaluated=false
   rootSignals: string[];          // 命中的向量 ID（不落明文细节）
-  fridaSignals: string[];
+  fridaSignals: string[];         // 同上
   debuggerAttached: boolean;
+  scope: 'fast' | 'full';         // 2026-10-24 review 修复：fast 不检查 root/Frida/反调试
   evaluatedAt: number;
+  riskLevel: RiskLevel;           // 门控使用的缓存级别（T3.2 子集：L0 / L4）
 }
+// 2026-10-24 review 修复（语义契约）：
+// - 未评估的自检上报 match=false + evaluated=false，**禁止**上报 false "match"；
+// - scope='fast' 时 root/Frida/debugger 的空值/false 表示「未检查」，不是「干净」；
+// - SecurityState 缓存**单调**（FAST 不得覆盖/降低 FULL 结果），gate 在未缓存 FULL 时先跑一次 FULL。
+//
 export function runDetection(scope: 'fast' | 'full'): Promise<DetectionReport>; // fast=首帧后最小集；full=后台
 export function getCachedRiskLevel(): RiskLevel;          // 热路径只读缓存，<1ms
 /** fail-closed 门控：供 vault-core 在 importMnemonic/signDigest 前调用；不通过则不释放密钥材料 */
@@ -119,6 +128,8 @@ internal object BundleSelfCheck { fun verifyHermesBundleHash(): Boolean }
 | T-SA-7 | Frida 插桩 | 多信号并发交叉计分：端口 27042/D-Bus、maps/fd/线程名、rwxp 段、**inline hook 序言字节自检**（ARM64 `B`=0x14xxxxxx）[^11^] | [C] |
 | T-SA-8 | attestation 中继（root 机转发 challenge 到干净设备）[^12^] | 服务端校验 `attestationApplicationId` + 会话内持续签名质询 + 同设备地理/频率聚类 | [C] |
 | T-SA-9 | Play Integrity 绕过（Tricky Store/keybox）或停机 | 双轨：Key Attestation 降级（无频限、可脱 GMS）[^13^]；verdict 仅作风险信号，密钥面 fail-closed 兜底；STRONG 不硬卡（Android 13+ 需 12 个月内补丁，防误伤）[^14^] | [C] |
+
+**2026-10-24 T3.2 子集口径**：本条目只产出 **L0（无命中）** 与 **L4（任一硬信号命中：签名/bundle 不一致、root、Frida、调试器）**，门控在 **≥L3** 拒绝；L1/L2/L3/L5 由 attestation verdict 驱动，随 T5.x 落地。判定为 L4 时不删密钥、不硬退出（恢复流保持可用）。
 
 **L0–L5 分级处置**（动作面：A 只读浏览 / B 收款地址展示 / C 签名交易 / D 导出密钥 / E 改安全设置）[^15^]：
 

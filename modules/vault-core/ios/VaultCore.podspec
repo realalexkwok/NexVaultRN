@@ -17,6 +17,10 @@ Pod::Spec.new do |s|
   # is unchanged, so Expo autolinking and the frozen four-method surface are untouched.
   s.dependency 'ExpoModulesCore'
   s.dependency 'VaultCoreCore'
+  # T3.2 (2026-10-24): fail-closed gate coupling. This bridge imports SecurityIos and injects
+  # SecurityGate.assertSigningAllowed() into VaultCoreCore. Both pods sit at the iOS 16.4
+  # ExpoModulesCore floor, so the VaultCoreCore / VaultCore platform split is unaffected.
+  s.dependency 'SecurityIos'
 
   # T1.5-r2: the P256K product is deliberately attached to VaultCoreCore ONLY. Declaring it here as
   # well makes both static pods embed the package's objects and the app link fails with duplicate

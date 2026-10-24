@@ -19,7 +19,12 @@ android {
 }
 
 dependencies {
-  // R4 amendment approved by owner 2026-10-15 (T1.3 GATE-R4-BC); see doc/dependencies.md §6b.
+  // T3.2: cross-module native gate coupling (E_VAULT_SECURITY_GATE in importMnemonic/signDigest).
+  // Both local modules are autolinked projects of apps/mobile/android, so this is a project
+  // reference, not a new external coordinate (zero R4 change).
+  implementation project(':security-android')
+
+  // R4 amendment approved by owner 2026-10-15 (T3.1/T1.3 GATE-R4-BC); see doc/dependencies.md §6b.
   // BouncyCastle lightweight API only — never register BouncyCastleProvider as a JCE provider.
   implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
 

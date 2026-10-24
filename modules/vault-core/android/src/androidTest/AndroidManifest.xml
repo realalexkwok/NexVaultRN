@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  T3.2: the library androidTest APK is self-targeted, so the production app context is resolved
+  explicitly with createPackageContext(<applicationId>). Android 11+ package visibility hides the
+  app from the test APK without this <queries> declaration (NameNotFoundException otherwise).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <queries>
+    <package android:name="io.github.realalexkwok.nexvault" />
+  </queries>
+</manifest>

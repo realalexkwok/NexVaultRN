@@ -1,0 +1,189 @@
+== install app-debug.apk ==
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+Performing Streamed Install
+Success
+== DetectionDeviceTest ==
+There was 1 failure:
+1) fullDetectionOnCleanDeviceIsL0AndAllowed(expo.modules.securityandroid.DetectionDeviceTest)
+java.lang.AssertionError: dev-signed build must match the injected cert constant expected:<true> but was:<null>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at expo.modules.securityandroid.DetectionDeviceTest.fullDetectionOnCleanDeviceIsL0AndAllowed(DetectionDeviceTest.kt:29)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+== SecurityGateCouplingDeviceTest ==
+
+expo.modules.vaultcore.SecurityGateCouplingDeviceTest:.
+
+Time: 1.155
+
+OK (1 test)
+
+
+== WrapKeyManagerDeviceTest (T3.1 regression) ==
+
+expo.modules.securityandroid.WrapKeyManagerDeviceTest:....
+
+Time: 0.29
+
+OK (4 tests)
+
+
+== DetectionDeviceTest (app context) ==
+	at android.app.ContextImpl.createPackageContextAsUser(ContextImpl.java:2978)
+	at android.app.ContextImpl.createPackageContext(ContextImpl.java:2945)
+	at android.content.ContextWrapper.createPackageContext(ContextWrapper.java:1156)
+	at expo.modules.securityandroid.DetectionDeviceTest.getContext(DetectionDeviceTest.kt:29)
+	at expo.modules.securityandroid.DetectionDeviceTest.fullDetectionOnCleanDeviceIsL0AndAllowed(DetectionDeviceTest.kt:34)
+
+FAILURES!!!
+Tests run: 2,  Failures: 2
+
+
+== SecurityGateCouplingDeviceTest (app context) ==
+	at android.app.ContextImpl.createPackageContextAsUser(ContextImpl.java:2978)
+	at android.app.ContextImpl.createPackageContext(ContextImpl.java:2945)
+	at android.content.ContextWrapper.createPackageContext(ContextWrapper.java:1156)
+	at expo.modules.vaultcore.SecurityGateCouplingDeviceTest.getContext(SecurityGateCouplingDeviceTest.kt:30)
+	at expo.modules.vaultcore.SecurityGateCouplingDeviceTest.gateDeniesImportAndSignOnDeviceAndWipesInput(SecurityGateCouplingDeviceTest.kt:43)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+== DetectionDeviceTest (app context + queries) ==
+
+expo.modules.securityandroid.DetectionDeviceTest:..
+
+Time: 0.817
+
+OK (2 tests)
+
+
+== SecurityGateCouplingDeviceTest (app context + queries) ==
+There was 1 failure:
+1) gateDeniesImportAndSignOnDeviceAndWipesInput(expo.modules.vaultcore.SecurityGateCouplingDeviceTest)
+expo.modules.vaultcore.InvalidMnemonicException: Invalid mnemonic
+	at expo.modules.vaultcore.VaultCoreModule.importMnemonicGuarded$vault_core_debug(VaultCoreModule.kt:74)
+	at expo.modules.vaultcore.SecurityGateCouplingDeviceTest.gateDeniesImportAndSignOnDeviceAndWipesInput(SecurityGateCouplingDeviceTest.kt:43)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+== SecurityGateCouplingDeviceTest (final) ==
+
+expo.modules.vaultcore.SecurityGateCouplingDeviceTest:.
+
+Time: 1.046
+
+OK (1 test)
+
+
+Success
+== DetectionDeviceTest on RELEASE app ==
+	at org.junit.Assert.failNotNull(Assert.java:756)
+	at org.junit.Assert.assertNull(Assert.java:738)
+	at expo.modules.securityandroid.DetectionDeviceTest.fullDetectionOnCleanDeviceIsL0AndAllowed(DetectionDeviceTest.kt:45)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+== SecurityGateCouplingDeviceTest on RELEASE app ==
+
+expo.modules.vaultcore.SecurityGateCouplingDeviceTest:.
+
+Time: 0.312
+
+OK (1 test)
+
+
+== DetectionDeviceTest on RELEASE app (final) ==
+
+expo.modules.securityandroid.DetectionDeviceTest:..
+
+Time: 0.177
+
+OK (2 tests)
+
+
+== FINAL DetectionDeviceTest (release app) ==
+
+Time: 0.124
+
+OK (2 tests)
+
+
+== FINAL SecurityGateCouplingDeviceTest ==
+
+Time: 0.299
+
+OK (1 test)
+
+
+== FINAL WrapKeyManagerDeviceTest (T3.1 regression) ==
+
+Time: 0.095
+
+OK (4 tests)
+
+
+== FINAL(snapshot) DetectionDeviceTest ==
+Time: 0.172
+
+OK (2 tests)
+
+
+== FINAL(snapshot) SecurityGateCouplingDeviceTest ==
+Time: 0.302
+
+OK (1 test)
+
+
+== REVIEW-FIX build: DetectionDeviceTest ==
+
+Time: 0.403
+
+OK (3 tests)
+
+
+== REVIEW-FIX build: SecurityGateCouplingDeviceTest ==
+
+Time: 0.396
+
+OK (1 test)
+
+
+== REVIEW-FIX build: WrapKeyManagerDeviceTest ==
+
+Time: 0.116
+
+OK (4 tests)
+
+
+== FINAL build (review round 2 fixes): DetectionDeviceTest ==
+Time: 0.153
+
+OK (3 tests)
+
+
+== FINAL build: SecurityGateCouplingDeviceTest ==
+Time: 0.394
+
+OK (1 test)
+
+
+== FINAL build: WrapKeyManagerDeviceTest ==
+Time: 0.096
+
+OK (4 tests)
+
+

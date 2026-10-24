@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   s.name           = 'SecurityIos'
   s.version        = '1.0.0'
   s.summary        = 'NexVault T3.1 iOS KEK/wrap submodule (Keychain biometric ACL + CryptoKit AES-GCM).'
-  s.description    = 'Keychain KEK storage behind biometric access control and the wrap-blob codec shared with Android. wrap/unwrap stay native-internal in T3.1; T3.2 wires them to vault-core.'
+  s.description    = 'Keychain KEK storage behind biometric access control, the wrap-blob codec shared with Android, and the T3.2 detection/gate surface (jailbreak/anti-debug/Frida signals -> L0-L5 -> E_SEC_GATE_DENIED). The vault-core bridge injects the gate before any key work.'
   s.author         = 'NexVault'
   s.homepage       = 'https://github.com/realalexkwok/NexVaultRN'
   s.platforms      = {

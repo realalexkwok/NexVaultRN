@@ -8,13 +8,21 @@ import Foundation
 public final class VaultCoreService {
   private let store = VaultStore()
   private let wordlist: [String] = Bip39.loadWordlist()
+  private let signingGate: () throws -> Void
 
-  public init() {}
+  /// `signingGate` runs before any key material is touched (T3.2 fail-closed coupling). The Expo
+  /// bridge injects `SecurityGate.assertSigningAllowed()`; the empty default exists ONLY for the
+  /// Expo-free crypto XCTest bundle, which exercises primitives rather than the gate boundary —
+  /// never construct this service without a gate on any path that can reach JS.
+  public init(signingGate: @escaping () throws -> Void = {}) {
+    self.signingGate = signingGate
+  }
 
   /// Validates + normalises the mnemonic, runs PBKDF2, stores the seed and returns a fresh handle.
   /// The caller owns 'bytes' and must wipe its own copy (the Expo bridge does); this method neither
   /// copies nor wipes it (NIT-6).
   public func importMnemonic(bytes: [UInt8]) throws -> String {
+    try signingGate()
     guard let decoded = String(bytes: bytes, encoding: .utf8) else {
       throw vaultException(VaultErrorCode.invalidMnemonic, "Invalid mnemonic")
     }
@@ -48,6 +56,7 @@ public final class VaultCoreService {
 
   /// 65-byte `r ‖ s ‖ recid` signature over a 32-byte digest (digest length checked before store access).
   public func signDigest(handle: String, path: String, digest: [UInt8]) throws -> [UInt8] {
+    try signingGate()
     try Ecdsa.requireDigest32(digest)
     guard var seed = store.copyOf(handle: handle) else {
       throw vaultException(VaultErrorCode.handleNotFound, "Handle not found")

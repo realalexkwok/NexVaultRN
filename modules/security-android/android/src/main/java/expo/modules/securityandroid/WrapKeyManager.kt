@@ -72,6 +72,9 @@ internal class WrapKeyManager(private val context: Context) {
     private const val KEYSTORE = "AndroidKeyStore"
     private const val MAX_FAILED_ATTEMPTS = 3
     private const val PROMPT_TIMEOUT_MS = 180_000L
+    private const val SCHEMA_PREFS = "nexvault.security"
+    internal const val SCHEMA_TAG = "wrap_key_schema_tag"
+    internal const val SCHEMA_VALUE = "tee-biometric-v1"
   }
 
   /** In-memory provenance of the key created by this process (never persisted; see class KDoc). */
@@ -105,6 +108,22 @@ internal class WrapKeyManager(private val context: Context) {
     if (info.securityLevel == SecurityLevel.SOFTWARE_DEBUG && !isDebuggable()) {
       throw SoftwareKeystoreException()
     }
+    return info
+  }
+
+  /**
+   * T3.2 wrap-key schema migration (Handoff H-T3.1-7). AES keys carry no KeyInfo, so a legacy key
+   * (pre-D6 device-credential auth type, or a StrongBox key from before the TEE switch) cannot be
+   * detected after the fact. The persisted schema tag is the only honest signal: when it is missing
+   * or stale the key is rebuilt unconditionally in one step (delete + ensure) and the caller has to
+   * re-wrap and re-authenticate. The blob format itself is unchanged (AesGcmEnvelope.VERSION = 1).
+   */
+  fun ensureCurrentSchemaKey(): WrapKeyInfo {
+    val prefs = context.getSharedPreferences(SCHEMA_PREFS, Context.MODE_PRIVATE)
+    if (prefs.getString(SCHEMA_TAG, null) == SCHEMA_VALUE) return ensureKey()
+    deleteKey()
+    val info = ensureKey()
+    prefs.edit().putString(SCHEMA_TAG, SCHEMA_VALUE).apply()
     return info
   }
 

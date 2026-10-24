@@ -5,9 +5,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { InteractionManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import '../../global.css';
+import { useSecurityStore } from '@/store/security';
 import { tokens } from '@/theme/tokens';
 
 // TanStack Query client (T2.2 — spec ui-wallet §2.5 homeSkeletonFirst): mounted at module scope so
@@ -41,6 +44,21 @@ export default function RootLayout() {
     'inter-semibold': require('../../assets/fonts/inter_semibold.ttf'),
     'inter-bold': require('../../assets/fonts/inter_bold.ttf'),
   });
+  const scan = useSecurityStore((state) => state.scan);
+
+  // T3.2: detection starts after the first frame, never on the cold-start path (ui-wallet 2.5).
+  // Fire and forget; the store exposes the honest "unsupported" state on web (R7).
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      useSecurityStore.setState({ status: 'unsupported' });
+      return;
+    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      void scan('fast');
+    });
+    return () => task.cancel();
+  }, [scan]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>

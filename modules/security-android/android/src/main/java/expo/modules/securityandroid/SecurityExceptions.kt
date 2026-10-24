@@ -16,6 +16,13 @@ internal object SecurityErrorCodes {
   const val SOFTWARE_KEYSTORE = "E_SEC_SOFTWARE_KEYSTORE"
   const val UNSUPPORTED_OPERATION = "E_SEC_UNSUPPORTED_OPERATION"
 
+  // T3.2 (spec section 2.5): the gate denial is raised by SecurityGate; the two mismatch codes are
+  // the report-level contract for the JS face (the report carries the flags, the gate throws
+  // E_SEC_GATE_DENIED). Kept in the fixed set so the spec table stays machine-checked.
+  const val GATE_DENIED = "E_SEC_GATE_DENIED"
+  const val SIG_MISMATCH = "E_SEC_SIG_MISMATCH"
+  const val BUNDLE_MISMATCH = "E_SEC_BUNDLE_MISMATCH"
+
   val ALL = setOf(
     NO_LOCKSCREEN,
     KEY_INVALIDATED,
@@ -23,7 +30,10 @@ internal object SecurityErrorCodes {
     BIOMETRIC_LOCKOUT,
     BLOB_CORRUPT,
     SOFTWARE_KEYSTORE,
-    UNSUPPORTED_OPERATION
+    UNSUPPORTED_OPERATION,
+    GATE_DENIED,
+    SIG_MISMATCH,
+    BUNDLE_MISMATCH
   )
 }
 
@@ -66,5 +76,16 @@ internal class SoftwareKeystoreException : CodedException(
 internal class SecurityUnsupportedException : CodedException(
   SecurityErrorCodes.UNSUPPORTED_OPERATION,
   "Operation is not supported",
+  null
+)
+
+/**
+ * T3.2 fail-closed gate denial (spec section 2.5). Public because the gate itself is imported by
+ * vault-core (and its device suite asserts this exception type); it is never thrown with signal
+ * details -- vector ids only reach the report (R5).
+ */
+class GateDeniedException : CodedException(
+  SecurityErrorCodes.GATE_DENIED,
+  "Security gate denied the operation",
   null
 )

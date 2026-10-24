@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="expo.modules.securityandroid.FridaDetectorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-24T05:12:12.973Z" hostname="superguo-SQM2270" time="0.018">
+  <properties/>
+  <testcase name="vectorIdsCombineMapsAndPorts" classname="expo.modules.securityandroid.FridaDetectorTest" time="0.017"/>
+  <testcase name="mapsNeedlesAreMatched" classname="expo.modules.securityandroid.FridaDetectorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

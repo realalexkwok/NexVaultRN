@@ -35,3 +35,16 @@ enum RandomBytes {
     return Data(bytes)
   }
 }
+
+/**
+ * fail-closed gate denial (spec: security-ios section 2.4, E_SEC_GATE_DENIED).
+ *
+ * Public because the vault-core bridge lives in a separate pod: it catches this value and
+ * re-labels the denial as the frozen E_VAULT_SECURITY_GATE code seen by JS. Messages are fixed
+ * templates and never carry detection detail (AGENTS.md R5).
+ */
+public struct SecurityGateDenied: Error, Equatable {
+  public static let code = "E_SEC_GATE_DENIED"
+  public static let message = "Security gate denied the operation"
+}
+

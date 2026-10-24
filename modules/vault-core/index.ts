@@ -10,6 +10,22 @@ const INVALID_DIGEST_LENGTH_CODE = 'E_VAULT_INVALID_DIGEST_LENGTH';
 const CRYPTO_INTERNAL_CODE = 'E_VAULT_CRYPTO_INTERNAL';
 
 /**
+ * Fixed error code raised by the T3.2 fail-closed security gate (spec: vault-core §2.4). The native
+ * path throws it from importMnemonic/signDigest before any key material is touched; the call order
+ * is gate -> (biometric, wrap path) -> crypto. Detection details never cross this boundary (R5).
+ */
+export const SECURITY_GATE_CODE = 'E_VAULT_SECURITY_GATE';
+
+/** True when a rejected vault-core call was refused by the security gate. */
+export function isSecurityGateError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === SECURITY_GATE_CODE
+  );
+}
+
+/**
  * Opaque handle returned by {@link importMnemonic}. String-branded: it is an ID only and
  * carries no key semantics (spec: vault-core §2.1, amended 2026-10-15 for T1.3/H2).
  */

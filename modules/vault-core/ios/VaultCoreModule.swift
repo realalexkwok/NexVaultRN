@@ -1,15 +1,19 @@
 import ExpoModulesCore
 import Foundation
+import SecurityIos
 import VaultCoreCore
 
 /// Expo bridge for the four frozen methods (spec: vault-core §2.3).
 ///
-/// Deliberately thin: all logic lives in `VaultCoreCore`, which carries the **iOS 15.0** floor so the
+/// Deliberately thin: all logic lives in `VaultCoreCore`, which carries the **iOS 15.1** floor so the
 /// XCTest bundle can run on an iOS 15.8 device (T1.5-r2). This pod keeps the **iOS 16.4** floor that
 /// ExpoModulesCore requires. The only thing that happens here is input copying/zeroization and the
 /// mapping of the core's coded errors onto the frozen `E_VAULT_*` exception the JS layer sees.
+///
+/// T3.2 (2026-10-24): the bridge injects the security gate into the core. Order per call is
+/// gate -> key work, and a denial is re-labelled E_VAULT_SECURITY_GATE (same code as Android).
 public class VaultCoreModule: Module {
-  private let service = VaultCoreService()
+  private let service = VaultCoreService(signingGate: VaultCoreModule.securityGate)
 
   public func definition() -> ModuleDefinition {
     Name("VaultCore")
@@ -34,6 +38,16 @@ public class VaultCoreModule: Module {
 
     AsyncFunction("destroy") { (handle: String) in
       self.service.destroy(handle: handle)
+    }
+  }
+
+  /// T3.2 fail-closed gate. The security pod owns the decision; this bridge only translates a denial
+  /// into the frozen vault-core code, so JS sees E_VAULT_SECURITY_GATE exactly as on Android.
+  private static func securityGate() throws {
+    do {
+      try SecurityGate.assertSigningAllowed()
+    } catch is SecurityGateDenied {
+      throw VaultCodedException(code: VaultErrorCode.securityGate, reason: "Security gate denied the operation")
     }
   }
 
