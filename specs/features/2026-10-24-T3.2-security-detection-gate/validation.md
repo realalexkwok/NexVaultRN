@@ -159,7 +159,7 @@ Status：`[x]`（静态/自动化门禁全绿；release 演示 + MAN-021 取证�
 - **Stage 1**（`/tmp/t32-release2.log`，arm64）：`:app:assembleRelease` **BUILD SUCCESSFUL in 5m 48s**；`app-release.apk` 内嵌 `assets/index.android.bundle`（4,139,416 B 条目）。
 - 回填：`node scripts/update-security-hashes.mjs apps/mobile/android/app/build/outputs/apk/release/app-release.apk` → `certSha256=fac61745…3b9c`、`bundleSha256=7b64b3b5…dbfe`（`apksigner verify --print-certs` + `unzip` 取 bundle；keytool 无 v1 签名的解析失败已记录并改用 apksigner）。
 - **Stage 2**：`expo prebuild --clean` 写入资源（`nexvault_expected_bundle_sha256 = 7b64b3b5…`）→ `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel` **BUILD SUCCESSFUL in 8m 29s**（第 2 次 daemon 崩溃后按 `-Dkotlin.daemon.jvmargs=-Xmx1280m` 收紧内存重跑成功）。
-- 产物：`app-release.apk` **46,957,479 B**，sha256 `f86eea121e4d36ef36cb75658d2f75a7813b982c7adfc353e08f8faa5e2684eb`（`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
+- 产物：`app-release.apk` **46,957,479 B**，sha256 `ac0130f062c6f6656098ccf1f8ff275c0f611c61036534558f34c250af9f1914`（最终构建，含自检异常加固；`evidence/release-apk-sha256.txt`）；`aapt2 dump resources` 确认两枚注入字符串值。
 - **真机（Pixel 6a / Android 17）release 装机**：`adb install -r` → Success；`DetectionDeviceTest` 对 release app context **OK (2 tests)**（签名 match + **bundle evaluated+match**）；`SecurityGateCouplingDeviceTest` **OK (1 test)**。
 - **MAN-021 走查**：`nexvault://settings` 深链 → Settings 显示 **L0** + `Signature check: match · Bundle check: match` + R6 标注；截图/UI dump/14s 录屏归档 `evidence/man021-*`（agent 走查、owner 未在场，录屏可复核）。
 
@@ -208,3 +208,12 @@ Status：`[~]`（评审轮进行中；收尾项完成后改 `[x]`）
 ## Task 8 — 风险降级预案
 
 见 plan.md Task 8：config plugin 任务图不可行 → D3(b) 两段脚本（记录）；Magisk 机未就位 → D2(b) 口径（TC-T32-007 证据 + MAN-004 挂起 handoff）；评审 BLOCKER/MAJOR → review-fix 纪律；设备离线 → D2(b)/待设备 handoff。
+### 6.4 最终修订证据（最终构建，2026-10-24 15:11–15:18）
+
+| 门禁 | 命令/动作 | 结果 |
+|---|---|---|
+| release 重建 | `:app:assembleRelease -PreactNativeArchitectures=arm64-v8a --max-workers=1 --no-parallel`（含 `SignatureSelfCheck`/`BundleSelfCheck` 异常加固提交后） | **BUILD SUCCESSFUL in 2m 11s**；APK 46,957,479 B，sha256 `ac0130f0…`（`evidence/release-apk-sha256.txt`） |
+| 设备 L0（release app context） | `DetectionDeviceTest` | **OK (2 tests)** |
+| 设备耦合（[P] 证据） | `SecurityGateCouplingDeviceTest` | **OK (1 test)** |
+| T3.1 回归 | `WrapKeyManagerDeviceTest` | **OK (4 tests)** |
+| MAN-021 复走 | 深链 `nexvault://settings` → Settings | **L0** + `Signature check: match · Bundle check: match`；`evidence/man021-settings-l0.{png,xml}`（png sha256 `991b5279…`）、`evidence/man021-l0.mp4`（sha256 `a24a0cf3…`） |
